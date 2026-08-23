@@ -37,7 +37,7 @@ import {
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
 // computed once per render rather than per row.
-function isDateActive(toValue) {
+export function isDateActive(toValue) {
   if (!toValue) return true
   const today = new Date().toISOString().slice(0, 10)
   return toValue >= today
@@ -49,23 +49,69 @@ function emptyForm(schema) {
   return form
 }
 
-// Dropdown option sources need the whole set to populate a select (they're
-// not a browsable/paginated list), so ask the paginated list endpoint for a
-// bigger page instead of just the default 50.
-function withLargePageSize(url) {
-  return `${url}${url.includes('?') ? '&' : '?'}page_size=500`
-}
+// A lookup this small is cheap to preload in full and filter instantly in
+// the browser — no debounce lag. Above it, the same combobox switches to
+// server-side search instead, so a table that grows past this line degrades
+// gracefully (still correct, just a network round-trip per keystroke)
+// rather than silently truncating a preloaded option list at some fixed
+// page size.
+const INSTANT_LIST_THRESHOLD = 200
 
-function RemoteCombobox({ field, value, onChange, disabled, filterValue }) {
+// One combobox for every FK/lookup field, small or huge. `type: 'select-remote'`
+// probes the endpoint once on mount and picks local-instant vs. server-search
+// based on the real row count the backend reports; `type: 'search-remote'`
+// skips the probe and goes straight to server-search for lookups already
+// known to be large (e.g. the ~28k-row employee roster). Either way,
+// `labelField` (a sibling display column already carried in the record,
+// e.g. `rig_name` alongside a `rig` id) is the fallback that always shows the
+// current selection's label even when it isn't in whatever page/search
+// results happen to be loaded.
+export function RemoteCombobox({ field, value, onChange, disabled, filterValue, labelValue }) {
+  const forceSearch = field.type === 'search-remote'
   const [options, setOptions] = useState([])
+  const [mode, setMode] = useState(forceSearch ? 'search' : 'probing')
+  const [query, setQuery] = useState('')
+  const sep = field.remote.includes('?') ? '&' : '?'
 
   useEffect(() => {
-    apiFetch(withLargePageSize(field.remote))
+    if (forceSearch) return
+    let cancelled = false
+    apiFetch(`${field.remote}${sep}page_size=${INSTANT_LIST_THRESHOLD}`)
       .then((r) => r.json())
-      .then((data) => setOptions(Array.isArray(data) ? data : data.results || []))
+      .then((data) => {
+        if (cancelled) return
+        if (Array.isArray(data)) {
+          // Endpoint isn't paginated — whatever it returns is the full set.
+          setOptions(data)
+          setMode('local')
+        } else {
+          const results = data.results || []
+          setOptions(results)
+          setMode(data.count > results.length ? 'search' : 'local')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [field.remote])
 
-  const needsFilter = Boolean(field.filterOptionField)
+  useEffect(() => {
+    if (mode !== 'search') return
+    const timer = setTimeout(() => {
+      apiFetch(`${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20`)
+        .then((r) => r.json())
+        .then((data) => setOptions(Array.isArray(data) ? data : data.results || []))
+    }, 300)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field.remote, query, mode])
+
+  // The "select a category first" cascade (e.g. Rank filtered by Fs
+  // Category) only makes sense once everything's already loaded locally —
+  // a lookup large enough to need server search is in practice never one of
+  // these small, cascade-filtered sets.
+  const needsFilter = mode === 'local' && Boolean(field.filterOptionField)
   const filtered =
     needsFilter && filterValue
       ? options.filter((o) => String(o[field.filterOptionField]) === String(filterValue))
@@ -87,74 +133,36 @@ function RemoteCombobox({ field, value, onChange, disabled, filterValue }) {
     () => shown.map((o) => ({ value: String(o[field.optionValue]), label: o[field.optionLabel] })),
     [shown, field.optionValue, field.optionLabel]
   )
-  const selectedItem = value != null ? (items.find((i) => i.value === String(value)) ?? null) : null
-  const blocked = needsFilter && !filterValue && !value
-
-  return (
-    <Combobox
-      items={items}
-      value={selectedItem}
-      onValueChange={(item) => onChange(item ? item.value : null)}
-      disabled={disabled || blocked}
-    >
-      <ComboboxInput
-        placeholder={blocked ? field.filterPlaceholder || 'Select above first…' : 'Search…'}
-        showClear
-        className="w-full"
-      />
-      <ComboboxContent>
-        <ComboboxEmpty>No results</ComboboxEmpty>
-        <ComboboxList>
-          {(item) => (
-            <ComboboxItem key={item.value} value={item}>
-              {item.label}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
-  )
-}
-
-// For a lookup too large to ever fetch in full (tens of thousands of rows),
-// search the server as the user types instead of pre-loading options.
-// `labelValue` carries the currently-selected row's display label in from
-// the parent record (via field.labelField) so an existing selection shows
-// correctly without needing a round-trip just to resolve id -> name.
-function SearchRemoteCombobox({ field, value, onChange, disabled, labelValue }) {
-  const [options, setOptions] = useState([])
-  const [query, setQuery] = useState('')
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      apiFetch(`${field.remote}?search=${encodeURIComponent(query)}&page_size=20`)
-        .then((r) => r.json())
-        .then((data) => setOptions(Array.isArray(data) ? data : data.results || []))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [field.remote, query])
-
-  const items = useMemo(
-    () => options.map((o) => ({ value: String(o[field.optionValue]), label: o[field.optionLabel] })),
-    [options, field.optionValue, field.optionLabel]
-  )
   const selectedItem =
     value != null
       ? (items.find((i) => i.value === String(value)) ??
         (labelValue ? { value: String(value), label: labelValue } : null))
       : null
+  const comboItems =
+    selectedItem && !items.some((i) => i.value === selectedItem.value) ? [selectedItem, ...items] : items
+  const blocked = needsFilter && !filterValue && !value
 
   return (
     <Combobox
-      items={selectedItem && !items.some((i) => i.value === selectedItem.value) ? [selectedItem, ...items] : items}
+      items={comboItems}
       value={selectedItem}
       onValueChange={(item) => onChange(item ? item.value : null)}
-      onInputValueChange={setQuery}
-      disabled={disabled}
+      onInputValueChange={mode === 'search' ? setQuery : undefined}
+      disabled={disabled || blocked}
     >
-      <ComboboxInput placeholder="Type to search…" showClear className="w-full" />
+      <ComboboxInput
+        placeholder={
+          blocked
+            ? field.filterPlaceholder || 'Select above first…'
+            : mode === 'search'
+              ? 'Type to search…'
+              : 'Search…'
+        }
+        showClear
+        className="w-full"
+      />
       <ComboboxContent>
-        <ComboboxEmpty>{query ? 'No results' : 'Type to search…'}</ComboboxEmpty>
+        <ComboboxEmpty>{mode === 'search' && !query ? 'Type to search…' : 'No results'}</ComboboxEmpty>
         <ComboboxList>
           {(item) => (
             <ComboboxItem key={item.value} value={item}>
@@ -246,7 +254,7 @@ function FileUploadField({ field, value, onChange, disabled, form }) {
 // A small fixed set of options (≤4) reads and picks faster as a row of
 // tiles than as a dropdown you have to open first — one click instead of
 // two, and every choice is visible at a glance.
-function TilePicker({ options, value, onChange, disabled }) {
+export function TilePicker({ options, value, onChange, disabled }) {
   return (
     <div className="flex flex-wrap gap-2" role="radiogroup">
       {options.map((o) => {
@@ -281,7 +289,7 @@ function TilePicker({ options, value, onChange, disabled }) {
 // is exactly the confusion these "blank means still active" fields need to
 // avoid. Side-step the browser inconsistency entirely: show plain text
 // until the user explicitly opts to set a date, then mount the real input.
-function NullableDateField({ value, onChange, disabled }) {
+export function NullableDateField({ value, onChange, disabled }) {
   const [editing, setEditing] = useState(Boolean(value))
 
   useEffect(() => {
@@ -330,7 +338,70 @@ function NullableDateField({ value, onChange, disabled }) {
   )
 }
 
-function FormField({ field, value, onChange, disabled, filterValue, form }) {
+// A number field that debounce-checks the server for a duplicate as the
+// user types, surfacing an amber banner with a one-click suggestion instead
+// of letting them find out on save (or worse, silently collide with
+// whatever the DB does on a duplicate).
+function UniqueCodeField({ value, onChange, disabled, checkUnique, excludeId }) {
+  const [status, setStatus] = useState('idle') // idle | checking | taken | available
+  const [suggestion, setSuggestion] = useState(null)
+
+  useEffect(() => {
+    if (value === '' || value == null) {
+      setStatus('idle')
+      return
+    }
+    setStatus('checking')
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ [checkUnique.param]: value })
+      if (excludeId) params.set('exclude', excludeId)
+      apiFetch(`${checkUnique.url}?${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setStatus(data.taken ? 'taken' : 'available')
+          setSuggestion(data.suggestion ?? null)
+        })
+        .catch(() => setStatus('idle'))
+    }, 400)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, checkUnique.url, checkUnique.param, excludeId])
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Input
+        type="number"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+      />
+      {status === 'taken' && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] leading-relaxed text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          <IconAlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            Code {value} is already in use.
+            {suggestion != null && (
+              <>
+                {' '}
+                Try{' '}
+                <button
+                  type="button"
+                  onClick={() => onChange(String(suggestion))}
+                  className="font-semibold underline underline-offset-2"
+                >
+                  {suggestion}
+                </button>{' '}
+                instead.
+              </>
+            )}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FormField({ field, value, onChange, disabled, filterValue, form, recordId }) {
   if (field.type === 'active-select') {
     // Some legacy rows have '' rather than 'Y'/'N' in this column — treat
     // anything but an explicit 'N' as Active.
@@ -346,7 +417,7 @@ function FormField({ field, value, onChange, disabled, filterValue, form }) {
       />
     )
   }
-  if (field.type === 'select-remote') {
+  if (field.type === 'select-remote' || field.type === 'search-remote') {
     return (
       <RemoteCombobox
         field={field}
@@ -354,23 +425,13 @@ function FormField({ field, value, onChange, disabled, filterValue, form }) {
         onChange={onChange}
         disabled={disabled}
         filterValue={filterValue}
+        labelValue={field.labelField ? form[field.labelField] : undefined}
       />
     )
   }
   if (field.type === 'select') {
     return (
       <TilePicker options={field.options} value={value || null} onChange={onChange} disabled={disabled} />
-    )
-  }
-  if (field.type === 'search-remote') {
-    return (
-      <SearchRemoteCombobox
-        field={field}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        labelValue={field.labelField ? form[field.labelField] : undefined}
-      />
     )
   }
   if (field.type === 'file') {
@@ -401,6 +462,17 @@ function FormField({ field, value, onChange, disabled, filterValue, form }) {
   }
   if (field.type === 'date' && field.hint) {
     return <NullableDateField value={value} onChange={onChange} disabled={disabled} />
+  }
+  if (field.type === 'number' && field.checkUnique) {
+    return (
+      <UniqueCodeField
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        checkUnique={field.checkUnique}
+        excludeId={recordId}
+      />
+    )
   }
   return (
     <Input
@@ -738,6 +810,7 @@ export default function MasterCrudPage() {
                       disabled={!canWrite}
                       filterValue={f.filterField ? form[f.filterField] : undefined}
                       form={form}
+                      recordId={selected ? selected[schema.idField] : null}
                     />
                     {/* NullableDateField already says "No end date" / "Set a
                         date" itself, so the hint would just repeat that. */}

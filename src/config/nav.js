@@ -247,6 +247,44 @@ export const navTree = [
           },
         ],
       },
+      {
+        label: 'Projects',
+        items: [
+          {
+            key: 'project_contract',
+            label: 'Project Contract',
+            path: '/masters/project-contract',
+            icon: IconBriefcase,
+            menuKey: 'masters.project_contract',
+          },
+          {
+            key: 'project_drilling_rates',
+            label: 'Project Drilling Rates',
+            path: '/masters/project-drilling-rates',
+            icon: IconTrendingUp,
+            menuKey: 'masters.project_drilling_rates',
+          },
+        ],
+      },
+      {
+        label: 'Drilling',
+        items: [
+          {
+            key: 'drilling_operations',
+            label: 'Drilling Operations',
+            path: '/masters/drilling-operations',
+            icon: IconWrench,
+            menuKey: 'masters.drilling_operations',
+          },
+          {
+            key: 'drilling_sections',
+            label: 'Drilling Sections',
+            path: '/masters/drilling-sections',
+            icon: IconLayers,
+            menuKey: 'masters.drilling_sections',
+          },
+        ],
+      },
     ],
   },
   {
@@ -259,11 +297,8 @@ export const navTree = [
         items: [
           { key: 'user_rights', label: 'User Rights', path: '/admin/user-rights', icon: IconShield },
           {
-            key: 'user_management',
-            label: 'User Management',
-            path: '/admin/user-management',
-            icon: IconUsers,
-          },
+            key: 'user_management', label: 'User Management', path: '/admin/user-management', icon: IconUsers, 
+            menuKey: 'admin.user_management'},
           { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
         ],
       },
