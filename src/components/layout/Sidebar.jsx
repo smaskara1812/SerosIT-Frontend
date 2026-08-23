@@ -53,14 +53,10 @@ export default function Sidebar() {
           the rail is too narrow for the wordmark to fit uncropped. */}
       <div className="flex h-16 items-center justify-center px-3">
         {collapsed ? (
-          <div
-            className="h-9 w-9 shrink-0 rounded-lg bg-white shadow-sm"
-            style={{
-              backgroundImage: "url('/branding/seros-logo.png')",
-              backgroundSize: 'auto 22px',
-              backgroundPosition: '7px center',
-              backgroundRepeat: 'no-repeat',
-            }}
+          <img
+            src="/android-chrome-192x192.png"
+            alt="Seros"
+            className="h-9 w-9 shrink-0 rounded-lg object-contain shadow-sm"
           />
         ) : (
           <div className="flex h-9 items-center justify-center rounded-lg bg-white px-3 shadow-sm">

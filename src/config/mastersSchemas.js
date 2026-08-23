@@ -595,4 +595,18 @@ export const mastersSchemas = {
     activeField: null,
     fields: [{ name: 'drilling_section_name', label: 'Section', required: true }],
   },
+  'drilling-rates': {
+    title: 'Drilling Rates',
+    menuKey: 'masters.drilling_rates',
+    apiBase: '/api/masters/drilling-rate-types/',
+    idField: 'drilling_rate_id',
+    nameField: 'rate_code',
+    activeField: 'rate_active',
+    listSecondary: (r) => r.rate_description || '',
+    fields: [
+      { name: 'rate_code', label: 'Rate Code', required: true },
+      { name: 'rate_description', label: 'Description', wide: true },
+      { name: 'rate_active', label: 'Active', type: 'active-select' },
+    ],
+  },
 }

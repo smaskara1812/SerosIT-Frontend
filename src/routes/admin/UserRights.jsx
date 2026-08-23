@@ -9,6 +9,17 @@ import { IconSearch, IconCheck } from '@/components/icons'
 
 const ACTIONS = ['view', 'add', 'edit', 'delete', 'export']
 
+// One color per action, used consistently for the column header dot, the
+// checked-cell fill, and nothing else — so "which column is this" reads at
+// a glance without needing the header text.
+const ACTION_META = {
+  view: { label: 'View', dot: 'bg-blue-500', fill: 'border-blue-500 bg-blue-500' },
+  add: { label: 'Add', dot: 'bg-emerald-500', fill: 'border-emerald-500 bg-emerald-500' },
+  edit: { label: 'Edit', dot: 'bg-amber-500', fill: 'border-amber-500 bg-amber-500' },
+  delete: { label: 'Delete', dot: 'bg-red-500', fill: 'border-red-500 bg-red-500' },
+  export: { label: 'Export', dot: 'bg-purple-500', fill: 'border-purple-500 bg-purple-500' },
+}
+
 const PRESETS = [
   { key: 'view-only', label: 'View only' },
   { key: 'grant-all', label: 'Grant all' },
@@ -24,6 +35,67 @@ function onListScroll(e, hasMore, loadMore) {
   const el = e.currentTarget
   if (!hasMore) return
   if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) loadMore()
+}
+
+// A real switch, not a status pill — the badge-shaped "APP ADMIN" button
+// read as a label instead of a control. The label sits outside the track so
+// it never looks like it's describing the user's current admin status.
+function ToggleSwitch({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2.5"
+    >
+      <span className="text-xs font-semibold text-foreground">{label}</span>
+      <span
+        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${
+          checked ? 'bg-[#1a3f7a]' : 'bg-muted-foreground/25'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </span>
+    </button>
+  )
+}
+
+// Tri-state header toggle for one action within one group's table only —
+// scoped to `menus`, never the whole permission set, so clicking it can't
+// reach into unrelated sections.
+function ColumnHeaderToggle({ menus, action, isAppAdmin, onToggle }) {
+  const meta = ACTION_META[action]
+  const applicable = menus.filter((m) => m.actions.includes(action))
+  const state =
+    applicable.length === 0
+      ? 'none'
+      : applicable.every((m) => m.perms[action])
+        ? 'all'
+        : applicable.every((m) => !m.perms[action])
+          ? 'none'
+          : 'some'
+
+  return (
+    <button
+      type="button"
+      disabled={isAppAdmin || applicable.length === 0}
+      onClick={() => onToggle(menus, action)}
+      title={`Toggle ${meta.label} for this section`}
+      className="inline-flex items-center gap-1 whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-50 enabled:hover:text-foreground"
+    >
+      <span
+        className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
+          state === 'all' ? meta.dot : state === 'some' ? `${meta.dot} opacity-40` : 'bg-gray-300'
+        }`}
+      />
+      <span className="text-[11px] font-semibold text-muted-foreground">{meta.label}</span>
+    </button>
+  )
 }
 
 export default function UserRights() {
@@ -84,23 +156,18 @@ export default function UserRights() {
     )
   }
 
-  // Tri-state for a column: 'all' | 'some' | 'none', over menus where the
-  // action is even applicable (not '—').
-  function columnState(action) {
-    if (!detail) return 'none'
-    const applicable = detail.filter((m) => m.actions.includes(action))
-    if (applicable.length === 0) return 'none'
-    if (applicable.every((m) => m.perms[action])) return 'all'
-    if (applicable.every((m) => !m.perms[action])) return 'none'
-    return 'some'
-  }
-
-  function toggleColumn(action) {
+  // Scoped to whichever group's `menus` the header toggle was clicked in —
+  // never the whole permission set, so a column toggle in "Masters ·
+  // General" can't reach rows under "Dashboard" or any other section.
+  function toggleColumnFor(menus, action) {
     if (isAppAdmin) return
-    const next = columnState(action) !== 'all'
+    const applicable = menus.filter((m) => m.actions.includes(action))
+    const allOn = applicable.length > 0 && applicable.every((m) => m.perms[action])
+    const next = !allOn
+    const keys = new Set(menus.map((m) => m.key))
     setDetail((prev) =>
       prev.map((m) =>
-        m.actions.includes(action) ? { ...m, perms: { ...m.perms, [action]: next } } : m
+        keys.has(m.key) && m.actions.includes(action) ? { ...m, perms: { ...m.perms, [action]: next } } : m
       )
     )
   }
@@ -273,24 +340,14 @@ export default function UserRights() {
                 <h2 className="text-base font-semibold text-foreground">{selected.name}</h2>
                 <p className="font-mono text-xs text-muted-foreground">{selected.login_id}</p>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAppAdmin((v) => !v)}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
-                    isAppAdmin
-                      ? 'bg-[#1a3f7a] text-white'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/70'
-                  }`}
-                >
-                  App Admin
-                </button>
+              <div className="flex items-center gap-4">
+                <ToggleSwitch checked={isAppAdmin} onChange={setIsAppAdmin} label="App Admin" />
                 <Button
                   onClick={handleSave}
                   disabled={saving || loadingDetail || !isDirty}
                   variant={isDirty ? 'default' : 'secondary'}
                   size="sm"
-                  title="⌘S / Ctrl+S"
+                  title="Ctrl+S / Cmd+S"
                 >
                   {saving ? 'Saving…' : savedFlash ? 'Saved' : isDirty ? 'Save changes' : 'Saved'}
                 </Button>
@@ -298,22 +355,24 @@ export default function UserRights() {
             </div>
 
             {!loadingDetail && !isAppAdmin && (
-              <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-4 py-2">
+              <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-4 py-2.5">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                   Quick actions
                 </span>
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => applyPreset(p.key)}
-                    className="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-[#1a3f7a] hover:text-[#1a3f7a]"
-                  >
-                    {p.label}
-                  </button>
-                ))}
+                <div className="flex items-center gap-1.5">
+                  {PRESETS.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => applyPreset(p.key)}
+                      className="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-[#1a3f7a] hover:text-[#1a3f7a]"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
                 <span className="ml-auto text-[11px] text-muted-foreground">
-                  Esc to close · ⌘S to save
+                  Esc to close &nbsp;·&nbsp; Ctrl/Cmd+S to save
                 </span>
               </div>
             )}
@@ -336,19 +395,18 @@ export default function UserRights() {
                         {group || 'General'}
                       </p>
                       {!isAppAdmin && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => setGroupAll(menus, true)}
-                            className="text-[11px] font-semibold text-[#2563eb] hover:underline"
+                            className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-semibold text-foreground transition-colors hover:border-[#1a3f7a] hover:text-[#1a3f7a]"
                           >
                             All
                           </button>
-                          <span className="text-[11px] text-muted-foreground">/</span>
                           <button
                             type="button"
                             onClick={() => setGroupAll(menus, false)}
-                            className="text-[11px] font-semibold text-muted-foreground hover:underline"
+                            className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-[#1a3f7a] hover:text-[#1a3f7a]"
                           >
                             None
                           </button>
@@ -356,49 +414,37 @@ export default function UserRights() {
                       )}
                     </div>
                     <div className="overflow-hidden rounded-xl border border-border">
-                      <table className="w-full text-sm">
+                      <table className="w-full table-fixed text-sm">
+                        <colgroup>
+                          <col className="w-[38%]" />
+                          {ACTIONS.map((a) => (
+                            <col key={a} className="w-[12.4%]" />
+                          ))}
+                        </colgroup>
                         <thead>
                           <tr className="bg-muted/50 text-left text-xs text-muted-foreground">
                             <th className="px-3 py-2 font-medium">Menu</th>
-                            {ACTIONS.map((a) => {
-                              const state = columnState(a)
-                              return (
-                                <th key={a} className="px-3 py-2 text-center font-medium">
-                                  <button
-                                    type="button"
-                                    disabled={isAppAdmin}
-                                    onClick={() => toggleColumn(a)}
-                                    title={`Toggle ${a} for every visible menu`}
-                                    className={`inline-flex items-center gap-1 rounded px-1 capitalize transition-colors ${
-                                      isAppAdmin
-                                        ? 'cursor-default opacity-60'
-                                        : 'hover:text-[#1a3f7a]'
-                                    }`}
-                                  >
-                                    <span
-                                      className={`h-1.5 w-1.5 rounded-full ${
-                                        state === 'all'
-                                          ? 'bg-[#1a3f7a]'
-                                          : state === 'some'
-                                            ? 'bg-[#1a3f7a]/40'
-                                            : 'bg-gray-300'
-                                      }`}
-                                    />
-                                    {a}
-                                  </button>
-                                </th>
-                              )
-                            })}
+                            {ACTIONS.map((a) => (
+                              <th key={a} className="px-2 py-2 text-center font-medium">
+                                <ColumnHeaderToggle
+                                  menus={menus}
+                                  action={a}
+                                  isAppAdmin={isAppAdmin}
+                                  onToggle={toggleColumnFor}
+                                />
+                              </th>
+                            ))}
                           </tr>
                         </thead>
                         <tbody>
                           {menus.map((m) => (
                             <tr key={m.key} className="border-t border-border">
-                              <td className="px-3 py-2 font-medium text-foreground">{m.label}</td>
+                              <td className="truncate px-3 py-2 font-medium text-foreground">{m.label}</td>
                               {ACTIONS.map((a) => {
                                 const available = m.actions.includes(a)
+                                const meta = ACTION_META[a]
                                 return (
-                                  <td key={a} className="px-3 py-2 text-center">
+                                  <td key={a} className="px-2 py-2 text-center">
                                     {!available ? (
                                       <span className="text-muted-foreground">—</span>
                                     ) : (
@@ -407,9 +453,7 @@ export default function UserRights() {
                                         disabled={isAppAdmin}
                                         onClick={() => togglePerm(m.key, a)}
                                         className={`mx-auto flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
-                                          m.perms[a]
-                                            ? 'border-[#1a3f7a] bg-[#1a3f7a] text-white'
-                                            : 'border-border bg-background'
+                                          m.perms[a] ? `${meta.fill} text-white` : 'border-border bg-background'
                                         } ${isAppAdmin ? 'opacity-40' : 'hover:border-[#1a3f7a]'}`}
                                       >
                                         {m.perms[a] && <IconCheck className="h-3 w-3" />}
