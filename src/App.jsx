@@ -14,6 +14,9 @@ import JobDescriptionsPage from '@/routes/masters/JobDescriptionsPage'
 import ProjectContractPage from '@/routes/masters/ProjectContractPage'
 import ProjectDrillingRatesPage from '@/routes/masters/ProjectDrillingRatesPage'
 import DrillingWorkShiftPage from '@/routes/masters/DrillingWorkShiftPage'
+import FsCatgToRigTypeMappingPage from '@/routes/masters/FsCatgToRigTypeMappingPage'
+import IncidentsPage from '@/routes/reports/IncidentsPage'
+import HazardCardsPage from '@/routes/reports/HazardCardsPage'
 
 function App() {
   return (
@@ -33,8 +36,14 @@ function App() {
             <Route path="/masters/project-contract" element={<ProjectContractPage />} />
             <Route path="/masters/project-drilling-rates" element={<ProjectDrillingRatesPage />} />
             <Route path="/masters/drilling-work-shifts" element={<DrillingWorkShiftPage />} />
+            <Route
+              path="/masters/fs-catg-to-rig-type-mapping"
+              element={<FsCatgToRigTypeMappingPage />}
+            />
             <Route path="/masters/:slug" element={<MasterCrudPage />} />
           </Route>
+          <Route path="/reports/incidents" element={<IncidentsPage />} />
+          <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

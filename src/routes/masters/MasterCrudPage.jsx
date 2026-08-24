@@ -71,6 +71,12 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   const [options, setOptions] = useState([])
   const [mode, setMode] = useState(forceSearch ? 'search' : 'probing')
   const [query, setQuery] = useState('')
+  // Server-search results are paginated (page_size=20) — hasMore/loadingMore
+  // back the "load next page on scroll" behavior below so a long list (e.g.
+  // ~700 Locations) never just gets cut off after the first page.
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const pageRef = useRef(1)
   const sep = field.remote.includes('?') ? '&' : '?'
 
   useEffect(() => {
@@ -96,16 +102,48 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [field.remote])
 
+  // Some search-remote fields (e.g. Location, scoped to a picked Country)
+  // narrow the server-side search itself rather than filtering a
+  // client-side option list — the lookup is too large to preload.
+  const remoteFilterParam =
+    field.remoteFilterParam && filterValue ? `&${field.remoteFilterParam}=${filterValue}` : ''
+
   useEffect(() => {
     if (mode !== 'search') return
     const timer = setTimeout(() => {
-      apiFetch(`${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20`)
+      apiFetch(`${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20&page=1${remoteFilterParam}`)
         .then((r) => r.json())
-        .then((data) => setOptions(Array.isArray(data) ? data : data.results || []))
+        .then((data) => {
+          pageRef.current = 1
+          if (Array.isArray(data)) {
+            setOptions(data)
+            setHasMore(false)
+          } else {
+            setOptions(data.results || [])
+            setHasMore(Boolean(data.next))
+          }
+        })
     }, 300)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [field.remote, query, mode])
+  }, [field.remote, query, mode, remoteFilterParam])
+
+  function loadMore() {
+    if (!hasMore || loadingMore) return
+    setLoadingMore(true)
+    const nextPage = pageRef.current + 1
+    apiFetch(
+      `${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20&page=${nextPage}${remoteFilterParam}`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const results = Array.isArray(data) ? [] : data.results || []
+        setOptions((prev) => [...prev, ...results])
+        setHasMore(Array.isArray(data) ? false : Boolean(data.next))
+        pageRef.current = nextPage
+      })
+      .finally(() => setLoadingMore(false))
+  }
 
   // The "select a category first" cascade (e.g. Rank filtered by Fs
   // Category) only makes sense once everything's already loaded locally —
@@ -130,9 +168,20 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   const shown = selectedOutsideFilter ? [...filtered, selectedOutsideFilter] : filtered
 
   const items = useMemo(
-    () => shown.map((o) => ({ value: String(o[field.optionValue]), label: o[field.optionLabel] })),
+    () => shown.map((o) => ({ value: String(o[field.optionValue]), label: o[field.optionLabel], raw: o })),
     [shown, field.optionValue, field.optionLabel]
   )
+  // Some cascades (e.g. Rig Subtype under Rig Type) have only one valid
+  // option once the parent is picked — auto-fill it instead of making the
+  // user pick the sole choice themselves.
+  useEffect(() => {
+    if (!needsFilter || !field.autoSelectSingleMatch || !filterValue) return
+    if (filtered.length !== 1) return
+    const only = String(filtered[0][field.optionValue])
+    if (String(value ?? '') !== only) onChange(only)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterValue, filtered.length, field.autoSelectSingleMatch])
+
   const selectedItem =
     value != null
       ? (items.find((i) => i.value === String(value)) ??
@@ -146,7 +195,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
     <Combobox
       items={comboItems}
       value={selectedItem}
-      onValueChange={(item) => onChange(item ? item.value : null)}
+      onValueChange={(item) => onChange(item ? item.value : null, item?.raw)}
       onInputValueChange={mode === 'search' ? setQuery : undefined}
       disabled={disabled || blocked}
     >
@@ -163,13 +212,25 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
       />
       <ComboboxContent>
         <ComboboxEmpty>{mode === 'search' && !query ? 'Type to search…' : 'No results'}</ComboboxEmpty>
-        <ComboboxList>
+        <ComboboxList
+          onScroll={
+            mode === 'search'
+              ? (e) => {
+                  const el = e.currentTarget
+                  if (el.scrollHeight - el.scrollTop - el.clientHeight < 64) loadMore()
+                }
+              : undefined
+          }
+        >
           {(item) => (
             <ComboboxItem key={item.value} value={item}>
               {item.label}
             </ComboboxItem>
           )}
         </ComboboxList>
+        {mode === 'search' && loadingMore && (
+          <div className="py-1.5 text-center text-xs text-muted-foreground">Loading more…</div>
+        )}
       </ComboboxContent>
     </Combobox>
   )
@@ -797,7 +858,7 @@ export default function MasterCrudPage() {
                     <FormField
                       field={f}
                       value={form[f.name]}
-                      onChange={(v) => {
+                      onChange={(v, raw) => {
                         const next = { ...form, [f.name]: v }
                         // Changing a field that other select-remote fields
                         // filter on (e.g. Category) invalidates whatever
@@ -805,9 +866,17 @@ export default function MasterCrudPage() {
                         for (const other of schema.fields) {
                           if (other.filterField === f.name) next[other.name] = null
                         }
+                        // Some fields (e.g. Rig Type from a picked Rig
+                        // Subtype) are derived from the selected option
+                        // itself rather than chosen independently.
+                        if (f.derives && raw) {
+                          for (const [targetField, sourceKey] of Object.entries(f.derives)) {
+                            next[targetField] = raw[sourceKey]
+                          }
+                        }
                         setForm(next)
                       }}
-                      disabled={!canWrite}
+                      disabled={!canWrite || f.readOnly}
                       filterValue={f.filterField ? form[f.filterField] : undefined}
                       form={form}
                       recordId={selected ? selected[schema.idField] : null}

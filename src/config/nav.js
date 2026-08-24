@@ -215,7 +215,7 @@ export const navTree = [
         ],
       },
       {
-        label: 'Mapping',
+        label: 'User Mapping Masters',
         items: [
           {
             key: 'user_rig_mapping',
@@ -244,6 +244,39 @@ export const navTree = [
             path: '/masters/interviewer-mapping',
             icon: IconUserCheck,
             menuKey: 'masters.interviewer_mapping',
+          },
+        ],
+      },
+      {
+        label: 'HR Mapping Masters',
+        items: [
+          {
+            key: 'fs_catg_to_rig_type_mapping',
+            label: 'Category To Rig Type Mapping',
+            path: '/masters/fs-catg-to-rig-type-mapping',
+            icon: IconLink,
+            menuKey: 'masters.fs_catg_to_rig_type_mapping',
+          },
+          {
+            key: 'rank_classification',
+            label: 'Rank Classification',
+            path: '/masters/rank-classification',
+            icon: IconChevronsUp,
+            menuKey: 'masters.rank_classification',
+          },
+          {
+            key: 'nationality_to_emp_type_mapping',
+            label: 'Nationality To Emp Type Mapping',
+            path: '/masters/nationality-to-emp-type-mapping',
+            icon: IconLink,
+            menuKey: 'masters.nationality_to_emp_type_mapping',
+          },
+          {
+            key: 'crew_change_reliever_mapping',
+            label: 'Crew Change Reliever Mapping',
+            path: '/masters/crew-change-reliever-mapping',
+            icon: IconLink,
+            menuKey: 'masters.crew_change_reliever_mapping',
           },
         ],
       },
@@ -296,6 +329,31 @@ export const navTree = [
             path: '/masters/drilling-rates',
             icon: IconTrendingUp,
             menuKey: 'masters.drilling_rates',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'reports',
+    label: 'Reports',
+    icon: IconClipboard,
+    sections: [
+      {
+        items: [
+          {
+            key: 'incidents',
+            label: 'Incidents',
+            path: '/reports/incidents',
+            icon: IconAlertTriangle,
+            menuKey: 'reports.incidents',
+          },
+          {
+            key: 'hazard_cards',
+            label: 'Hazard Cards',
+            path: '/reports/hazard-cards',
+            icon: IconShieldCheck,
+            menuKey: 'reports.hazard_cards',
           },
         ],
       },
