@@ -248,6 +248,25 @@ export const navTree = [
         ],
       },
       {
+        label: 'General Mapping Masters',
+        items: [
+          {
+            key: 'cost_centre_to_company_mapping',
+            label: 'Cost Centre To Company Mapping',
+            path: '/masters/cost-centre-to-company-mapping',
+            icon: IconLink,
+            menuKey: 'masters.cost_centre_to_company_mapping',
+          },
+          {
+            key: 'rig_site_mapping',
+            label: 'Rig Site Mapping',
+            path: '/masters/rig-site-mapping',
+            icon: IconLink,
+            menuKey: 'masters.rig_site_mapping',
+          },
+        ],
+      },
+      {
         label: 'HR Mapping Masters',
         items: [
           {
@@ -277,6 +296,37 @@ export const navTree = [
             path: '/masters/crew-change-reliever-mapping',
             icon: IconLink,
             menuKey: 'masters.crew_change_reliever_mapping',
+          },
+        ],
+      },
+      {
+        label: 'HSE Mapping Masters',
+        items: [
+          {
+            key: 'wkgrp_indicator_type_mapping',
+            label: 'Workgroup To Indicator Type Mapping',
+            path: '/masters/wkgrp-indicator-type-mapping',
+            icon: IconLink,
+            menuKey: 'masters.wkgrp_indicator_type_mapping',
+          },
+        ],
+      },
+      {
+        label: 'Exception Masters',
+        items: [
+          {
+            key: 'rig_crew_exceptions',
+            label: 'Rig Crew Exceptions',
+            path: '/masters/rig-crew-exceptions',
+            icon: IconAlertTriangle,
+            menuKey: 'masters.rig_crew_exceptions',
+          },
+          {
+            key: 'crew_schedule_exceptions',
+            label: 'Crew Schedule Exceptions',
+            path: '/masters/crew-schedule-exceptions',
+            icon: IconAlertTriangle,
+            menuKey: 'masters.crew_schedule_exceptions',
           },
         ],
       },
