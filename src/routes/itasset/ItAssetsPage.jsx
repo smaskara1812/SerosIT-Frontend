@@ -16,7 +16,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Laptop, Pencil } from 'lucide-react'
+import { Laptop, Pencil, History } from 'lucide-react'
 
 const ACTIVE_OPTIONS = [
   { value: '', label: 'All' },
@@ -352,6 +352,19 @@ export default function ItAssetsPage() {
                       </td>
                       <td className="px-2 py-2.5">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            title="View Assignment History"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(
+                                `/it-asset/it-asset-holders?asset=${r.it_asset_id}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`
+                              )
+                            }}
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <History className="h-3.5 w-3.5" />
+                          </button>
                           {canEdit && (
                             <button
                               type="button"
@@ -404,6 +417,18 @@ export default function ItAssetsPage() {
                                 Delete
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                navigate(
+                                  `/it-asset/it-asset-holders?asset=${r.it_asset_id}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`
+                                )
+                              }
+                            >
+                              <History className="h-3.5 w-3.5" />
+                              View Assignment History
+                            </Button>
                           </div>
                           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <DetailField label="Type" value={r.it_asset_type_name} />

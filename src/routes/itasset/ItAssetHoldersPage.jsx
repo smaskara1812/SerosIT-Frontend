@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -16,7 +16,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconUserCheck, IconTrash } from '@/components/icons'
-import { Pencil } from 'lucide-react'
+import { Pencil, X } from 'lucide-react'
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
@@ -82,9 +82,15 @@ function isOngoing(toDate) {
 export default function ItAssetHoldersPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const canAdd = can(user, 'it_asset.it_asset_holders', 'add')
   const canEdit = can(user, 'it_asset.it_asset_holders', 'edit')
   const canDelete = can(user, 'it_asset.it_asset_holders', 'delete')
+
+  // Arrived from an IT Asset row's "View Assignment History" button —
+  // scopes the list to that one asset's holder history until cleared.
+  const assetFilter = searchParams.get('asset')
+  const assetFilterLabel = searchParams.get('sr_no')
 
   const [status, setStatus] = useState('')
   const [itAssetType, setItAssetType] = useState('')
@@ -122,6 +128,7 @@ export default function ItAssetHoldersPage() {
     const timer = setTimeout(() => {
       setLoading(true)
       const params = new URLSearchParams()
+      if (assetFilter) params.set('it_asset', assetFilter)
       if (status) params.set('status', status)
       if (itAssetType) params.set('it_asset_type', itAssetType)
       if (itAssetSubtype) params.set('it_asset_subtype', itAssetSubtype)
@@ -139,7 +146,17 @@ export default function ItAssetHoldersPage() {
         .finally(() => setLoading(false))
     }, 300)
     return () => clearTimeout(timer)
-  }, [status, itAssetType, itAssetSubtype, ownCompany, search, ordering, page, pageSize])
+  }, [assetFilter, status, itAssetType, itAssetSubtype, ownCompany, search, ordering, page, pageSize])
+
+  function clearAssetFilter() {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('asset')
+      next.delete('sr_no')
+      return next
+    })
+    setPage(1)
+  }
 
   const typeOptions = [
     { value: '', label: 'All' },
@@ -216,6 +233,22 @@ export default function ItAssetHoldersPage() {
           </Button>
         )}
       </div>
+
+      {assetFilter && (
+        <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
+          <span className="text-foreground">
+            Showing assignment history for <span className="font-semibold">{assetFilterLabel || assetFilter}</span>
+          </span>
+          <button
+            type="button"
+            onClick={clearAssetFilter}
+            className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <label className="flex min-w-[220px] flex-1 flex-col gap-1">
