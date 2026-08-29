@@ -74,6 +74,17 @@ export async function loginRequest(username, password) {
   return res.json()
 }
 
+// A list-shaped endpoint normally answers with either a bare array or a
+// paginated {results: [...]}. An error response (403/500) is neither, so a
+// bare `data.results || data` would hand back the whole error object where
+// callers expect an array — feeding straight into `.map` and crashing the
+// page instead of just showing an empty dropdown.
+export function asList(data) {
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data?.results)) return data.results
+  return []
+}
+
 export async function fetchCurrentUser() {
   const res = await apiFetch('/api/auth/me/')
   if (!res.ok) return null

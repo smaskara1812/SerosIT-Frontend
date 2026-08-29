@@ -26,8 +26,8 @@ import {
   IconLink,
   IconFileSignature,
   IconUserCheck,
-  IconDeviceLaptop,
 } from '@/components/icons'
+import { Laptop } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
 // with `sections` gets one primary-sidebar entry, and its sections render in
@@ -388,7 +388,7 @@ export const navTree = [
   {
     key: 'it_asset',
     label: 'IT Asset',
-    icon: IconDeviceLaptop,
+    icon: Laptop,
     sections: [
       {
         items: [
@@ -396,7 +396,7 @@ export const navTree = [
             key: 'it_assets',
             label: 'IT Assets',
             path: '/it-asset/it-assets',
-            icon: IconDeviceLaptop,
+            icon: Laptop,
             menuKey: 'it_asset.it_assets',
           },
           {

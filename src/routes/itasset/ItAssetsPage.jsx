@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, asList } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
+import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,7 +15,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { IconSearch, IconChevronDown, IconDeviceLaptop, IconPencil, IconTrash } from '@/components/icons'
+import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
+import { Laptop, Pencil } from 'lucide-react'
 
 const ACTIVE_OPTIONS = [
   { value: '', label: 'All' },
@@ -124,10 +126,10 @@ export default function ItAssetsPage() {
       apiFetch('/api/masters/companies/?page_size=1000').then((r) => r.json()),
     ]).then(([types, subtypes, mfgs, companies]) => {
       setMeta({
-        types: types.results || types,
-        subtypes: subtypes.results || subtypes,
-        mfgs: mfgs.results || mfgs,
-        companies: companies.results || companies,
+        types: asList(types),
+        subtypes: asList(subtypes),
+        mfgs: asList(mfgs),
+        companies: asList(companies),
       })
     })
   }, [])
@@ -204,6 +206,8 @@ export default function ItAssetsPage() {
   const start = count ? (page - 1) * pageSize + 1 : 0
   const end = Math.min(page * pageSize, count)
 
+  if (!can(user, 'it_asset.it_assets', 'view')) return <AccessDenied />
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -212,7 +216,7 @@ export default function ItAssetsPage() {
             className="flex h-9 w-9 items-center justify-center rounded-xl"
             style={{ backgroundColor: '#eef3fb', color: '#1a3f7a' }}
           >
-            <IconDeviceLaptop className="h-[18px] w-[18px]" />
+            <Laptop className="h-[18px] w-[18px]" />
           </div>
           <div>
             <h1 className="text-base font-bold text-foreground">IT Assets</h1>
@@ -358,7 +362,7 @@ export default function ItAssetsPage() {
                               }}
                               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                             >
-                              <IconPencil className="h-3.5 w-3.5" />
+                              <Pencil className="h-3.5 w-3.5" />
                             </button>
                           )}
                           {canDelete && (
@@ -390,7 +394,7 @@ export default function ItAssetsPage() {
                                 variant="outline"
                                 onClick={() => navigate(`/it-asset/it-assets/${r.it_asset_id}/edit`)}
                               >
-                                <IconPencil className="h-3.5 w-3.5" />
+                                <Pencil className="h-3.5 w-3.5" />
                                 Edit
                               </Button>
                             )}

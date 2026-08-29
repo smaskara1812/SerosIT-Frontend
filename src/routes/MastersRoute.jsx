@@ -1,7 +1,8 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
 import { can } from '@/lib/permissions'
+import AccessDenied from '@/components/AccessDenied'
 
 export default function MastersRoute() {
   const { user } = useAuth()
@@ -10,6 +11,6 @@ export default function MastersRoute() {
     user?.is_app_admin ||
     masters.sections.some((s) => s.items.some((i) => can(user, i.menuKey)))
 
-  if (!hasAnyAccess) return <Navigate to="/" replace />
+  if (!hasAnyAccess) return <AccessDenied />
   return <Outlet />
 }

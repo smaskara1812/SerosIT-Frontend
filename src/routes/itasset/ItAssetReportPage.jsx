@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, asList } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
+import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
@@ -124,7 +125,7 @@ function MultiSelectField({ label, options, remote, optionValue, optionLabel, se
       const sep = remote.includes('?') ? '&' : '?'
       apiFetch(`${remote}${sep}search=${encodeURIComponent(query)}&page_size=20`)
         .then((r) => r.json())
-        .then((data) => setRemoteOptions(data.results || data))
+        .then((data) => setRemoteOptions(asList(data)))
     }, 250)
     return () => clearTimeout(timer)
   }, [remote, query, open])
@@ -280,7 +281,7 @@ export default function ItAssetReportPage() {
       apiFetch('/api/masters/it-asset-types/?page_size=100').then((r) => r.json()),
       apiFetch('/api/masters/it-asset-mfgs/?page_size=100').then((r) => r.json()),
     ]).then(([types, mfgs]) => {
-      setMeta({ types: types.results || types, mfgs: mfgs.results || mfgs })
+      setMeta({ types: asList(types), mfgs: asList(mfgs) })
     })
   }, [])
 
@@ -358,6 +359,8 @@ export default function ItAssetReportPage() {
       setPage(1)
     }
   }
+
+  if (!can(user, 'reports.it_assets', 'view')) return <AccessDenied />
 
   return (
     <div className="flex flex-col gap-4">

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { FormField, emptyForm } from '@/routes/masters/MasterCrudPage'
 import { IconChevronLeft } from '@/components/icons'
+import AccessDenied from '@/components/AccessDenied'
 
 const schema = mastersSchemas['it-assets']
 
@@ -96,7 +97,7 @@ export default function ItAssetFormPage() {
   }
 
   if (notFound) return <Navigate to="/it-asset/it-assets" replace />
-  if (!can(user, schema.menuKey, 'view')) return <Navigate to="/it-asset/it-assets" replace />
+  if (!can(user, schema.menuKey, 'view')) return <AccessDenied />
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4 pb-16">

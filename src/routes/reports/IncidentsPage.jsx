@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
+import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { IconSearch, IconChevronDown, IconAlertTriangle } from '@/components/icons'
@@ -168,6 +169,8 @@ export default function IncidentsPage() {
 
   const start = count ? (page - 1) * pageSize + 1 : 0
   const end = Math.min(page * pageSize, count)
+
+  if (!can(user, 'reports.incidents', 'view')) return <AccessDenied />
 
   return (
     <div className="flex flex-col gap-4">

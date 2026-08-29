@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { mastersSchemas } from '@/config/mastersSchemas'
+import AccessDenied from '@/components/AccessDenied'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -734,7 +735,7 @@ export default function MasterCrudPage() {
   }
 
   if (!can(user, schema.menuKey, 'view')) {
-    return <Navigate to={schema.hubPath === undefined ? '/masters' : schema.hubPath || '/'} replace />
+    return <AccessDenied />
   }
 
   return (
