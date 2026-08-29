@@ -43,9 +43,9 @@ export function isDateActive(toValue) {
   return toValue >= today
 }
 
-function emptyForm(schema) {
+export function emptyForm(schema) {
   const form = {}
-  for (const f of schema.fields) form[f.name] = f.type === 'active-select' ? 'Y' : ''
+  for (const f of schema.fields) form[f.name] = f.type === 'active-select' ? 'Y' : (f.default ?? '')
   return form
 }
 
@@ -462,7 +462,7 @@ function UniqueCodeField({ value, onChange, disabled, checkUnique, excludeId }) 
   )
 }
 
-function FormField({ field, value, onChange, disabled, filterValue, form, recordId }) {
+export function FormField({ field, value, onChange, disabled, filterValue, form, recordId }) {
   if (field.type === 'active-select') {
     // Some legacy rows have '' rather than 'Y'/'N' in this column — treat
     // anything but an explicit 'N' as Active.
@@ -538,6 +538,7 @@ function FormField({ field, value, onChange, disabled, filterValue, form, record
   return (
     <Input
       type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : field.type === 'email' ? 'email' : 'text'}
+      step={field.type === 'number' ? 'any' : undefined}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
@@ -671,9 +672,18 @@ export default function MasterCrudPage() {
     try {
       const isEdit = Boolean(selected)
       const url = isEdit ? `${schema.apiBase}${selected[schema.idField]}/` : schema.apiBase
+      // An untouched optional date/number field starts out as '' (see
+      // emptyForm) — DRF rejects an empty string for those types, so it has
+      // to go over the wire as null instead.
+      const payload = { ...form }
+      for (const f of schema.fields) {
+        if ((f.type === 'date' || f.type === 'number') && payload[f.name] === '') {
+          payload[f.name] = null
+        }
+      }
       const res = await apiFetch(url, {
         method: isEdit ? 'PATCH' : 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(JSON.stringify(data))
@@ -724,18 +734,20 @@ export default function MasterCrudPage() {
   }
 
   if (!can(user, schema.menuKey, 'view')) {
-    return <Navigate to="/masters" replace />
+    return <Navigate to={schema.hubPath === undefined ? '/masters' : schema.hubPath || '/'} replace />
   }
 
   return (
     <div className="flex h-full flex-col gap-3">
-      <Link
-        to="/masters"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <IconChevronLeft className="h-4 w-4" />
-        All Masters
-      </Link>
+      {schema.hubPath !== null && (
+        <Link
+          to={schema.hubPath ?? '/masters'}
+          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <IconChevronLeft className="h-4 w-4" />
+          {schema.hubLabel ?? 'All Masters'}
+        </Link>
+      )}
       <div className="flex flex-1 gap-5 overflow-hidden">
       <div className="flex w-[300px] shrink-0 flex-col rounded-2xl border border-border bg-card">
         <div className="flex items-center justify-between p-3 pb-2">

@@ -26,6 +26,7 @@ import {
   IconLink,
   IconFileSignature,
   IconUserCheck,
+  IconDeviceLaptop,
 } from '@/components/icons'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -379,6 +380,38 @@ export const navTree = [
             path: '/masters/drilling-rates',
             icon: IconTrendingUp,
             menuKey: 'masters.drilling_rates',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'it_asset',
+    label: 'IT Asset',
+    icon: IconDeviceLaptop,
+    sections: [
+      {
+        items: [
+          {
+            key: 'it_assets',
+            label: 'IT Assets',
+            path: '/it-asset/it-assets',
+            icon: IconDeviceLaptop,
+            menuKey: 'it_asset.it_assets',
+          },
+          {
+            key: 'it_asset_holders',
+            label: 'IT Assets Holder',
+            path: '/it-asset/it-asset-holders',
+            icon: IconUserCheck,
+            menuKey: 'it_asset.it_asset_holders',
+          },
+          {
+            key: 'it_asset_report',
+            label: 'Asset Report',
+            path: '/it-asset/report',
+            icon: IconClipboard,
+            menuKey: 'reports.it_assets',
           },
         ],
       },

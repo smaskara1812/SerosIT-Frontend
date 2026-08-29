@@ -17,6 +17,11 @@ import DrillingWorkShiftPage from '@/routes/masters/DrillingWorkShiftPage'
 import FsCatgToRigTypeMappingPage from '@/routes/masters/FsCatgToRigTypeMappingPage'
 import IncidentsPage from '@/routes/reports/IncidentsPage'
 import HazardCardsPage from '@/routes/reports/HazardCardsPage'
+import ItAssetsPage from '@/routes/itasset/ItAssetsPage'
+import ItAssetFormPage from '@/routes/itasset/ItAssetFormPage'
+import ItAssetHoldersPage from '@/routes/itasset/ItAssetHoldersPage'
+import ItAssetHolderFormPage from '@/routes/itasset/ItAssetHolderFormPage'
+import ItAssetReportPage from '@/routes/itasset/ItAssetReportPage'
 
 function App() {
   return (
@@ -42,6 +47,13 @@ function App() {
             />
             <Route path="/masters/:slug" element={<MasterCrudPage />} />
           </Route>
+          <Route path="/it-asset/it-assets" element={<ItAssetsPage />} />
+          <Route path="/it-asset/it-assets/new" element={<ItAssetFormPage />} />
+          <Route path="/it-asset/it-assets/:id/edit" element={<ItAssetFormPage />} />
+          <Route path="/it-asset/it-asset-holders" element={<ItAssetHoldersPage />} />
+          <Route path="/it-asset/it-asset-holders/new" element={<ItAssetHolderFormPage />} />
+          <Route path="/it-asset/it-asset-holders/:id/edit" element={<ItAssetHolderFormPage />} />
+          <Route path="/it-asset/report" element={<ItAssetReportPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>

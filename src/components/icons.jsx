@@ -385,3 +385,21 @@ export function IconUpload(props) {
     </svg>
   )
 }
+
+export function IconPencil(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+  )
+}
+
+export function IconDeviceLaptop(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="4" width="18" height="12" rx="1.5" />
+      <line x1="2" y1="20" x2="22" y2="20" />
+      <line x1="9" y1="20" x2="15" y2="20" />
+    </svg>
+  )
+}
