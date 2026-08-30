@@ -306,8 +306,8 @@ export default function ItAssetHoldersPage() {
               <col className="w-[120px]" />
               <col className="w-[130px]" />
               <col />
-              <col className="w-[110px]" />
-              <col className="w-[110px]" />
+              <col className="w-[128px]" />
+              <col className="w-[128px]" />
               <col className="w-[92px]" />
             </colgroup>
             <thead>
@@ -364,14 +364,14 @@ export default function ItAssetHoldersPage() {
                       <td className="truncate px-3 py-2.5" title={who}>
                         {who}
                       </td>
-                      <td className="truncate px-3 py-2.5">{r.it_asset_holder_from}</td>
-                      <td className="px-3 py-2.5">
+                      <td className="whitespace-nowrap px-3 py-2.5">{r.it_asset_holder_from}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5">
                         {ongoing ? (
                           <span className="inline-block rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                             Ongoing
                           </span>
                         ) : (
-                          <span className="truncate text-muted-foreground">{r.it_asset_holder_to}</span>
+                          <span className="text-muted-foreground">{r.it_asset_holder_to}</span>
                         )}
                       </td>
                       <td className="px-2 py-2.5">
