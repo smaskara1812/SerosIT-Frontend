@@ -42,24 +42,18 @@ function SectionGroup({ section, items }) {
         <button
           type="button"
           onClick={toggleExpanded}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-black/[0.03]"
+          className="mt-2 flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors first:mt-0 hover:opacity-80"
         >
           <span
-            className="text-[11px] font-bold uppercase tracking-widest"
-            style={{ color: 'var(--ss-text)' }}
+            className="text-[10px] font-bold uppercase tracking-widest"
+            style={{ color: 'var(--ss-grp-text)' }}
           >
             {section.label}
           </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
-              style={{ backgroundColor: 'var(--ss-act-bg)', color: 'var(--ss-text-act)' }}
-            >
-              {items.length}
-            </span>
+          <span className="flex items-center gap-1" style={{ color: 'var(--ss-grp-text)' }}>
+            <span className="text-[10px] font-semibold">{items.length}</span>
             <IconChevronDown
-              className={`h-3.5 w-3.5 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}
-              style={{ color: 'var(--ss-text)' }}
+              className={`h-3 w-3 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}
             />
           </span>
         </button>
@@ -72,9 +66,8 @@ function SectionGroup({ section, items }) {
               to={path}
               className={({ isActive }) =>
                 [
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors',
-                  hasLabel && 'ml-1',
-                  isActive ? 'font-semibold' : 'hover:bg-black/[0.03]',
+                  'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] transition-colors',
+                  isActive ? 'font-semibold shadow-sm' : 'font-medium hover:bg-[var(--ss-hover-bg)]',
                 ]
                   .filter(Boolean)
                   .join(' ')
@@ -84,7 +77,7 @@ function SectionGroup({ section, items }) {
                 color: isActive ? 'var(--ss-text-act)' : 'var(--ss-text)',
               })}
             >
-              {Icon && <Icon className="h-4 w-4 shrink-0" />}
+              {Icon && <Icon className="h-[13.5px] w-[13.5px] shrink-0" />}
               <span className="truncate">{label}</span>
             </NavLink>
           ))}
@@ -117,24 +110,24 @@ export default function SecondarySidebar() {
     })
   }
 
+  const HeaderIcon = activeItem.icon
+
   return (
     <aside
-      className="relative flex h-screen shrink-0 flex-col border-r transition-[width] duration-200 ease-in-out"
+      className="relative flex h-screen shrink-0 flex-col shadow-[inset_-1px_0_0_rgba(20,30,60,0.06)] transition-[width] duration-200 ease-in-out"
       style={{
         width: collapsed ? '28px' : '220px',
-        backgroundColor: 'var(--ss-bg)',
-        borderColor: 'var(--ss-border)',
+        backgroundImage: 'linear-gradient(180deg, var(--ss-bg-top) 0%, var(--ss-bg) 45%, var(--ss-bg-bottom) 100%)',
       }}
     >
       <button
         type="button"
         onClick={toggle}
         aria-label={collapsed ? 'Expand section menu' : 'Collapse section menu'}
-        className="absolute -right-3 top-14 flex h-6 w-6 items-center justify-center rounded-full border shadow-md transition-colors"
+        className="absolute -right-3.5 top-14 flex h-7 w-7 items-center justify-center rounded-full shadow-[0_2px_8px_rgba(23,53,110,0.18)] ring-1 ring-black/[0.04] transition-all duration-150 hover:scale-105 hover:shadow-[0_3px_10px_rgba(23,53,110,0.24)]"
         style={{
-          backgroundColor: 'var(--ss-bg)',
-          borderColor: 'var(--ss-border)',
-          color: 'var(--ss-text)',
+          backgroundColor: '#ffffff',
+          color: 'var(--ss-text-act)',
         }}
       >
         {collapsed ? (
@@ -146,10 +139,18 @@ export default function SecondarySidebar() {
 
       {!collapsed && (
         <>
-          <div className="flex h-16 items-center px-4">
+          <div className="flex h-16 items-center gap-2 px-4">
+            {HeaderIcon && (
+              <span
+                className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: 'var(--ss-act-bg)', color: 'var(--ss-text-act)' }}
+              >
+                <HeaderIcon className="h-3.5 w-3.5" />
+              </span>
+            )}
             <span
-              className="text-[13px] font-bold uppercase tracking-wider"
-              style={{ color: 'var(--ss-text)' }}
+              className="text-[13px] font-extrabold tracking-wide"
+              style={{ color: 'var(--ss-text-act)' }}
             >
               {activeItem.label}
             </span>

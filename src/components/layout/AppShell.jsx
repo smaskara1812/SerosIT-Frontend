@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import SecondarySidebar from './SecondarySidebar'
 import Topbar from './Topbar'
+import { TopbarProvider } from '@/context/TopbarContext'
 
 export default function AppShell() {
   return (
@@ -9,10 +10,12 @@ export default function AppShell() {
       <Sidebar />
       <SecondarySidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
-        </main>
+        <TopbarProvider>
+          <Topbar />
+          <main className="flex-1 overflow-y-auto p-6">
+            <Outlet />
+          </main>
+        </TopbarProvider>
       </div>
     </div>
   )

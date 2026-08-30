@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList } from '@/lib/api'
+import { usePageSubtitle } from '@/context/TopbarContext'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
@@ -15,7 +16,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { IconSearch, IconChevronDown, IconUserCheck, IconTrash } from '@/components/icons'
+import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
 import { Pencil, X } from 'lucide-react'
 
 const STATUS_OPTIONS = [
@@ -210,30 +211,12 @@ export default function ItAssetHoldersPage() {
   const start = count ? (page - 1) * pageSize + 1 : 0
   const end = Math.min(page * pageSize, count)
 
+  usePageSubtitle(`${count.toLocaleString()} holder records`)
+
   if (!can(user, 'it_asset.it_asset_holders', 'view')) return <AccessDenied />
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
-            style={{ backgroundColor: '#eef3fb', color: '#1a3f7a' }}
-          >
-            <IconUserCheck className="h-[18px] w-[18px]" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">IT Assets Holder</h1>
-            <p className="text-xs text-muted-foreground">{count.toLocaleString()} holder records</p>
-          </div>
-        </div>
-        {canAdd && (
-          <Button size="sm" onClick={() => navigate('/it-asset/it-asset-holders/new')}>
-            + New Holder Record
-          </Button>
-        )}
-      </div>
-
       {assetFilter && (
         <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
           <span className="text-foreground">
@@ -250,50 +233,59 @@ export default function ItAssetHoldersPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
-        <label className="flex min-w-[220px] flex-1 flex-col gap-1">
-          <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Search</span>
-          <div className="relative">
-            <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Asset Sr. No., tag, SAP code, holder name…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-              className="h-9 pl-8"
-            />
-          </div>
-        </label>
-        <SelectField
-          label="Status"
-          value={status}
-          onChange={resetPageAnd(setStatus)}
-          options={STATUS_OPTIONS}
-          width="w-[110px]"
-        />
-        <SelectField
-          label="Type"
-          value={itAssetType}
-          onChange={resetPageAnd(setItAssetType)}
-          options={typeOptions}
-          width="w-[130px]"
-        />
-        <SelectField
-          label="Subtype"
-          value={itAssetSubtype}
-          onChange={resetPageAnd(setItAssetSubtype)}
-          options={subtypeOptions}
-          width="w-[140px]"
-        />
-        <SelectField
-          label="Own Company"
-          value={ownCompany}
-          onChange={resetPageAnd(setOwnCompany)}
-          options={companyOptions}
-          width="w-[170px]"
-        />
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-[220px] flex-1 flex-col gap-1">
+            <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Search</span>
+            <div className="relative">
+              <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Asset Sr. No., tag, SAP code, holder name…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
+                className="h-9 pl-8"
+              />
+            </div>
+          </label>
+          <SelectField
+            label="Status"
+            value={status}
+            onChange={resetPageAnd(setStatus)}
+            options={STATUS_OPTIONS}
+            width="w-[110px]"
+          />
+          <SelectField
+            label="Type"
+            value={itAssetType}
+            onChange={resetPageAnd(setItAssetType)}
+            options={typeOptions}
+            width="w-[130px]"
+          />
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <SelectField
+            label="Subtype"
+            value={itAssetSubtype}
+            onChange={resetPageAnd(setItAssetSubtype)}
+            options={subtypeOptions}
+            width="w-[140px]"
+          />
+          <SelectField
+            label="Own Company"
+            value={ownCompany}
+            onChange={resetPageAnd(setOwnCompany)}
+            options={companyOptions}
+            width="w-[170px]"
+          />
+          {canAdd && (
+            <Button size="lg" className="ml-auto" onClick={() => navigate('/it-asset/it-asset-holders/new')}>
+              + New Holder Record
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">

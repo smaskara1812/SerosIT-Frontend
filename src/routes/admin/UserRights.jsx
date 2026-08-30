@@ -4,8 +4,17 @@ import { apiFetch } from '@/lib/api'
 import { useUserList } from '@/hooks/useUserList'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import UserFilterTabs from '@/components/admin/UserFilterTabs'
 import { IconSearch, IconCheck } from '@/components/icons'
+import { BookmarkPlus, X } from 'lucide-react'
 
 const ACTIONS = ['view', 'add', 'edit', 'delete', 'export']
 
@@ -121,6 +130,23 @@ export default function UserRights() {
   const [savedFlash, setSavedFlash] = useState(false)
   const [snapshot, setSnapshot] = useState(null)
 
+  // Custom, saved-once permission presets — an admin's own reusable
+  // shortcuts (e.g. "Req Master View Only") layered on top of the 3
+  // built-in ones above. Loaded once; the list itself rarely changes.
+  const [customPresets, setCustomPresets] = useState([])
+  const [presetDialogOpen, setPresetDialogOpen] = useState(false)
+  const [presetName, setPresetName] = useState('')
+  const [presetDescription, setPresetDescription] = useState('')
+  const [savingPreset, setSavingPreset] = useState(false)
+  const [deletePresetTarget, setDeletePresetTarget] = useState(null)
+
+  useEffect(() => {
+    apiFetch('/api/admin/permission-presets/')
+      .then((r) => r.json())
+      .then((data) => setCustomPresets(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [])
+
   function selectUser(u) {
     setSelected(u)
     setLoadingDetail(true)
@@ -198,6 +224,67 @@ export default function UserRights() {
         return { ...m, perms }
       })
     )
+  }
+
+  // Applies a saved custom preset to whichever user is currently open —
+  // only pre-fills the grid (same as the 3 built-in presets above), Save
+  // still has to be clicked to actually persist it to that user. Rows not
+  // mentioned in the preset are left exactly as they are.
+  function applyCustomPreset(preset) {
+    if (isAppAdmin || !detail) return
+    setDetail((prev) =>
+      prev.map((m) => {
+        const p = preset.menus[m.key]
+        if (!p) return m
+        return { ...m, perms: { ...m.perms, ...p } }
+      })
+    )
+    toast.success(`Applied "${preset.name}" — remember to Save`)
+  }
+
+  async function handleSavePreset() {
+    if (!detail) return
+    const name = presetName.trim()
+    if (!name) {
+      toast.error('Name is required')
+      return
+    }
+    const menus = Object.fromEntries(detail.map((m) => [m.key, m.perms]))
+    setSavingPreset(true)
+    try {
+      const res = await apiFetch('/api/admin/permission-presets/create/', {
+        method: 'POST',
+        body: JSON.stringify({ name, description: presetDescription.trim(), menus }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to save preset')
+      setCustomPresets((prev) =>
+        [...prev, { id: data.id, name: data.name, description: presetDescription.trim(), menus }].sort(
+          (a, b) => a.name.localeCompare(b.name)
+        )
+      )
+      toast.success(`Preset "${name}" saved`)
+      setPresetDialogOpen(false)
+      setPresetName('')
+      setPresetDescription('')
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setSavingPreset(false)
+    }
+  }
+
+  async function handleDeletePreset() {
+    if (!deletePresetTarget) return
+    const { id, name } = deletePresetTarget
+    const res = await apiFetch(`/api/admin/permission-presets/${id}/delete/`, { method: 'DELETE' })
+    setDeletePresetTarget(null)
+    if (res.status === 204) {
+      setCustomPresets((prev) => prev.filter((p) => p.id !== id))
+      toast.success(`Preset "${name}" deleted`)
+    } else {
+      toast.error('Failed to delete preset')
+    }
   }
 
   async function handleSave() {
@@ -359,7 +446,7 @@ export default function UserRights() {
                 <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                   Quick actions
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {PRESETS.map((p) => (
                     <button
                       key={p.key}
@@ -370,6 +457,39 @@ export default function UserRights() {
                       {p.label}
                     </button>
                   ))}
+                  {customPresets.length > 0 && <span className="h-4 w-px bg-border" />}
+                  {customPresets.map((p) => (
+                    <span
+                      key={p.id}
+                      className="group flex items-center rounded-md border border-border bg-background pl-2.5 text-xs font-medium text-foreground transition-colors hover:border-[#1a3f7a]"
+                      title={p.description || undefined}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => applyCustomPreset(p)}
+                        className="py-1 pr-1.5 hover:text-[#1a3f7a]"
+                      >
+                        {p.name}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletePresetTarget(p)}
+                        title="Delete preset"
+                        className="rounded p-1 text-muted-foreground/50 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setPresetDialogOpen(true)}
+                    title="Save the current selection as a reusable preset"
+                    className="flex items-center gap-1 rounded-md border border-dashed border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-[#1a3f7a] hover:text-[#1a3f7a]"
+                  >
+                    <BookmarkPlus className="h-3 w-3" />
+                    Save as preset
+                  </button>
                 </div>
                 <span className="ml-auto text-[11px] text-muted-foreground">
                   Esc to close &nbsp;·&nbsp; Ctrl/Cmd+S to save
@@ -473,6 +593,65 @@ export default function UserRights() {
           </div>
         )}
       </div>
+
+      <Dialog open={presetDialogOpen} onOpenChange={setPresetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save as preset</DialogTitle>
+            <DialogDescription>
+              Saves the permissions currently checked in this grid — including anything not yet
+              saved to {selected?.name} — as a reusable shortcut you can apply to any user later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-foreground">Name</span>
+              <Input
+                autoFocus
+                placeholder="e.g. Req Master View Only"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-foreground">Description (optional)</span>
+              <Input
+                placeholder="What is this preset for?"
+                value={presetDescription}
+                onChange={(e) => setPresetDescription(e.target.value)}
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setPresetDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePreset} disabled={savingPreset || !presetName.trim()}>
+              {savingPreset ? 'Saving…' : 'Save preset'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(deletePresetTarget)} onOpenChange={(open) => !open && setDeletePresetTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this preset?</DialogTitle>
+            <DialogDescription>
+              "{deletePresetTarget?.name}" will no longer be available as a quick action. Users it
+              was already applied to keep their permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setDeletePresetTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeletePreset}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

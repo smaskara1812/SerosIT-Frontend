@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch, asList } from '@/lib/api'
+import { usePageSubtitle } from '@/context/TopbarContext'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
-import { IconSearch, IconClipboard, IconChevronDown, IconX } from '@/components/icons'
+import { IconSearch, IconChevronDown, IconX } from '@/components/icons'
+import { Download, RotateCcw } from 'lucide-react'
 
 const ACTIVE_OPTIONS = [
   { value: 'Y', label: 'Active' },
@@ -360,35 +362,12 @@ export default function ItAssetReportPage() {
     }
   }
 
+  usePageSubtitle(`${count.toLocaleString()} assets`)
+
   if (!can(user, 'reports.it_assets', 'view')) return <AccessDenied />
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
-            style={{ backgroundColor: '#eef3fb', color: '#1a3f7a' }}
-          >
-            <IconClipboard className="h-[18px] w-[18px]" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">Asset Report</h1>
-            <p className="text-xs text-muted-foreground">{count.toLocaleString()} assets</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={resetFilters}>
-            Reset Filters
-          </Button>
-          {canExport && (
-            <Button size="sm" variant="outline" onClick={exportCsv}>
-              Export CSV
-            </Button>
-          )}
-        </div>
-      </div>
-
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <label className="flex flex-col gap-1 sm:col-span-2">
@@ -506,10 +485,10 @@ export default function ItAssetReportPage() {
               <label className="flex flex-col gap-1">
                 <FilterLabel>Quick Range</FilterLabel>
                 <div className="flex items-center gap-1.5">
-                  <Button size="sm" variant="outline" className="h-9" onClick={() => applyDatePreset('30d')}>
+                  <Button size="lg" variant="outline" onClick={() => applyDatePreset('30d')}>
                     Last 30 days
                   </Button>
-                  <Button size="sm" variant="outline" className="h-9" onClick={() => applyDatePreset('ytd')}>
+                  <Button size="lg" variant="outline" onClick={() => applyDatePreset('ytd')}>
                     YTD
                   </Button>
                 </div>
@@ -517,6 +496,19 @@ export default function ItAssetReportPage() {
             </div>
           </>
         )}
+
+        <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
+          <Button size="lg" variant="outline" onClick={resetFilters}>
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset Filters
+          </Button>
+          {canExport && (
+            <Button size="lg" onClick={exportCsv}>
+              <Download className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">

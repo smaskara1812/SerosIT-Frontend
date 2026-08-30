@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '@/lib/api'
+import { usePageSubtitle } from '@/context/TopbarContext'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { IconSearch, IconChevronDown, IconAlertTriangle } from '@/components/icons'
+import { IconSearch, IconChevronDown } from '@/components/icons'
+import { Download } from 'lucide-react'
 
 const SEVERITY_OPTIONS = [
   { value: '', label: 'All' },
@@ -170,30 +172,12 @@ export default function IncidentsPage() {
   const start = count ? (page - 1) * pageSize + 1 : 0
   const end = Math.min(page * pageSize, count)
 
+  usePageSubtitle(`${count.toLocaleString()} incidents`)
+
   if (!can(user, 'reports.incidents', 'view')) return <AccessDenied />
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
-            style={{ backgroundColor: '#eef3fb', color: '#1a3f7a' }}
-          >
-            <IconAlertTriangle className="h-[18px] w-[18px]" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">Incidents</h1>
-            <p className="text-xs text-muted-foreground">{count.toLocaleString()} incidents</p>
-          </div>
-        </div>
-        {canExport && (
-          <Button size="sm" variant="outline" onClick={exportCsv}>
-            Export CSV
-          </Button>
-        )}
-      </div>
-
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <SelectField
           label="Year"
@@ -245,6 +229,12 @@ export default function IncidentsPage() {
             />
           </div>
         </label>
+        {canExport && (
+          <Button size="lg" className="ml-auto" onClick={exportCsv}>
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList } from '@/lib/api'
+import { usePageSubtitle } from '@/context/TopbarContext'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
@@ -16,7 +17,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Laptop, Pencil, History } from 'lucide-react'
+import { Pencil, History } from 'lucide-react'
 
 const ACTIVE_OPTIONS = [
   { value: '', label: 'All' },
@@ -206,88 +207,79 @@ export default function ItAssetsPage() {
   const start = count ? (page - 1) * pageSize + 1 : 0
   const end = Math.min(page * pageSize, count)
 
+  usePageSubtitle(`${count.toLocaleString()} assets`)
+
   if (!can(user, 'it_asset.it_assets', 'view')) return <AccessDenied />
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
-            style={{ backgroundColor: '#eef3fb', color: '#1a3f7a' }}
-          >
-            <Laptop className="h-[18px] w-[18px]" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">IT Assets</h1>
-            <p className="text-xs text-muted-foreground">{count.toLocaleString()} assets</p>
-          </div>
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-[220px] flex-1 flex-col gap-1">
+            <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Search</span>
+            <div className="relative">
+              <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Sr. No., asset tag, SAP code…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
+                className="h-9 pl-8"
+              />
+            </div>
+          </label>
+          <SelectField
+            label="Active"
+            value={filters.active}
+            onChange={(v) => setFilter('active', v)}
+            options={ACTIVE_OPTIONS}
+            width="w-[100px]"
+          />
+          <SelectField
+            label="Holder Type"
+            value={filters.holder_type}
+            onChange={(v) => setFilter('holder_type', v)}
+            options={HOLDER_TYPE_OPTIONS}
+            width="w-[130px]"
+          />
+          <SelectField
+            label="Type"
+            value={filters.it_asset_type}
+            onChange={(v) => setFilter('it_asset_type', v)}
+            options={typeOptions}
+            width="w-[130px]"
+          />
         </div>
-        {canAdd && (
-          <Button size="sm" onClick={() => navigate('/it-asset/it-assets/new')}>
-            + New IT Asset
-          </Button>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
-        <label className="flex min-w-[220px] flex-1 flex-col gap-1">
-          <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Search</span>
-          <div className="relative">
-            <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Sr. No., asset tag, SAP code…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-              className="h-9 pl-8"
-            />
-          </div>
-        </label>
-        <SelectField
-          label="Active"
-          value={filters.active}
-          onChange={(v) => setFilter('active', v)}
-          options={ACTIVE_OPTIONS}
-          width="w-[100px]"
-        />
-        <SelectField
-          label="Holder Type"
-          value={filters.holder_type}
-          onChange={(v) => setFilter('holder_type', v)}
-          options={HOLDER_TYPE_OPTIONS}
-          width="w-[130px]"
-        />
-        <SelectField
-          label="Type"
-          value={filters.it_asset_type}
-          onChange={(v) => setFilter('it_asset_type', v)}
-          options={typeOptions}
-          width="w-[130px]"
-        />
-        <SelectField
-          label="Subtype"
-          value={filters.it_asset_subtype}
-          onChange={(v) => setFilter('it_asset_subtype', v)}
-          options={subtypeOptions}
-          width="w-[140px]"
-        />
-        <SelectField
-          label="Manufacturer"
-          value={filters.it_asset_mfg}
-          onChange={(v) => setFilter('it_asset_mfg', v)}
-          options={mfgOptions}
-          width="w-[140px]"
-        />
-        <SelectField
-          label="Own Company"
-          value={filters.own_company}
-          onChange={(v) => setFilter('own_company', v)}
-          options={companyOptions}
-          width="w-[170px]"
-        />
+        <div className="flex flex-wrap items-end gap-3">
+          <SelectField
+            label="Subtype"
+            value={filters.it_asset_subtype}
+            onChange={(v) => setFilter('it_asset_subtype', v)}
+            options={subtypeOptions}
+            width="w-[140px]"
+          />
+          <SelectField
+            label="Manufacturer"
+            value={filters.it_asset_mfg}
+            onChange={(v) => setFilter('it_asset_mfg', v)}
+            options={mfgOptions}
+            width="w-[140px]"
+          />
+          <SelectField
+            label="Own Company"
+            value={filters.own_company}
+            onChange={(v) => setFilter('own_company', v)}
+            options={companyOptions}
+            width="w-[170px]"
+          />
+          {canAdd && (
+            <Button size="lg" className="ml-auto" onClick={() => navigate('/it-asset/it-assets/new')}>
+              + New IT Asset
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">

@@ -54,11 +54,15 @@
     --nav-active-bg: rgba(255, 255, 255, 0.15);
     --nav-text: rgba(255, 255, 255, 0.6);
     --nav-text-act: #ffffff;
-    --ss-bg: #f8fafc;
+    --ss-bg-top: #e7ecf9;
+    --ss-bg: #dfe6f6;
+    --ss-bg-bottom: #d7e0f3;
     --ss-border: #e5e7eb;
-    --ss-text: #374151;
-    --ss-text-act: #1a3f7a;
-    --ss-act-bg: #eef3fb;
+    --ss-text: #45506b;
+    --ss-text-act: #17356e;
+    --ss-act-bg: #ffffff;
+    --ss-grp-text: #8189a3;
+    --ss-hover-bg: rgba(26, 63, 122, 0.06);
     --app-bg: #f0f2f5;
 
     --background: oklch(1 0 0);

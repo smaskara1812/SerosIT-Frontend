@@ -56,7 +56,7 @@ export default function Sidebar() {
           <img
             src="/android-chrome-192x192.png"
             alt="Seros"
-            className="h-9 w-9 shrink-0 rounded-lg object-contain shadow-sm"
+            className="h-9 w-9 shrink-0 rounded-full object-contain shadow-sm"
           />
         ) : (
           <div className="flex h-9 items-center justify-center rounded-lg bg-white px-3 shadow-sm">
@@ -74,7 +74,8 @@ export default function Sidebar() {
         type="button"
         onClick={toggle}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="absolute -right-3 top-14 z-30 flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-[#1e478c] text-white/70 shadow-md transition-colors hover:text-white"
+        className="absolute -right-3.5 top-14 z-30 flex h-7 w-7 items-center justify-center rounded-full text-[#1a3f7a] shadow-[0_2px_8px_rgba(10,20,45,0.35)] ring-1 ring-black/[0.04] transition-all duration-150 hover:scale-105 hover:shadow-[0_3px_10px_rgba(10,20,45,0.4)]"
+        style={{ backgroundColor: '#ffffff' }}
       >
         {collapsed ? (
           <IconChevronRight className="h-3.5 w-3.5" />
@@ -91,7 +92,7 @@ export default function Sidebar() {
             : null
           const targetPath = path || allItems[0].path
           const isActive = allItems
-            ? allItems.some((c) => pathname.startsWith(c.path))
+            ? pathname === path || allItems.some((c) => pathname.startsWith(c.path))
             : pathname === targetPath
 
           return (
