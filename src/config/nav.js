@@ -27,7 +27,7 @@ import {
   IconFileSignature,
   IconUserCheck,
 } from '@/components/icons'
-import { Laptop } from 'lucide-react'
+import { Laptop, MapPin, Tag, Tags, Factory, Package, Truck } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
 // with `sections` gets one primary-sidebar entry, and its sections render in
@@ -97,6 +97,13 @@ export const navTree = [
             path: '/masters/email-notification-types',
             icon: IconMail,
             menuKey: 'masters.email_notification_types',
+          },
+          {
+            key: 'company_locations',
+            label: 'Company Location',
+            path: '/masters/company-locations',
+            icon: MapPin,
+            menuKey: 'masters.company_locations',
           },
         ],
       },
@@ -380,6 +387,53 @@ export const navTree = [
             path: '/masters/drilling-rates',
             icon: IconTrendingUp,
             menuKey: 'masters.drilling_rates',
+          },
+        ],
+      },
+      {
+        label: 'IT Asset Masters',
+        items: [
+          {
+            key: 'it_asset_types',
+            label: 'IT Asset Type',
+            path: '/masters/it-asset-types',
+            icon: Tag,
+            menuKey: 'masters.it_asset_types',
+          },
+          {
+            key: 'it_asset_subtypes',
+            label: 'IT Asset Subtype',
+            path: '/masters/it-asset-subtypes',
+            icon: Tags,
+            menuKey: 'masters.it_asset_subtypes',
+          },
+          {
+            key: 'it_asset_mfgs',
+            label: 'IT Asset Manufacturer',
+            path: '/masters/it-asset-mfgs',
+            icon: Factory,
+            menuKey: 'masters.it_asset_mfgs',
+          },
+          {
+            key: 'it_asset_models',
+            label: 'IT Asset Model',
+            path: '/masters/it-asset-models',
+            icon: Package,
+            menuKey: 'masters.it_asset_models',
+          },
+          {
+            key: 'vendor_types',
+            label: 'Vendor Type',
+            path: '/masters/vendor-types',
+            icon: Tag,
+            menuKey: 'masters.vendor_types',
+          },
+          {
+            key: 'vendors',
+            label: 'Vendor',
+            path: '/masters/vendors',
+            icon: Truck,
+            menuKey: 'masters.vendors',
           },
         ],
       },

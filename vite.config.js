@@ -4,7 +4,14 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // `npm run build` (mode=production) and `npm run build:dev`
+  // (mode=development) would otherwise both write to dist/ and clobber
+  // each other — separate output dirs so both builds can coexist and
+  // `preview`/`preview:dev` each serve the one they actually built.
+  build: {
+    outDir: mode === 'development' ? 'dist-dev' : 'dist',
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -40,4 +47,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

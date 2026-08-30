@@ -1,6 +1,19 @@
 const ACCESS_KEY = 'serosit.access'
 const REFRESH_KEY = 'serosit.refresh'
 
+// Every call site passes a path starting with "/api/..." and relies on
+// same-origin (relative fetch) by default — true for local dev (Vite's
+// proxy) and for any deployment where the frontend's own web server also
+// serves /api (e.g. reverse-proxying it to the backend). Set
+// VITE_API_BASE_URL only when the backend genuinely lives on a different
+// host/port the browser must be told about explicitly (then the backend's
+// CORS_ALLOWED_ORIGINS / ALLOWED_HOSTS need the frontend's origin too).
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
+
+function apiUrl(path) {
+  return `${API_BASE}${path}`
+}
+
 export const tokenStore = {
   getAccess: () => localStorage.getItem(ACCESS_KEY),
   getRefresh: () => localStorage.getItem(REFRESH_KEY),
@@ -18,7 +31,7 @@ async function refreshAccessToken() {
   const refresh = tokenStore.getRefresh()
   if (!refresh) return false
 
-  const res = await fetch('/api/auth/token/refresh/', {
+  const res = await fetch(apiUrl('/api/auth/token/refresh/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh }),
@@ -42,7 +55,7 @@ export async function apiFetch(path, options = {}) {
 
   const doFetch = () => {
     const access = tokenStore.getAccess()
-    return fetch(path, {
+    return fetch(apiUrl(path), {
       ...options,
       headers: {
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -63,7 +76,7 @@ export async function apiFetch(path, options = {}) {
 }
 
 export async function loginRequest(username, password) {
-  const res = await fetch('/api/auth/token/', {
+  const res = await fetch(apiUrl('/api/auth/token/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
