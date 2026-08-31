@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -36,8 +36,16 @@ export default function ItAssetHolderFormPage() {
   const { user } = useAuth()
   const canWrite = can(user, schema.menuKey, isEdit ? 'edit' : 'add')
 
+  // Arrived from an ongoing holder row's "Reassign Device" button — the IT
+  // Asset is locked to this one, and saving goes through the /reassign/
+  // action (closes the old ongoing row + creates this one atomically)
+  // instead of a plain create.
+  const [searchParams] = useSearchParams()
+  const reassignAssetId = !isEdit ? searchParams.get('reassign') : null
+  const reassignSrNo = searchParams.get('sr_no')
+
   const [form, setForm] = useState(() => emptyForm(schema))
-  const [loading, setLoading] = useState(isEdit)
+  const [loading, setLoading] = useState(isEdit || Boolean(reassignAssetId))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notFound, setNotFound] = useState(false)
@@ -49,12 +57,50 @@ export default function ItAssetHolderFormPage() {
         if (!r.ok) throw new Error('not found')
         return r.json()
       })
-      .then((data) => setForm(data))
+      .then((data) =>
+        setForm({
+          ...data,
+          // it_asset_holder_to is a datetime (see the model note — a
+          // system-closed row is an exact moment, not just a day) but the
+          // date-only picker here only ever shows/edits the day part.
+          it_asset_holder_to: data.it_asset_holder_to ? data.it_asset_holder_to.slice(0, 10) : null,
+        })
+      )
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id, isEdit])
 
-  const heading = isEdit ? `Holder record — ${form.it_asset_sr_no || ''}` : 'New Holder Record'
+  useEffect(() => {
+    if (isEdit || !reassignAssetId) return
+    apiFetch(`/api/it-asset/it-assets/${reassignAssetId}/`)
+      .then((r) => {
+        if (!r.ok) throw new Error('not found')
+        return r.json()
+      })
+      .then((asset) => {
+        setForm((prev) => ({
+          ...prev,
+          it_asset: asset.it_asset_id,
+          it_asset_sr_no: asset.it_asset_sr_no,
+          it_asset_tag: asset.it_asset_tag,
+          it_asset_sap_code: asset.it_asset_sap_code,
+          it_asset_model_name: asset.it_asset_model_name,
+          it_asset_subtype_name: asset.it_asset_subtype_name,
+          it_asset_mfg_name: asset.it_asset_mfg_name,
+          it_asset_active: asset.it_asset_active,
+          own_company_name: asset.own_company_name,
+          it_asset_holder_from: new Date().toISOString().slice(0, 10),
+        }))
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false))
+  }, [isEdit, reassignAssetId])
+
+  const heading = isEdit
+    ? `Holder record — ${form.it_asset_sr_no || ''}`
+    : reassignAssetId
+      ? `Reassign ${reassignSrNo || ''}`
+      : 'New Holder Record'
 
   function handleChange(f, v, raw) {
     const next = { ...form, [f.name]: v }
@@ -76,14 +122,25 @@ export default function ItAssetHolderFormPage() {
           payload[f.name] = null
         }
       }
-      const url = isEdit ? `${schema.apiBase}${id}/` : schema.apiBase
+      // it_asset_holder_to is a datetime column — a manually-picked date
+      // means "ends this day", so normalize to that day's last moment
+      // rather than midnight (which would read as already-ended the
+      // instant that day starts).
+      if (payload.it_asset_holder_to) {
+        payload.it_asset_holder_to = `${payload.it_asset_holder_to}T23:59:59`
+      }
+      const url = isEdit
+        ? `${schema.apiBase}${id}/`
+        : reassignAssetId
+          ? '/api/it-asset/it-asset-holders/reassign/'
+          : schema.apiBase
       const res = await apiFetch(url, {
         method: isEdit ? 'PATCH' : 'POST',
         body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(JSON.stringify(data))
-      toast.success(isEdit ? 'Changes saved' : 'Holder record created')
+      toast.success(isEdit ? 'Changes saved' : reassignAssetId ? 'Device reassigned' : 'Holder record created')
       navigate(`/it-asset/it-asset-holders/${data.it_asset_holder_id}/edit`, { replace: true })
     } catch (e) {
       setError(e.message)
@@ -115,6 +172,12 @@ export default function ItAssetHolderFormPage() {
         )}
       </div>
 
+      {reassignAssetId && !isEdit && (
+        <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-foreground">
+          Reassigning <span className="font-semibold">{reassignSrNo}</span> — its current
+          assignment will be closed as of today automatically when you create this record.
+        </p>
+      )}
       {error && (
         <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
       )}
@@ -146,7 +209,7 @@ export default function ItAssetHolderFormPage() {
                     field={f}
                     value={form[f.name]}
                     onChange={(v, raw) => handleChange(f, v, raw)}
-                    disabled={!canWrite || f.readOnly}
+                    disabled={!canWrite || f.readOnly || (f.name === 'it_asset' && Boolean(reassignAssetId))}
                     form={form}
                     recordId={isEdit ? id : null}
                   />

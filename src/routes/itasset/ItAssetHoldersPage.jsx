@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil, X } from 'lucide-react'
+import { Pencil, X, UserMinus, Repeat } from 'lucide-react'
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
@@ -75,9 +75,17 @@ function SortHeader({ col, ordering, onClick }) {
   )
 }
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function isOngoing(toDate) {
   if (!toDate) return true
-  return toDate >= new Date().toISOString().slice(0, 10)
+  // it_asset_holder_to is a datetime — a row closed by Remove Assignment /
+  // Reassign / Mark as Scrap stamps the exact moment it happened, so it
+  // must read as ended right away rather than staying "Ongoing" for the
+  // rest of that same calendar day.
+  return new Date(toDate) > new Date()
 }
 
 export default function ItAssetHoldersPage() {
@@ -108,6 +116,8 @@ export default function ItAssetHoldersPage() {
   const [openRow, setOpenRow] = useState(null)
   const [deleteInfo, setDeleteInfo] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [removeTarget, setRemoveTarget] = useState(null)
+  const [removing, setRemoving] = useState(false)
 
   const [meta, setMeta] = useState({ types: [], subtypes: [], companies: [] })
 
@@ -205,6 +215,26 @@ export default function ItAssetHoldersPage() {
       toast.error(data.error || 'Failed to delete')
     }
     setDeleteTarget(null)
+  }
+
+  async function confirmRemoveAssignment() {
+    setRemoving(true)
+    const res = await apiFetch(
+      `/api/it-asset/it-asset-holders/${removeTarget.target.it_asset_holder_id}/remove-assignment/`,
+      { method: 'POST', body: JSON.stringify({ action_date: removeTarget.date }) }
+    )
+    setRemoving(false)
+    if (res.ok) {
+      const data = await res.json()
+      toast.success('Assignment removed — asset is now Unassigned')
+      setRows((prev) =>
+        prev.map((r) => (r.it_asset_holder_id === removeTarget.target.it_asset_holder_id ? data : r))
+      )
+    } else {
+      const data = await res.json().catch(() => ({}))
+      toast.error(data.error || 'Failed to remove assignment')
+    }
+    setRemoveTarget(null)
   }
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize))
@@ -335,7 +365,7 @@ export default function ItAssetHoldersPage() {
                 const srNo = (page - 1) * pageSize + idx + 1
                 const zebra = idx % 2 === 0 ? 'bg-card' : 'bg-muted/30'
                 const ongoing = isOngoing(r.it_asset_holder_to)
-                const who = r.emp_name || r.holder_name || 'Common'
+                const who = r.holder_user_name || r.emp_name || r.holder_name || 'Common'
                 return (
                   <Fragment key={r.it_asset_holder_id}>
                     <tr
@@ -363,7 +393,7 @@ export default function ItAssetHoldersPage() {
                             Ongoing
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">{r.it_asset_holder_to}</span>
+                          <span className="text-muted-foreground">{r.it_asset_holder_to?.slice(0, 10)}</span>
                         )}
                       </td>
                       <td className="px-2 py-2.5">
@@ -418,6 +448,30 @@ export default function ItAssetHoldersPage() {
                               <Button size="sm" variant="destructive" onClick={() => handleDeleteClick(r)}>
                                 <IconTrash className="h-3.5 w-3.5" />
                                 Delete
+                              </Button>
+                            )}
+                            {canEdit && ongoing && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setRemoveTarget({ target: r, date: todayStr() })}
+                              >
+                                <UserMinus className="h-3.5 w-3.5" />
+                                Remove Assignment
+                              </Button>
+                            )}
+                            {canAdd && ongoing && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  navigate(
+                                    `/it-asset/it-asset-holders/new?reassign=${r.it_asset}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`
+                                  )
+                                }
+                              >
+                                <Repeat className="h-3.5 w-3.5" />
+                                Reassign Device
                               </Button>
                             )}
                           </div>
@@ -513,6 +567,41 @@ export default function ItAssetHoldersPage() {
                 Delete
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(removeTarget)} onOpenChange={(open) => !open && setRemoveTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove this assignment?</DialogTitle>
+            <DialogDescription>
+              Ends {removeTarget?.target.it_asset_sr_no}'s current assignment as of the date below
+              and marks the asset Unassigned.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Date
+            </span>
+            <Input
+              type="date"
+              value={removeTarget?.date || ''}
+              onChange={(e) => setRemoveTarget((prev) => ({ ...prev, date: e.target.value }))}
+              className="w-[160px]"
+            />
+          </label>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setRemoveTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmRemoveAssignment}
+              disabled={removing || !removeTarget?.date}
+            >
+              {removing ? 'Removing…' : 'Remove Assignment'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

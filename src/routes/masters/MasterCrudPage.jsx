@@ -67,7 +67,7 @@ const INSTANT_LIST_THRESHOLD = 200
 // e.g. `rig_name` alongside a `rig` id) is the fallback that always shows the
 // current selection's label even when it isn't in whatever page/search
 // results happen to be loaded.
-export function RemoteCombobox({ field, value, onChange, disabled, filterValue, labelValue }) {
+export function RemoteCombobox({ field, value, onChange, disabled, filterValue, filterValues, labelValue }) {
   const forceSearch = field.type === 'search-remote'
   const [options, setOptions] = useState([])
   const [mode, setMode] = useState(forceSearch ? 'search' : 'probing')
@@ -105,9 +105,17 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
 
   // Some search-remote fields (e.g. Location, scoped to a picked Country)
   // narrow the server-side search itself rather than filtering a
-  // client-side option list — the lookup is too large to preload.
-  const remoteFilterParam =
+  // client-side option list — the lookup is too large to preload. Most
+  // fields narrow on a single picked value; a few (e.g. Model, narrowed by
+  // whichever of Manufacturer/Type/Subtype are already picked) narrow on
+  // several at once via `filterValues`.
+  let remoteFilterParam =
     field.remoteFilterParam && filterValue ? `&${field.remoteFilterParam}=${filterValue}` : ''
+  if (filterValues) {
+    for (const [param, val] of Object.entries(filterValues)) {
+      if (val) remoteFilterParam += `&${param}=${val}`
+    }
+  }
 
   useEffect(() => {
     if (mode !== 'search') return
@@ -480,6 +488,15 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
     )
   }
   if (field.type === 'select-remote' || field.type === 'search-remote') {
+    // Most filtered fields narrow on one picked value (`filterField` +
+    // `filterValue`, passed in by the caller). A few narrow on several at
+    // once (e.g. Model, by whichever of Manufacturer/Type/Subtype are
+    // already picked) — those declare `filterFields` on the schema and get
+    // read straight from `form` here instead of threading each value
+    // through every caller.
+    const filterValues = field.filterFields
+      ? Object.fromEntries(field.filterFields.map((ff) => [ff.param, form?.[ff.field]]))
+      : undefined
     return (
       <RemoteCombobox
         field={field}
@@ -487,6 +504,7 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
         onChange={onChange}
         disabled={disabled}
         filterValue={filterValue}
+        filterValues={filterValues}
         labelValue={field.labelField ? form[field.labelField] : undefined}
       />
     )
@@ -877,7 +895,11 @@ export default function MasterCrudPage() {
                         // filter on (e.g. Category) invalidates whatever
                         // they'd already picked from the old option set.
                         for (const other of schema.fields) {
-                          if (other.filterField === f.name) next[other.name] = null
+                          if (
+                            other.filterField === f.name ||
+                            other.filterFields?.some((ff) => ff.field === f.name)
+                          )
+                            next[other.name] = null
                         }
                         // Some fields (e.g. Rig Type from a picked Rig
                         // Subtype) are derived from the selected option

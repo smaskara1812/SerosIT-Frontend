@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil, History } from 'lucide-react'
+import { Pencil, History, Archive, ArchiveRestore, SearchX, Undo2 } from 'lucide-react'
 
 const ACTIVE_OPTIONS = [
   { value: '', label: 'All' },
@@ -32,6 +32,18 @@ const HOLDER_TYPE_OPTIONS = [
   { value: 'V', label: 'Vessel' },
   { value: 'L', label: 'Location' },
 ]
+
+const ALLOCATED_OPTIONS = [
+  { value: '', label: 'All' },
+  { value: 'Y', label: 'Assigned' },
+  { value: 'N', label: 'Unassigned' },
+  { value: 'S', label: 'Scrap' },
+  { value: 'L', label: 'Lost' },
+]
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 const HOLDER_TYPE_LABEL = { C: 'Common', I: 'Individual', V: 'Vessel', L: 'Location' }
 
@@ -100,6 +112,7 @@ export default function ItAssetsPage() {
   const [filters, setFilters] = useState({
     active: '',
     holder_type: '',
+    allocated: '',
     it_asset_type: '',
     it_asset_subtype: '',
     it_asset_mfg: '',
@@ -116,6 +129,16 @@ export default function ItAssetsPage() {
   const [openRow, setOpenRow] = useState(null)
   const [deleteInfo, setDeleteInfo] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  // Mark as Scrap / Mark as Lost share the same dialog shape: which asset,
+  // which retirement type, an editable action date (defaults to today, but
+  // can be backdated/future-dated), and whatever holder is currently
+  // ongoing so the dialog can say who it'll be closed out from.
+  const [retireDialog, setRetireDialog] = useState(null)
+  const [retireHolder, setRetireHolder] = useState(null)
+  const [retireHolderLoading, setRetireHolderLoading] = useState(false)
+  const [retiring, setRetiring] = useState(false)
+  const [unretireDialog, setUnretireDialog] = useState(null)
+  const [unretiring, setUnretiring] = useState(false)
 
   const [meta, setMeta] = useState({ types: [], subtypes: [], mfgs: [], companies: [] })
 
@@ -203,6 +226,86 @@ export default function ItAssetsPage() {
     setDeleteTarget(null)
   }
 
+  async function openRetireDialog(row, type) {
+    setRetireDialog({ type, target: row, date: todayStr() })
+    setRetireHolder(null)
+    setRetireHolderLoading(true)
+    const res = await apiFetch(
+      `/api/it-asset/it-asset-holders/?it_asset=${row.it_asset_id}&status=ongoing&page_size=1`
+    )
+    const data = await res.json().catch(() => null)
+    const results = Array.isArray(data) ? data : data?.results || []
+    setRetireHolder(results[0] || null)
+    setRetireHolderLoading(false)
+  }
+
+  async function confirmRetire() {
+    const { type, target, date } = retireDialog
+    setRetiring(true)
+    const res = await apiFetch(`/api/it-asset/it-assets/${target.it_asset_id}/mark-${type}/`, {
+      method: 'POST',
+      body: JSON.stringify({ action_date: date }),
+    })
+    setRetiring(false)
+    if (res.ok) {
+      const data = await res.json()
+      toast.success(
+        data.closed_holder_rows
+          ? `Marked as ${type} and closed the current assignment`
+          : `Marked as ${type}`
+      )
+      setRows((prev) =>
+        prev.map((r) =>
+          r.it_asset_id === target.it_asset_id
+            ? {
+                ...r,
+                it_asset_active: data.it_asset_active,
+                it_asset_allocated: data.it_asset_allocated,
+                it_asset_scrap_dt: data.it_asset_scrap_dt,
+                it_asset_lost_dt: data.it_asset_lost_dt,
+              }
+            : r
+        )
+      )
+    } else {
+      const err = await res.json().catch(() => ({}))
+      toast.error(err.error || `Failed to mark as ${type}`)
+    }
+    setRetireDialog(null)
+    setRetireHolder(null)
+  }
+
+  async function confirmUnretire() {
+    const { type, target } = unretireDialog
+    setUnretiring(true)
+    const res = await apiFetch(`/api/it-asset/it-assets/${target.it_asset_id}/un${type}/`, {
+      method: 'POST',
+    })
+    setUnretiring(false)
+    if (res.ok) {
+      const data = await res.json()
+      toast.success(
+        type === 'scrap' ? 'Un-scrapped — back in the active fleet' : 'No longer marked lost — back in the active fleet'
+      )
+      setRows((prev) =>
+        prev.map((r) =>
+          r.it_asset_id === target.it_asset_id
+            ? {
+                ...r,
+                it_asset_active: data.it_asset_active,
+                it_asset_allocated: data.it_asset_allocated,
+                it_asset_scrap_dt: data.it_asset_scrap_dt,
+                it_asset_lost_dt: data.it_asset_lost_dt,
+              }
+            : r
+        )
+      )
+    } else {
+      toast.error(`Failed to un-${type}`)
+    }
+    setUnretireDialog(null)
+  }
+
   const totalPages = Math.max(1, Math.ceil(count / pageSize))
   const start = count ? (page - 1) * pageSize + 1 : 0
   const end = Math.min(page * pageSize, count)
@@ -243,6 +346,13 @@ export default function ItAssetsPage() {
             onChange={(v) => setFilter('holder_type', v)}
             options={HOLDER_TYPE_OPTIONS}
             width="w-[130px]"
+          />
+          <SelectField
+            label="Status"
+            value={filters.allocated}
+            onChange={(v) => setFilter('allocated', v)}
+            options={ALLOCATED_OPTIONS}
+            width="w-[120px]"
           />
           <SelectField
             label="Type"
@@ -421,12 +531,45 @@ export default function ItAssetsPage() {
                               <History className="h-3.5 w-3.5" />
                               View Assignment History
                             </Button>
+                            {canEdit &&
+                              (r.it_asset_scrap_dt ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setUnretireDialog({ type: 'scrap', target: r })}
+                                >
+                                  <ArchiveRestore className="h-3.5 w-3.5" />
+                                  Unscrap
+                                </Button>
+                              ) : r.it_asset_lost_dt ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setUnretireDialog({ type: 'lost', target: r })}
+                                >
+                                  <Undo2 className="h-3.5 w-3.5" />
+                                  Unlost
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button size="sm" variant="outline" onClick={() => openRetireDialog(r, 'scrap')}>
+                                    <Archive className="h-3.5 w-3.5" />
+                                    Mark as Scrap
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => openRetireDialog(r, 'lost')}>
+                                    <SearchX className="h-3.5 w-3.5" />
+                                    Mark as Lost
+                                  </Button>
+                                </>
+                              ))}
                           </div>
                           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <DetailField label="Type" value={r.it_asset_type_name} />
                             <DetailField label="Subtype" value={r.it_asset_subtype_name} />
                             <DetailField label="Own Company" value={r.own_company_name} />
                             <DetailField label="Current Company" value={r.cur_company_name} />
+                            <DetailField label="Scrap Date" value={r.it_asset_scrap_dt} />
+                            <DetailField label="Lost Date" value={r.it_asset_lost_dt} />
                             <DetailField label="SAP Code" value={r.it_asset_sap_code} />
                             <DetailField label="RAM (GB)" value={r.it_asset_ram} />
                             <DetailField label="HDD/SSD (GB)" value={r.it_asset_hdd} />
@@ -522,6 +665,93 @@ export default function ItAssetsPage() {
                 Delete
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(retireDialog)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRetireDialog(null)
+            setRetireHolder(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Mark {retireDialog?.target.it_asset_sr_no} as {retireDialog?.type}?
+            </DialogTitle>
+            <DialogDescription>
+              {retireHolderLoading ? (
+                'Checking its current assignment…'
+              ) : retireHolder ? (
+                <>
+                  This device is currently used by{' '}
+                  <span className="font-semibold text-foreground">
+                    {retireHolder.holder_user_name || retireHolder.emp_name || retireHolder.holder_name || 'Common'}
+                  </span>{' '}
+                  since {retireHolder.it_asset_holder_from}. Marking it as {retireDialog?.type} will
+                  close that assignment as of the date below and mark the asset Inactive and
+                  Unassigned. This can be undone by editing the asset and its assignment history
+                  afterwards.
+                </>
+              ) : (
+                <>
+                  This asset has no ongoing assignment. Marking it as {retireDialog?.type} will
+                  mark it Inactive and Unassigned. This can be undone by editing the asset and its
+                  assignment history afterwards.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Date
+            </span>
+            <Input
+              type="date"
+              value={retireDialog?.date || ''}
+              onChange={(e) => setRetireDialog((prev) => ({ ...prev, date: e.target.value }))}
+              className="w-[160px]"
+            />
+          </label>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setRetireDialog(null)
+                setRetireHolder(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmRetire} disabled={retiring || !retireDialog?.date}>
+              {retiring ? 'Marking…' : `Mark as ${retireDialog?.type === 'lost' ? 'Lost' : 'Scrap'}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(unretireDialog)} onOpenChange={(open) => !open && setUnretireDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {unretireDialog?.type === 'scrap' ? 'Un-scrap' : 'Un-lost'} {unretireDialog?.target.it_asset_sr_no}?
+            </DialogTitle>
+            <DialogDescription>
+              Marks the asset Active again. It stays Unassigned until reassigned through the
+              normal flow.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setUnretireDialog(null)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmUnretire} disabled={unretiring}>
+              {unretiring ? 'Working…' : unretireDialog?.type === 'scrap' ? 'Unscrap' : 'Unlost'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

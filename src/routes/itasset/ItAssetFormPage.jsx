@@ -61,6 +61,14 @@ export default function ItAssetFormPage() {
 
   function handleChange(f, v, raw) {
     const next = { ...form, [f.name]: v }
+    // Changing a field that another field narrows its remote search by
+    // (e.g. Manufacturer/Type/Subtype narrowing Model) invalidates whatever
+    // was already picked under the old filter.
+    for (const other of schema.fields) {
+      if (other.filterField === f.name || other.filterFields?.some((ff) => ff.field === f.name)) {
+        next[other.name] = null
+      }
+    }
     if (f.derives && raw) {
       for (const [targetField, sourceKey] of Object.entries(f.derives)) {
         next[targetField] = raw[sourceKey]

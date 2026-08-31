@@ -1053,6 +1053,15 @@ export const mastersSchemas = {
           it_asset_mfg: 'it_asset_mfg',
           it_asset_mfg_name: 'it_asset_mfg_name',
         },
+        // Picking Model directly still fills Type/Subtype/Manufacturer in
+        // from it (via `derives` above) — but whichever of those three are
+        // already picked also narrows this search first, so neither has to
+        // come first (same two-way pattern as Operators' Country/Location).
+        filterFields: [
+          { field: 'it_asset_mfg', param: 'mfg' },
+          { field: 'it_asset_type', param: 'type' },
+          { field: 'it_asset_subtype', param: 'subtype' },
+        ],
         required: true,
         section: 'Classification',
       },
@@ -1064,8 +1073,7 @@ export const mastersSchemas = {
         optionLabel: 'it_asset_type_name',
         optionValue: 'it_asset_type_id',
         labelField: 'it_asset_type_name',
-        readOnly: true,
-        hint: 'Set automatically from the chosen Model.',
+        hint: 'Auto-filled from Model, or pick first to narrow it.',
         section: 'Classification',
       },
       {
@@ -1076,8 +1084,7 @@ export const mastersSchemas = {
         optionLabel: 'it_asset_subtype_name',
         optionValue: 'it_asset_subtype_id',
         labelField: 'it_asset_subtype_name',
-        readOnly: true,
-        hint: 'Set automatically from the chosen Model.',
+        hint: 'Auto-filled from Model, or pick first to narrow it.',
         section: 'Classification',
       },
       {
@@ -1088,8 +1095,7 @@ export const mastersSchemas = {
         optionLabel: 'it_asset_mfg_name',
         optionValue: 'it_asset_mfg_id',
         labelField: 'it_asset_mfg_name',
-        readOnly: true,
-        hint: 'Set automatically from the chosen Model.',
+        hint: 'Auto-filled from Model, or pick first to narrow it.',
         section: 'Classification',
       },
       {
@@ -1256,23 +1262,19 @@ export const mastersSchemas = {
         required: true,
         section: 'Holder',
       },
-      {
-        name: 'emp',
-        label: 'Employee',
-        type: 'search-remote',
-        remote: '/api/masters/employees/',
-        optionLabel: 'display_name',
-        optionValue: 'emp_id',
-        labelField: 'emp_name',
-        section: 'Holder',
-      },
+      // Employee (holder_user) and its legacy `emp` derivation are hidden
+      // from this form on purpose, for now — new entries go through Holder
+      // Name (free text) only. Both fields/FKs are untouched on the
+      // backend: still populated on older rows and still shown in the list
+      // page's Employee/Holder Name column, just not offered as pickers
+      // here until that's revisited.
       { name: 'holder_name', label: 'Holder Name', section: 'Holder' },
       {
         name: 'department',
         label: 'Department',
         type: 'select-remote',
         remote: '/api/masters/departments/',
-        optionLabel: 'dept_dispname',
+        optionLabel: 'dept_name',
         optionValue: 'dept_id',
         labelField: 'department_name',
         section: 'Holder',
