@@ -34,7 +34,7 @@ import {
   IconCheck,
   IconAlertCircle,
 } from '@/components/icons'
-import { ArrowDownAZ, ArrowUpZA } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpZA, Download } from 'lucide-react'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
@@ -573,6 +573,7 @@ export default function MasterCrudPage() {
   const canAdd = can(user, schema?.menuKey, 'add')
   const canEdit = can(user, schema?.menuKey, 'edit')
   const canDelete = can(user, schema?.menuKey, 'delete')
+  const canExport = can(user, schema?.menuKey, 'export')
 
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
@@ -604,18 +605,44 @@ export default function MasterCrudPage() {
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
 
-  // Lists are server-paginated (50/page) and server-searched — large
-  // masters (imported legacy data already puts some in the hundreds) never
-  // ship the whole table to the browser up front.
-  function loadPage(pageNum, searchQuery, { append } = {}) {
-    const thisRequest = ++requestIdRef.current
-    const params = new URLSearchParams({ page: String(pageNum) })
+  // Shared by loadPage and exportCsv, so "export" always matches whatever
+  // search/sort/filter is currently on screen.
+  function buildFilterParams(searchQuery) {
+    const params = new URLSearchParams()
     if (searchQuery) params.set('search', searchQuery)
     if (ordering !== 'name') params.set('ordering', ordering)
     if (hasActiveFilter && activeFilter) params.set('active', activeFilter)
     for (const f of filterableFields) {
       if (extraFilters[f.name]) params.set(f.name, extraFilters[f.name])
     }
+    return params
+  }
+
+  async function exportCsv() {
+    const params = buildFilterParams(query)
+    const res = await apiFetch(`${schema.apiBase}export/?${params.toString()}`)
+    if (!res.ok) {
+      toast.error('Failed to export')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${slug}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  // Lists are server-paginated (50/page) and server-searched — large
+  // masters (imported legacy data already puts some in the hundreds) never
+  // ship the whole table to the browser up front.
+  function loadPage(pageNum, searchQuery, { append } = {}) {
+    const thisRequest = ++requestIdRef.current
+    const params = buildFilterParams(searchQuery)
+    params.set('page', String(pageNum))
     if (append) setLoadingMore(true)
     else setLoading(true)
     return apiFetch(`${schema.apiBase}?${params}`)
@@ -806,6 +833,16 @@ export default function MasterCrudPage() {
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-foreground">
               {totalCount}
             </span>
+            {canExport && (
+              <button
+                type="button"
+                title="Export CSV (current search/sort/filter)"
+                onClick={exportCsv}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+            )}
             {canAdd && (
               <Button size="sm" onClick={startCreate}>
                 + New
