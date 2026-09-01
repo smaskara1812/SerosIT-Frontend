@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { RemoteCombobox, NullableDateField, isDateActive } from './MasterCrudPage'
 import { IconSearch, IconChevronLeft, IconPlus, IconTrash } from '@/components/icons'
-import { ArrowDownAZ, ArrowUpZA } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpZA, Download } from 'lucide-react'
 
 const MENU_KEY = 'masters.project_contract'
 const API = '/api/masters/project-contracts/'
@@ -170,6 +170,7 @@ export default function ProjectContractPage() {
   const canAdd = can(user, MENU_KEY, 'add')
   const canEdit = can(user, MENU_KEY, 'edit')
   const canDelete = can(user, MENU_KEY, 'delete')
+  const canExport = can(user, MENU_KEY, 'export')
 
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
@@ -190,12 +191,18 @@ export default function ProjectContractPage() {
   const [saving, setSaving] = useState(false)
   const [deleteInfo, setDeleteInfo] = useState(null)
 
-  function loadContracts(pageNum, q) {
-    setLoading(true)
-    const params = new URLSearchParams({ page: String(pageNum) })
+  function buildFilterParams(q) {
+    const params = new URLSearchParams()
     if (q) params.set('search', q)
     if (ordering) params.set('ordering', ordering)
     if (statusFilter) params.set('status', statusFilter)
+    return params
+  }
+
+  function loadContracts(pageNum, q) {
+    setLoading(true)
+    const params = buildFilterParams(q)
+    params.set('page', String(pageNum))
     apiFetch(`${API}?${params}`)
       .then((r) => r.json())
       .then((data) => {
@@ -205,6 +212,24 @@ export default function ProjectContractPage() {
         setPage(pageNum)
       })
       .finally(() => setLoading(false))
+  }
+
+  async function exportCsv() {
+    const params = buildFilterParams(query)
+    const res = await apiFetch(`${API}export/?${params.toString()}`)
+    if (!res.ok) {
+      toast.error('Failed to export')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'project-contracts.csv'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   useEffect(() => {
@@ -376,6 +401,16 @@ export default function ProjectContractPage() {
               <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-foreground">
                 {totalCount}
               </span>
+              {canExport && (
+                <button
+                  type="button"
+                  title="Export CSV"
+                  onClick={exportCsv}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Download className="h-4 w-4" />
+                </button>
+              )}
               {canAdd && (
                 <Button size="sm" onClick={startCreate}>
                   + New

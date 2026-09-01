@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { RemoteCombobox } from './MasterCrudPage'
 import { IconChevronLeft } from '@/components/icons'
+import { Download } from 'lucide-react'
 
 const MENU_KEY = 'masters.fs_catg_to_rig_type_mapping'
 const API = '/api/masters/fs-catg-to-rig-type-mapping/'
@@ -42,6 +43,7 @@ function ToggleSwitch({ checked, onChange, disabled }) {
 export default function FsCatgToRigTypeMappingPage() {
   const { user } = useAuth()
   const canEdit = can(user, MENU_KEY, 'edit') || can(user, MENU_KEY, 'add')
+  const canExport = can(user, MENU_KEY, 'export')
 
   const [rigTypes, setRigTypes] = useState([])
   const [categoryId, setCategoryId] = useState(null)
@@ -65,6 +67,25 @@ export default function FsCatgToRigTypeMappingPage() {
       .then((r) => r.json())
       .then((data) => setMappings(Array.isArray(data) ? data : data.results || []))
       .finally(() => setLoading(false))
+  }
+
+  async function exportCsv() {
+    const params = new URLSearchParams()
+    if (categoryId) params.set('fs_category', categoryId)
+    const res = await apiFetch(`${API}export/?${params.toString()}`)
+    if (!res.ok) {
+      toast.error('Failed to export')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'category-to-rig-type-mapping.csv'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   function onCategoryChange(id) {
@@ -128,9 +149,21 @@ export default function FsCatgToRigTypeMappingPage() {
 
       <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card p-5">
         <div className="mx-auto max-w-xl">
-          <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            Category To Rig Type Mapping
-          </p>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              Category To Rig Type Mapping
+            </p>
+            {canExport && (
+              <button
+                type="button"
+                title="Export CSV"
+                onClick={exportCsv}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+            )}
+          </div>
 
           <div className="mb-6 flex flex-col gap-1.5">
             <Label>Category</Label>

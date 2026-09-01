@@ -24,6 +24,7 @@ import {
   IconCheck,
   IconX,
 } from '@/components/icons'
+import { Download } from 'lucide-react'
 
 const MENU_KEY = 'masters.job_descriptions'
 
@@ -339,6 +340,7 @@ export default function JobDescriptionsPage() {
   const canAdd = can(user, MENU_KEY, 'add')
   const canEdit = can(user, MENU_KEY, 'edit')
   const canDelete = can(user, MENU_KEY, 'delete')
+  const canExport = can(user, MENU_KEY, 'export')
 
   const [ranks, setRanks] = useState([])
   const [query, setQuery] = useState('')
@@ -371,6 +373,25 @@ export default function JobDescriptionsPage() {
     setSelectedRank(rank)
     setAddingSection(false)
     loadSections(rank.rank_id)
+  }
+
+  async function exportCsv() {
+    const params = new URLSearchParams()
+    if (selectedRank) params.set('rank', selectedRank.rank_id)
+    const res = await apiFetch(`/api/masters/job-description-headers/export/?${params.toString()}`)
+    if (!res.ok) {
+      toast.error('Failed to export')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'job-descriptions.csv'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   async function addSection() {
@@ -412,9 +433,21 @@ export default function JobDescriptionsPage() {
             <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
               Ranks
             </span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-foreground">
-              {ranks.length}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-foreground">
+                {ranks.length}
+              </span>
+              {canExport && (
+                <button
+                  type="button"
+                  title="Export CSV"
+                  onClick={exportCsv}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
           <div className="px-3 pb-3">
             <div className="relative">

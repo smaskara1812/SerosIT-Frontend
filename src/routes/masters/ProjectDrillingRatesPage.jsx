@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/combobox'
 import { RemoteCombobox } from './MasterCrudPage'
 import { IconChevronLeft, IconTrash } from '@/components/icons'
+import { Download } from 'lucide-react'
 
 const MENU_KEY = 'masters.project_drilling_rates'
 const API = '/api/masters/project-drilling-rates/'
@@ -258,6 +259,7 @@ export default function ProjectDrillingRatesPage() {
   const canAdd = can(user, MENU_KEY, 'add')
   const canEdit = can(user, MENU_KEY, 'edit')
   const canDelete = can(user, MENU_KEY, 'delete')
+  const canExport = can(user, MENU_KEY, 'export')
 
   const [rateTypes, setRateTypes] = useState([])
   const [currencies, setCurrencies] = useState([])
@@ -322,6 +324,26 @@ export default function ProjectDrillingRatesPage() {
     else setRates(null)
   }
 
+  async function exportCsv() {
+    const params = new URLSearchParams()
+    if (projectId) params.set('contract', projectId)
+    if (rigId) params.set('rig', rigId)
+    const res = await apiFetch(`${API}export/?${params.toString()}`)
+    if (!res.ok) {
+      toast.error('Failed to export')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'project-drilling-rates.csv'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
   async function saveRow(id, body) {
     const res = await apiFetch(`${API}${id}/`, { method: 'PATCH', body: JSON.stringify(body) })
     if (res.ok) {
@@ -373,9 +395,21 @@ export default function ProjectDrillingRatesPage() {
 
       <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card p-5">
         <div className="mx-auto max-w-3xl">
-          <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            Select Project &amp; Rig
-          </p>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              Select Project &amp; Rig
+            </p>
+            {canExport && (
+              <button
+                type="button"
+                title="Export CSV"
+                onClick={exportCsv}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+            )}
+          </div>
 
           <div className="mb-4 flex flex-col gap-1.5">
             <Label>Project</Label>
