@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { RemoteCombobox, NullableDateField, isDateActive } from './MasterCrudPage'
 import { IconSearch, IconChevronLeft, IconPlus, IconTrash } from '@/components/icons'
+import { ArrowDownAZ, ArrowUpZA } from 'lucide-react'
 
 const MENU_KEY = 'masters.project_contract'
 const API = '/api/masters/project-contracts/'
@@ -176,6 +177,8 @@ export default function ProjectContractPage() {
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [ordering, setOrdering] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const searchTimerRef = useRef(null)
 
   const [selectedId, setSelectedId] = useState(null)
@@ -191,6 +194,8 @@ export default function ProjectContractPage() {
     setLoading(true)
     const params = new URLSearchParams({ page: String(pageNum) })
     if (q) params.set('search', q)
+    if (ordering) params.set('ordering', ordering)
+    if (statusFilter) params.set('status', statusFilter)
     apiFetch(`${API}?${params}`)
       .then((r) => r.json())
       .then((data) => {
@@ -212,6 +217,12 @@ export default function ProjectContractPage() {
     return () => clearTimeout(searchTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
+
+  // Sort/filter changes reload immediately — no debounce needed.
+  useEffect(() => {
+    loadContracts(1, query)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordering, statusFilter])
 
   function loadDetail(id) {
     setLoadingDetail(true)
@@ -381,6 +392,30 @@ export default function ProjectContractPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 className="h-9 pl-8"
               />
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                title={ordering === '-name' ? 'Sorted Z–A — click for A–Z' : 'Sorted A–Z — click for Z–A'}
+                onClick={() => setOrdering((prev) => (prev === '-name' ? 'name' : '-name'))}
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-input px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                {ordering === '-name' ? (
+                  <ArrowUpZA className="h-3.5 w-3.5" />
+                ) : (
+                  <ArrowDownAZ className="h-3.5 w-3.5" />
+                )}
+                Contract No
+              </button>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-8 flex-1 rounded-lg border border-input bg-transparent px-2 text-xs text-foreground outline-none focus:border-ring"
+              >
+                <option value="">All</option>
+                <option value="active">Active</option>
+                <option value="closed">Closed</option>
+              </select>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto border-t border-border">

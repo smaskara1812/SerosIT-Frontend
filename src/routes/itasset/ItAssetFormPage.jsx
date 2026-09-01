@@ -95,7 +95,11 @@ export default function ItAssetFormPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(JSON.stringify(data))
       toast.success(isEdit ? 'Changes saved' : `${data.it_asset_sr_no} created`)
-      navigate(`/it-asset/it-assets/${data.it_asset_id}/edit`, { replace: true })
+      if (isEdit) {
+        navigate(`/it-asset/it-assets/${data.it_asset_id}/edit`, { replace: true })
+      } else {
+        navigate('/it-asset/it-assets')
+      }
     } catch (e) {
       setError(e.message)
       toast.error('Failed to save')

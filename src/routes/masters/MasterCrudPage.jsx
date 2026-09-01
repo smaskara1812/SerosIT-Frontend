@@ -34,6 +34,7 @@ import {
   IconCheck,
   IconAlertCircle,
 } from '@/components/icons'
+import { ArrowDownAZ, ArrowUpZA } from 'lucide-react'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
@@ -579,6 +580,18 @@ export default function MasterCrudPage() {
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [query, setQuery] = useState('')
+  // Generic list sort/filter, backed by BaseMasterViewSet's ?ordering=
+  // name|-name and ?active=Y/N — every master gets name sort for free;
+  // the Active filter only shows when the schema declares activeField.
+  const [ordering, setOrdering] = useState('name')
+  const [activeFilter, setActiveFilter] = useState('')
+  // Extra filter dropdowns, one per schema field with `filterable: true`
+  // (e.g. Rank Classification's Junior/Senior) — keyed by field name,
+  // sent as plain ?<field>=<value> since these are always small fixed
+  // choice sets, not FK ids.
+  const [extraFilters, setExtraFilters] = useState({})
+  const filterableFields = useMemo(() => schema.fields.filter((f) => f.filterable), [schema])
+  const hasActiveFilter = Boolean(schema.activeField || schema.dateActiveField)
   const [selectedId, setSelectedId] = useState(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState(() => emptyForm(schema))
@@ -598,6 +611,11 @@ export default function MasterCrudPage() {
     const thisRequest = ++requestIdRef.current
     const params = new URLSearchParams({ page: String(pageNum) })
     if (searchQuery) params.set('search', searchQuery)
+    if (ordering !== 'name') params.set('ordering', ordering)
+    if (hasActiveFilter && activeFilter) params.set('active', activeFilter)
+    for (const f of filterableFields) {
+      if (extraFilters[f.name]) params.set(f.name, extraFilters[f.name])
+    }
     if (append) setLoadingMore(true)
     else setLoading(true)
     return apiFetch(`${schema.apiBase}?${params}`)
@@ -632,6 +650,9 @@ export default function MasterCrudPage() {
     setSelectedId(null)
     setCreating(false)
     setQuery('')
+    setOrdering('name')
+    setActiveFilter('')
+    setExtraFilters({})
     if (listRef.current) listRef.current.scrollTop = 0
     loadPage(1, '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -647,6 +668,14 @@ export default function MasterCrudPage() {
     return () => clearTimeout(searchTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
+
+  // Sort/filter changes reload immediately (no debounce needed — these are
+  // discrete clicks, not keystrokes).
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0
+    loadPage(1, query)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordering, activeFilter, extraFilters])
 
   function handleListScroll(e) {
     const el = e.currentTarget
@@ -784,7 +813,7 @@ export default function MasterCrudPage() {
             )}
           </div>
         </div>
-        <div className="px-3 pb-3">
+        <div className="flex flex-col gap-2 px-3 pb-3">
           <div className="relative">
             <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -794,6 +823,47 @@ export default function MasterCrudPage() {
               className="h-9 pl-8"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              title={ordering === 'name' ? 'Sorted A–Z — click for Z–A' : 'Sorted Z–A — click for A–Z'}
+              onClick={() => setOrdering((prev) => (prev === 'name' ? '-name' : 'name'))}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-input px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {ordering === 'name' ? (
+                <ArrowDownAZ className="h-3.5 w-3.5" />
+              ) : (
+                <ArrowUpZA className="h-3.5 w-3.5" />
+              )}
+              Name
+            </button>
+            {hasActiveFilter && (
+              <select
+                value={activeFilter}
+                onChange={(e) => setActiveFilter(e.target.value)}
+                className="h-8 flex-1 rounded-lg border border-input bg-transparent px-2 text-xs text-foreground outline-none focus:border-ring"
+              >
+                <option value="">All</option>
+                <option value="Y">Active</option>
+                <option value="N">Inactive</option>
+              </select>
+            )}
+          </div>
+          {filterableFields.map((f) => (
+            <select
+              key={f.name}
+              value={extraFilters[f.name] || ''}
+              onChange={(e) => setExtraFilters((prev) => ({ ...prev, [f.name]: e.target.value }))}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-xs text-foreground outline-none focus:border-ring"
+            >
+              <option value="">All {f.label}</option>
+              {f.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          ))}
         </div>
         <div
           ref={listRef}

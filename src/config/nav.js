@@ -27,7 +27,19 @@ import {
   IconFileSignature,
   IconUserCheck,
 } from '@/components/icons'
-import { Laptop, MapPin, Tag, Tags, Factory, Package, Truck } from 'lucide-react'
+import {
+  Laptop,
+  MapPin,
+  Tag,
+  Tags,
+  Factory,
+  Package,
+  Truck,
+  Building2,
+  Network,
+  Building,
+  Users,
+} from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
 // with `sections` gets one primary-sidebar entry, and its sections render in
@@ -105,6 +117,27 @@ export const navTree = [
             icon: MapPin,
             menuKey: 'masters.company_locations',
           },
+          {
+            key: 'organisational_grps',
+            label: 'Organisational Group',
+            path: '/masters/organisational-grps',
+            icon: Building2,
+            menuKey: 'masters.organisational_grps',
+          },
+          {
+            key: 'business_grps',
+            label: 'Business Group',
+            path: '/masters/business-grps',
+            icon: Network,
+            menuKey: 'masters.business_grps',
+          },
+          {
+            key: 'companies',
+            label: 'Company',
+            path: '/masters/companies',
+            icon: Building,
+            menuKey: 'masters.companies',
+          },
         ],
       },
       {
@@ -151,6 +184,13 @@ export const navTree = [
             path: '/masters/reporting-structure',
             icon: IconGitBranch,
             menuKey: 'masters.reporting_structure',
+          },
+          {
+            key: 'departments',
+            label: 'Department',
+            path: '/masters/departments',
+            icon: Users,
+            menuKey: 'masters.departments',
           },
         ],
       },
@@ -271,6 +311,13 @@ export const navTree = [
             path: '/masters/rig-site-mapping',
             icon: IconLink,
             menuKey: 'masters.rig_site_mapping',
+          },
+          {
+            key: 'company_to_location_mapping',
+            label: 'Company To Location Mapping',
+            path: '/masters/company-to-location-mapping',
+            icon: IconLink,
+            menuKey: 'masters.company_to_location_mapping',
           },
         ],
       },

@@ -141,7 +141,11 @@ export default function ItAssetHolderFormPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(JSON.stringify(data))
       toast.success(isEdit ? 'Changes saved' : reassignAssetId ? 'Device reassigned' : 'Holder record created')
-      navigate(`/it-asset/it-asset-holders/${data.it_asset_holder_id}/edit`, { replace: true })
+      if (isEdit) {
+        navigate(`/it-asset/it-asset-holders/${data.it_asset_holder_id}/edit`, { replace: true })
+      } else {
+        navigate('/it-asset/it-asset-holders')
+      }
     } catch (e) {
       setError(e.message)
       toast.error('Failed to save')
