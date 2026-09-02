@@ -39,6 +39,7 @@ import {
   Network,
   Building,
   Users,
+  Cable,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -506,6 +507,20 @@ export const navTree = [
             path: '/it-asset/it-asset-holders',
             icon: IconUserCheck,
             menuKey: 'it_asset.it_asset_holders',
+          },
+          {
+            key: 'it_accessories',
+            label: 'IT Accessory',
+            path: '/it-asset/it-accessories',
+            icon: Cable,
+            menuKey: 'masters.it_accessories',
+          },
+          {
+            key: 'it_accessory_holders',
+            label: 'IT Accessory Holder',
+            path: '/it-asset/it-accessory-holders',
+            icon: Cable,
+            menuKey: 'it_asset.it_accessory_holders',
           },
           {
             key: 'it_asset_report',

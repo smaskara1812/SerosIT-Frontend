@@ -21,6 +21,10 @@ import ItAssetsPage from '@/routes/itasset/ItAssetsPage'
 import ItAssetFormPage from '@/routes/itasset/ItAssetFormPage'
 import ItAssetHoldersPage from '@/routes/itasset/ItAssetHoldersPage'
 import ItAssetHolderFormPage from '@/routes/itasset/ItAssetHolderFormPage'
+import ItAccessoriesPage from '@/routes/itasset/ItAccessoriesPage'
+import ItAccessoryFormPage from '@/routes/itasset/ItAccessoryFormPage'
+import ItAccessoryHoldersPage from '@/routes/itasset/ItAccessoryHoldersPage'
+import ItAccessoryHolderFormPage from '@/routes/itasset/ItAccessoryHolderFormPage'
 import ItAssetReportPage from '@/routes/itasset/ItAssetReportPage'
 
 function App() {
@@ -53,6 +57,12 @@ function App() {
           <Route path="/it-asset/it-asset-holders" element={<ItAssetHoldersPage />} />
           <Route path="/it-asset/it-asset-holders/new" element={<ItAssetHolderFormPage />} />
           <Route path="/it-asset/it-asset-holders/:id/edit" element={<ItAssetHolderFormPage />} />
+          <Route path="/it-asset/it-accessories" element={<ItAccessoriesPage />} />
+          <Route path="/it-asset/it-accessories/new" element={<ItAccessoryFormPage />} />
+          <Route path="/it-asset/it-accessories/:id/edit" element={<ItAccessoryFormPage />} />
+          <Route path="/it-asset/it-accessory-holders" element={<ItAccessoryHoldersPage />} />
+          <Route path="/it-asset/it-accessory-holders/new" element={<ItAccessoryHolderFormPage />} />
+          <Route path="/it-asset/it-accessory-holders/:id/edit" element={<ItAccessoryHolderFormPage />} />
           <Route path="/it-asset/report" element={<ItAssetReportPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
