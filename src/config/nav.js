@@ -40,6 +40,8 @@ import {
   Building,
   Users,
   Cable,
+  CalendarRange,
+  Stamp,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -138,6 +140,34 @@ export const navTree = [
             path: '/masters/companies',
             icon: Building,
             menuKey: 'masters.companies',
+          },
+          {
+            key: 'financial_years',
+            label: 'Financial Year',
+            path: '/masters/financial-years',
+            icon: CalendarRange,
+            menuKey: 'masters.financial_years',
+          },
+          {
+            key: 'buss_cert_issue_authorities',
+            label: 'Issuing Authority',
+            path: '/masters/buss-cert-issue-authorities',
+            icon: Stamp,
+            menuKey: 'masters.buss_cert_issue_authorities',
+          },
+          {
+            key: 'buss_cert_types',
+            label: 'Certificate Type',
+            path: '/masters/buss-cert-types',
+            icon: IconAward,
+            menuKey: 'masters.buss_cert_types',
+          },
+          {
+            key: 'buss_certs',
+            label: 'Certificates',
+            path: '/masters/buss-certs',
+            icon: IconClipboard,
+            menuKey: 'masters.buss_certs',
           },
         ],
       },

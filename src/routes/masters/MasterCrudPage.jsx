@@ -47,7 +47,11 @@ export function isDateActive(toValue) {
 
 export function emptyForm(schema) {
   const form = {}
-  for (const f of schema.fields) form[f.name] = f.type === 'active-select' ? 'Y' : (f.default ?? '')
+  for (const f of schema.fields) {
+    if (f.type === 'active-select') form[f.name] = 'Y'
+    else if (f.type === 'flag-id') form[f.name] = f.default ?? null
+    else form[f.name] = f.default ?? ''
+  }
   return form
 }
 
@@ -485,6 +489,21 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
         value={value === 'N' ? 'N' : 'Y'}
         onChange={onChange}
         disabled={disabled}
+      />
+    )
+  }
+  if (field.type === 'flag-id') {
+    // Legacy checkbox whose "on" value isn't a plain boolean but a fixed
+    // sentinel (e.g. Mst_Buss_Cert's Business_System_Id_N columns store
+    // that business system's own id when checked, NULL when not) — kept
+    // faithful to the real column rather than normalizing to Y/N.
+    return (
+      <input
+        type="checkbox"
+        checked={value != null}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked ? field.checkedValue : null)}
+        className="h-4 w-4 rounded border-input accent-[#1a3f7a] disabled:opacity-50"
       />
     )
   }
