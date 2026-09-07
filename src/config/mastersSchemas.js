@@ -152,6 +152,37 @@ export const mastersSchemas = {
       { name: 'rig_active', label: 'Active', type: 'active-select' },
     ],
   },
+  'rig-types': {
+    title: 'Rig Type',
+    menuKey: 'masters.rig_types',
+    apiBase: '/api/masters/rig-types/',
+    idField: 'rig_type_id',
+    nameField: 'rig_type_name',
+    activeField: null,
+    fields: [{ name: 'rig_type_name', label: 'Name', required: true, wide: true }],
+  },
+  'rig-subtypes': {
+    title: 'Rig Subtype',
+    menuKey: 'masters.rig_subtypes',
+    apiBase: '/api/masters/rig-subtypes/',
+    idField: 'rig_subtype_id',
+    nameField: 'rig_subtype_name',
+    activeField: null,
+    listSecondary: (r) => r.rig_type_name || '',
+    fields: [
+      { name: 'rig_subtype_name', label: 'Name', required: true },
+      {
+        name: 'rig_type',
+        label: 'Rig Type',
+        type: 'select-remote',
+        remote: '/api/masters/rig-types/',
+        optionLabel: 'rig_type_name',
+        optionValue: 'rig_type_id',
+        labelField: 'rig_type_name',
+        required: true,
+      },
+    ],
+  },
   'cost-centres': {
     title: 'Cost Centres',
     menuKey: 'masters.cost_centres',
@@ -226,7 +257,31 @@ export const mastersSchemas = {
     idField: 'fs_category_id',
     nameField: 'fs_category_name',
     activeField: null,
-    fields: [{ name: 'fs_category_name', label: 'Name', required: true }],
+    fields: [
+      { name: 'fs_category_name', label: 'FS Category', required: true, wide: true },
+      // Only Oilfield Services is surfaced on the form — Shipping, Dredging,
+      // Offshore Sub Sea and business_system_id_16 stay as whatever value is
+      // already in the DB, untouched by this form (see MstFsCategory's model
+      // docstring: checked stores 'Y', unchecked is NULL).
+      { name: 'business_system_id_6', label: 'Oilfield Services', type: 'flag-id', checkedValue: 'Y', wide: true },
+    ],
+  },
+  'vessel-depts': {
+    title: 'Vessel Department',
+    menuKey: 'masters.vessel_depts',
+    apiBase: '/api/masters/vessel-depts/',
+    idField: 'vessel_dept_id',
+    nameField: 'vessel_dept_name',
+    activeField: null,
+    fields: [
+      { name: 'vessel_dept_name', label: 'Vessel Department', required: true, wide: true },
+      // Only Oilfield Services is surfaced — Shipping, Dredging and
+      // Offshore Sub Sea stay as whatever value is already in the DB,
+      // untouched by this form (same "Extended to" shape as fs-categories
+      // and ranks: checked stores 'Y', unchecked is NULL).
+      { name: 'business_system_id_6', label: 'Oilfield Services', type: 'flag-id', checkedValue: 'Y', wide: true },
+      { name: 'vessel_dept_order', label: 'Display Order', type: 'number' },
+    ],
   },
   ranks: {
     title: 'Ranks',
@@ -260,6 +315,11 @@ export const mastersSchemas = {
         required: true,
       },
       { name: 'rank_order', label: 'Order', type: 'number' },
+      // Only Oilfield Services is surfaced — Shipping, Dredging and
+      // Offshore Sub Sea stay as whatever value is already in the DB,
+      // untouched by this form (same "Extended to" shape as fs-categories:
+      // checked stores 'Y', unchecked is NULL).
+      { name: 'business_system_id_6', label: 'Oilfield Services', type: 'flag-id', checkedValue: 'Y', wide: true },
     ],
   },
   'travel-eligibility': {

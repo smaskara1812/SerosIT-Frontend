@@ -42,6 +42,7 @@ import {
   Cable,
   CalendarRange,
   Stamp,
+  Ship,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -70,6 +71,27 @@ export const navTree = [
             path: '/masters/rigs',
             icon: IconHome,
             menuKey: 'masters.rigs',
+          },
+          {
+            key: 'rig_types',
+            label: 'Rig Type',
+            path: '/masters/rig-types',
+            icon: IconWrench,
+            menuKey: 'masters.rig_types',
+          },
+          {
+            key: 'rig_subtypes',
+            label: 'Rig Subtype',
+            path: '/masters/rig-subtypes',
+            icon: Network,
+            menuKey: 'masters.rig_subtypes',
+          },
+          {
+            key: 'vessel_depts',
+            label: 'Vessel Department',
+            path: '/masters/vessel-depts',
+            icon: Ship,
+            menuKey: 'masters.vessel_depts',
           },
           {
             key: 'cost_centres',
@@ -180,13 +202,6 @@ export const navTree = [
             path: '/masters/competency',
             icon: IconStar,
             menuKey: 'masters.competency',
-          },
-          {
-            key: 'fs_categories',
-            label: 'Fs Categories',
-            path: '/masters/fs-categories',
-            icon: IconTag,
-            menuKey: 'masters.fs_categories',
           },
           {
             key: 'ranks',
@@ -361,6 +376,13 @@ export const navTree = [
             path: '/masters/fs-catg-to-rig-type-mapping',
             icon: IconLink,
             menuKey: 'masters.fs_catg_to_rig_type_mapping',
+          },
+          {
+            key: 'fs_categories',
+            label: 'Fs Categories',
+            path: '/masters/fs-categories',
+            icon: IconTag,
+            menuKey: 'masters.fs_categories',
           },
           {
             key: 'rank_classification',
