@@ -63,6 +63,13 @@ export function emptyForm(schema) {
 // page size.
 const INSTANT_LIST_THRESHOLD = 200
 
+// A stable reference for the "no extra filters" state — `setExtraFilters({})`
+// with a fresh object literal looks like a no-op but isn't: {} !== {}, so
+// React never bails out on it, and the effect keyed on `extraFilters` fires
+// again even though nothing actually changed. Reusing the same object each
+// time restores the bail-out.
+const EMPTY_EXTRA_FILTERS = {}
+
 // One combobox for every FK/lookup field, small or huge. `type: 'select-remote'`
 // probes the endpoint once on mount and picks local-instant vs. server-search
 // based on the real row count the backend reports; `type: 'search-remote'`
@@ -85,10 +92,28 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   const pageRef = useRef(1)
   const sep = field.remote.includes('?') ? '&' : '?'
 
+  // Only optionValue/optionLabel ever render, filterOptionField is the only
+  // other one read off an option for cascade-filtering, and every
+  // `derives` source is the complete set of what a picked option's `raw`
+  // gets read for (verified: nothing else in the app reads `raw` outside
+  // that mechanism) — so this is the full, safe set to ask for instead of
+  // whatever else the endpoint's default serializer carries. Profiling a
+  // 318-row Company fetch found ~100ms of pure DRF serialization on
+  // columns nothing here reads; this preload runs on every mount of every
+  // FK picker up to INSTANT_LIST_THRESHOLD rows, so it's the single
+  // highest-traffic place this matters.
+  const neededFields = [
+    field.optionValue,
+    field.optionLabel,
+    field.filterOptionField,
+    ...Object.values(field.derives || {}),
+  ].filter(Boolean)
+  const fieldsParam = `&fields=${[...new Set(neededFields)].join(',')}`
+
   useEffect(() => {
     if (forceSearch) return
     let cancelled = false
-    apiFetch(`${field.remote}${sep}page_size=${INSTANT_LIST_THRESHOLD}`)
+    apiFetch(`${field.remote}${sep}page_size=${INSTANT_LIST_THRESHOLD}${fieldsParam}`)
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return
@@ -609,7 +634,7 @@ export default function MasterCrudPage() {
   // (e.g. Rank Classification's Junior/Senior) — keyed by field name,
   // sent as plain ?<field>=<value> since these are always small fixed
   // choice sets, not FK ids.
-  const [extraFilters, setExtraFilters] = useState({})
+  const [extraFilters, setExtraFilters] = useState(EMPTY_EXTRA_FILTERS)
   const filterableFields = useMemo(() => schema.fields.filter((f) => f.filterable), [schema])
   const hasActiveFilter = Boolean(schema.activeField || schema.dateActiveField)
   const [selectedId, setSelectedId] = useState(null)
@@ -623,6 +648,16 @@ export default function MasterCrudPage() {
   const listRef = useRef(null)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
+  // The slug-change effect below resets query/ordering/activeFilter/
+  // extraFilters to their defaults and loads page 1 itself — but React
+  // fires every effect at least once on mount/slug-change regardless of
+  // whether its own deps "changed" from that reset, so the query effect
+  // and the ordering/filter effect would each independently fire their own
+  // redundant loadPage right alongside (one of them ~300ms later, off the
+  // search debounce) if left alone. This flag lets those two skip the one
+  // pass that the slug effect already covers, without skipping any later,
+  // real user-driven change to query/ordering/filters.
+  const skipNextLoadRef = useRef(false)
 
   // Shared by loadPage and exportCsv, so "export" always matches whatever
   // search/sort/filter is currently on screen.
@@ -698,14 +733,16 @@ export default function MasterCrudPage() {
     setQuery('')
     setOrdering('name')
     setActiveFilter('')
-    setExtraFilters({})
+    setExtraFilters(EMPTY_EXTRA_FILTERS)
     if (listRef.current) listRef.current.scrollTop = 0
+    skipNextLoadRef.current = true
     loadPage(1, '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   // Debounced server-side search — resets to page 1 on every new query.
   useEffect(() => {
+    if (skipNextLoadRef.current) return // already loaded by the slug-reset effect above
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
       if (listRef.current) listRef.current.scrollTop = 0
@@ -718,6 +755,13 @@ export default function MasterCrudPage() {
   // Sort/filter changes reload immediately (no debounce needed — these are
   // discrete clicks, not keystrokes).
   useEffect(() => {
+    // Last of the two consumers (declaration order below the query effect
+    // above) — clears the flag so the *next* real change to any of these,
+    // from either effect, behaves normally again.
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false
+      return
+    }
     if (listRef.current) listRef.current.scrollTop = 0
     loadPage(1, query)
     // eslint-disable-next-line react-hooks/exhaustive-deps

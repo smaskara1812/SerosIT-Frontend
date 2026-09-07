@@ -279,10 +279,10 @@ export default function ProjectDrillingRatesPage() {
   )
 
   useEffect(() => {
-    apiFetch('/api/masters/drilling-rate-types/?page_size=200')
+    apiFetch('/api/masters/drilling-rate-types/?page_size=200&fields=drilling_rate_id,rate_code')
       .then((r) => r.json())
       .then((data) => setRateTypes(Array.isArray(data) ? data : data.results || []))
-    apiFetch('/api/masters/currencies/?page_size=200')
+    apiFetch('/api/masters/currencies/?page_size=200&fields=currency_id,currency_abrv')
       .then((r) => r.json())
       .then((data) => setCurrencies(Array.isArray(data) ? data : data.results || []))
   }, [])

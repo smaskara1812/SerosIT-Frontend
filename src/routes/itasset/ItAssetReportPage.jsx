@@ -280,8 +280,12 @@ export default function ItAssetReportPage() {
 
   useEffect(() => {
     Promise.all([
-      apiFetch('/api/masters/it-asset-types/?page_size=100').then((r) => r.json()),
-      apiFetch('/api/masters/it-asset-mfgs/?page_size=100').then((r) => r.json()),
+      apiFetch('/api/masters/it-asset-types/?page_size=100&fields=it_asset_type_id,it_asset_type_name').then((r) =>
+        r.json()
+      ),
+      apiFetch('/api/masters/it-asset-mfgs/?page_size=100&fields=it_asset_mfg_id,it_asset_mfg_name').then((r) =>
+        r.json()
+      ),
     ]).then(([types, mfgs]) => {
       setMeta({ types: asList(types), mfgs: asList(mfgs) })
     })

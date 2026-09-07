@@ -123,9 +123,15 @@ export default function ItAssetHoldersPage() {
 
   useEffect(() => {
     Promise.all([
-      apiFetch('/api/masters/it-asset-types/?page_size=100').then((r) => r.json()),
-      apiFetch('/api/masters/it-asset-subtypes/?page_size=100').then((r) => r.json()),
-      apiFetch('/api/masters/companies/?page_size=1000').then((r) => r.json()),
+      apiFetch('/api/masters/it-asset-types/?page_size=100&fields=it_asset_type_id,it_asset_type_name').then((r) =>
+        r.json()
+      ),
+      apiFetch(
+        '/api/masters/it-asset-subtypes/?page_size=100&fields=it_asset_subtype_id,it_asset_subtype_name'
+      ).then((r) => r.json()),
+      // Only id+name are read below (typeOptions/subtypeOptions/companyOptions)
+      // — see ItAssetsPage.jsx for the profiling that motivated this.
+      apiFetch('/api/masters/companies/?page_size=1000&fields=company_id,company_name').then((r) => r.json()),
     ]).then(([types, subtypes, companies]) => {
       setMeta({
         types: asList(types),

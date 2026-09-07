@@ -91,7 +91,7 @@ export default function HazardCardsPage() {
     apiFetch('/api/reports/hazard-cards/meta/')
       .then((r) => r.json())
       .then(setMeta)
-    apiFetch('/api/masters/rigs/?page_size=200')
+    apiFetch('/api/masters/rigs/?page_size=200&fields=rig_id,rig_name')
       .then((r) => r.json())
       .then((data) => setRigs(Array.isArray(data) ? data : data.results || []))
   }, [])

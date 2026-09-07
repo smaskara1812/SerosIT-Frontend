@@ -83,7 +83,7 @@ export default function ItAccessoryHoldersPage() {
   const [accessories, setAccessories] = useState([])
 
   useEffect(() => {
-    apiFetch('/api/masters/it-accessories/?page_size=200')
+    apiFetch('/api/masters/it-accessories/?page_size=200&fields=it_accessory_id,it_accessory_name')
       .then((r) => r.json())
       .then((data) => setAccessories(asList(data)))
   }, [])

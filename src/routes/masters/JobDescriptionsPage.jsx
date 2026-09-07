@@ -355,7 +355,7 @@ export default function JobDescriptionsPage() {
     // The rank picker is a search-as-you-type list, not a paginated browse
     // view, so it needs the whole set — ask for a bigger page than the
     // default (Ranks list endpoint is otherwise server-paginated).
-    apiFetch('/api/masters/ranks/?page_size=500')
+    apiFetch('/api/masters/ranks/?page_size=500&fields=rank_id,rank_name,fs_category_name')
       .then((r) => r.json())
       .then((data) => setRanks(Array.isArray(data) ? data : data.results || []))
       .finally(() => setLoadingRanks(false))

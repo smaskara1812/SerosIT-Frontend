@@ -56,7 +56,7 @@ export default function FsCatgToRigTypeMappingPage() {
   const [pending, setPending] = useState({})
 
   useEffect(() => {
-    apiFetch('/api/masters/rig-types/?page_size=200')
+    apiFetch('/api/masters/rig-types/?page_size=200&fields=rig_type_id,rig_type_name')
       .then((r) => r.json())
       .then((data) => setRigTypes(Array.isArray(data) ? data : data.results || []))
   }, [])
