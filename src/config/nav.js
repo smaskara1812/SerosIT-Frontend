@@ -43,6 +43,11 @@ import {
   CalendarRange,
   Stamp,
   Ship,
+  GraduationCap,
+  IdCard,
+  Wallet,
+  ClipboardList,
+  Layers3,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -237,6 +242,77 @@ export const navTree = [
             path: '/masters/departments',
             icon: Users,
             menuKey: 'masters.departments',
+          },
+        ],
+      },
+      {
+        label: 'Certificate Classification',
+        items: [
+          {
+            key: 'cert_types',
+            label: 'Certificate Type',
+            path: '/masters/cert-types',
+            icon: IconAward,
+            menuKey: 'masters.cert_types',
+          },
+          {
+            key: 'certs',
+            label: 'Certificates',
+            path: '/masters/certs',
+            icon: IconClipboard,
+            menuKey: 'masters.certs',
+          },
+          {
+            key: 'qualifications',
+            label: 'Qualification',
+            path: '/masters/qualifications',
+            icon: GraduationCap,
+            menuKey: 'masters.qualifications',
+          },
+        ],
+      },
+      {
+        label: 'Employment Classification',
+        items: [
+          {
+            key: 'emp_natures',
+            label: 'Employment Nature',
+            path: '/masters/emp-natures',
+            icon: IdCard,
+            menuKey: 'masters.emp_natures',
+          },
+          {
+            key: 'emp_types',
+            label: 'Employment Type',
+            path: '/masters/emp-types',
+            icon: Wallet,
+            menuKey: 'masters.emp_types',
+          },
+        ],
+      },
+      {
+        label: 'Service Particulars',
+        items: [
+          {
+            key: 'serv_types',
+            label: 'Service Type',
+            path: '/masters/serv-types',
+            icon: ClipboardList,
+            menuKey: 'masters.serv_types',
+          },
+          {
+            key: 'serv_subtypes',
+            label: 'Service Subtype',
+            path: '/masters/serv-subtypes',
+            icon: Layers3,
+            menuKey: 'masters.serv_subtypes',
+          },
+          {
+            key: 'fs_catg_to_sstype',
+            label: 'FS Category To Service Subtype',
+            path: '/masters/fs-catg-to-sstype',
+            icon: IconLink,
+            menuKey: 'masters.fs_catg_to_sstype',
           },
         ],
       },
