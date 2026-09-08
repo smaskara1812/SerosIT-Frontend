@@ -48,6 +48,13 @@ import {
   Wallet,
   ClipboardList,
   Layers3,
+  Globe,
+  Flag,
+  Map,
+  Users2,
+  LogOut,
+  Landmark,
+  MailWarning,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -97,6 +104,20 @@ export const navTree = [
             path: '/masters/vessel-depts',
             icon: Ship,
             menuKey: 'masters.vessel_depts',
+          },
+          {
+            key: 'relations',
+            label: 'Relation',
+            path: '/masters/relations',
+            icon: Users2,
+            menuKey: 'masters.relations',
+          },
+          {
+            key: 'business_systems',
+            label: 'Business System',
+            path: '/masters/business-systems',
+            icon: Landmark,
+            menuKey: 'masters.business_systems',
           },
           {
             key: 'cost_centres',
@@ -313,6 +334,110 @@ export const navTree = [
             path: '/masters/fs-catg-to-sstype',
             icon: IconLink,
             menuKey: 'masters.fs_catg_to_sstype',
+          },
+        ],
+      },
+      {
+        label: 'Incident Classification',
+        items: [
+          {
+            key: 'incident_types',
+            label: 'Incident Type',
+            path: '/masters/incident-types',
+            icon: IconAlertTriangle,
+            menuKey: 'masters.incident_types',
+          },
+          {
+            key: 'incident_causes',
+            label: 'Incident Cause',
+            path: '/masters/incident-causes',
+            icon: IconActivity,
+            menuKey: 'masters.incident_causes',
+          },
+          {
+            key: 'incident_subcauses',
+            label: 'Incident Subcause',
+            path: '/masters/incident-subcauses',
+            icon: IconActivity,
+            menuKey: 'masters.incident_subcauses',
+          },
+          {
+            key: 'work_locations',
+            label: 'Work Location',
+            path: '/masters/work-locations',
+            icon: MapPin,
+            menuKey: 'masters.work_locations',
+          },
+        ],
+      },
+      {
+        label: 'Regional Information',
+        items: [
+          {
+            key: 'continents',
+            label: 'Continent',
+            path: '/masters/continents',
+            icon: Globe,
+            menuKey: 'masters.continents',
+          },
+          {
+            key: 'countries',
+            label: 'Country',
+            path: '/masters/countries',
+            icon: Flag,
+            menuKey: 'masters.countries',
+          },
+          {
+            key: 'country_states',
+            label: 'Country State',
+            path: '/masters/country-states',
+            icon: Map,
+            menuKey: 'masters.country_states',
+          },
+          {
+            key: 'locations',
+            label: 'Location',
+            path: '/masters/locations',
+            icon: MapPin,
+            menuKey: 'masters.locations',
+          },
+        ],
+      },
+      {
+        label: 'Leave Masters',
+        items: [
+          {
+            key: 'leaving_reasons',
+            label: 'Leaving Reasons',
+            path: '/masters/leaving-reasons',
+            icon: LogOut,
+            menuKey: 'masters.leaving_reasons',
+          },
+          {
+            key: 'leaving_reason_details',
+            label: 'Leaving Reason Details',
+            path: '/masters/leaving-reason-details',
+            icon: LogOut,
+            menuKey: 'masters.leaving_reason_details',
+          },
+        ],
+      },
+      {
+        label: 'Mail Alert Masters',
+        items: [
+          {
+            key: 'mail_alerts',
+            label: 'Alert Details',
+            path: '/masters/mail-alerts',
+            icon: MailWarning,
+            menuKey: 'masters.mail_alerts',
+          },
+          {
+            key: 'mail_alert_to_users',
+            label: 'Alert To Users',
+            path: '/masters/mail-alert-to-users',
+            icon: IconLink,
+            menuKey: 'masters.mail_alert_to_users',
           },
         ],
       },

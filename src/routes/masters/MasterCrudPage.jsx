@@ -601,7 +601,17 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
   }
   return (
     <Input
-      type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : field.type === 'email' ? 'email' : 'text'}
+      type={
+        field.type === 'number'
+          ? 'number'
+          : field.type === 'date'
+            ? 'date'
+            : field.type === 'email'
+              ? 'email'
+              : field.type === 'password'
+                ? 'password'
+                : 'text'
+      }
       step={field.type === 'number' ? 'any' : undefined}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
