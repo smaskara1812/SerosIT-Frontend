@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
 import './index.css'
+import 'leaflet/dist/leaflet.css'
 import App from './App.jsx'
 
 // Browser back/forward can restore the page from bfcache instead of doing a

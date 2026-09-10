@@ -26,6 +26,7 @@ import ItAccessoryFormPage from '@/routes/itasset/ItAccessoryFormPage'
 import ItAccessoryHoldersPage from '@/routes/itasset/ItAccessoryHoldersPage'
 import ItAccessoryHolderFormPage from '@/routes/itasset/ItAccessoryHolderFormPage'
 import ItAssetReportPage from '@/routes/itasset/ItAssetReportPage'
+import DrillingInformationPage from '@/routes/drilling/DrillingInformationPage'
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
           <Route path="/it-asset/it-accessory-holders/new" element={<ItAccessoryHolderFormPage />} />
           <Route path="/it-asset/it-accessory-holders/:id/edit" element={<ItAccessoryHolderFormPage />} />
           <Route path="/it-asset/report" element={<ItAssetReportPage />} />
+          <Route path="/drilling/drilling-information" element={<DrillingInformationPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>

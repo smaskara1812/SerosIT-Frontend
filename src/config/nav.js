@@ -55,6 +55,7 @@ import {
   LogOut,
   Landmark,
   MailWarning,
+  Drill,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -781,6 +782,24 @@ export const navTree = [
             path: '/it-asset/report',
             icon: IconClipboard,
             menuKey: 'reports.it_assets',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'drilling',
+    label: 'Drilling Details',
+    icon: Drill,
+    sections: [
+      {
+        items: [
+          {
+            key: 'drilling_information',
+            label: 'Drilling Information',
+            path: '/drilling/drilling-information',
+            icon: Drill,
+            menuKey: 'drilling.drilling_information',
           },
         ],
       },
