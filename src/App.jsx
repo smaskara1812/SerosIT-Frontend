@@ -27,6 +27,7 @@ import ItAccessoryHoldersPage from '@/routes/itasset/ItAccessoryHoldersPage'
 import ItAccessoryHolderFormPage from '@/routes/itasset/ItAccessoryHolderFormPage'
 import ItAssetReportPage from '@/routes/itasset/ItAssetReportPage'
 import DrillingInformationPage from '@/routes/drilling/DrillingInformationPage'
+import ApproverMappingPage from '@/routes/admin/ApproverMappingPage'
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path="/admin/user-rights" element={<UserRights />} />
             <Route path="/admin/user-management" element={<UserManagement />} />
             <Route path="/admin/audit-trail" element={<AuditTrail />} />
+            <Route path="/admin/approver-mapping" element={<ApproverMappingPage />} />
           </Route>
           <Route element={<MastersRoute />}>
             <Route path="/masters" element={<MastersHub />} />

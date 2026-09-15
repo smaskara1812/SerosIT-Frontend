@@ -326,6 +326,19 @@ export const mastersSchemas = {
       },
     ],
   },
+  'approval-codes': {
+    title: 'Approval Code',
+    menuKey: 'masters.approval_codes',
+    apiBase: '/api/masters/approval-codes/',
+    idField: 'approval_code_id',
+    nameField: 'approval_code',
+    activeField: 'approval_active',
+    fields: [
+      { name: 'approval_code', label: 'Approval Code', required: true },
+      { name: 'approval_desc', label: 'Description', required: true, wide: true },
+      { name: 'approval_active', label: 'Active', type: 'active-select' },
+    ],
+  },
   'mail-alerts': {
     title: 'Alert Details',
     menuKey: 'masters.mail_alerts',

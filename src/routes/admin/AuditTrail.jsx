@@ -23,6 +23,18 @@ const ACTION_COLORS = {
 // infer that "Modified By" and "the user this changed" are different people.
 const USER_ENTITIES = new Set(['admin.user_rights', 'admin.user_management'])
 
+// Every diff value used to be a plain scalar (string/number/date), where
+// String(v) reads fine — Approver Mapping's `details` was the first field
+// to carry an array of objects, and String() on that gives Array's default
+// join-via-toString, i.e. a useless "[object Object],[object Object]".
+// JSON.stringify for anything non-scalar keeps this generic for whatever
+// nested-detail master audits this next (Drilling Report's Ops grid).
+function formatDiffValue(value) {
+  if (value === null || value === undefined || value === '') return '—'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
 export default function AuditTrail() {
   const [facets, setFacets] = useState({ actions: [], users: [], entities: [] })
   const [filters, setFilters] = useState({ action: '', entity: '', user: '', q: '' })
@@ -198,9 +210,9 @@ export default function AuditTrail() {
                                   {field}
                                 </td>
                                 <td className="pr-4 py-0.5 text-muted-foreground">
-                                  {String(diff.old)}
+                                  {formatDiffValue(diff.old)}
                                 </td>
-                                <td className="py-0.5 text-foreground">{String(diff.new)}</td>
+                                <td className="py-0.5 text-foreground">{formatDiffValue(diff.new)}</td>
                               </tr>
                             ))}
                           </tbody>
