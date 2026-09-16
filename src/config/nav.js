@@ -801,6 +801,13 @@ export const navTree = [
             icon: Drill,
             menuKey: 'drilling.drilling_information',
           },
+          {
+            key: 'drilling_report',
+            label: 'Drilling Report',
+            path: '/drilling/drilling-report',
+            icon: IconClipboard,
+            menuKey: 'drilling.drilling_report',
+          },
         ],
       },
     ],
@@ -843,6 +850,7 @@ export const navTree = [
             key: 'user_management', label: 'User Management', path: '/admin/user-management', icon: IconUsers, 
             menuKey: 'admin.user_management'},
           { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
+          { key: 'email_log', label: 'Email Log', path: '/admin/email-log', icon: IconMail },
           {
             key: 'approval_codes',
             label: 'Approval Code',

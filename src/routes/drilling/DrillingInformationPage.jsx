@@ -111,6 +111,8 @@ function emptyForm() {
     first_anchor_down_time: '',
     distance_covered_kms_knots: '',
     drilling_rate: '',
+    drilling_completion_date: '',
+    drilling_completion_time: '',
   }
 }
 
@@ -207,7 +209,6 @@ export default function DrillingInformationPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [creating, setCreating] = useState(false)
-  const [showExtraDetails, setShowExtraDetails] = useState(false)
 
   const [form, setForm] = useState(emptyForm())
   const [snapshot, setSnapshot] = useState(null)
@@ -386,6 +387,8 @@ export default function DrillingInformationPage() {
       first_anchor_down_time: row.first_anchor_down_dt ? row.first_anchor_down_dt.slice(11, 16) : '',
       distance_covered_kms_knots: row.distance_covered_kms_knots ?? '',
       drilling_rate: row.drilling_rate ? String(row.drilling_rate) : '',
+      drilling_completion_date: row.drilling_completion_dt ? row.drilling_completion_dt.slice(0, 10) : '',
+      drilling_completion_time: row.drilling_completion_dt ? row.drilling_completion_dt.slice(11, 16) : '',
     }
     setForm(loaded)
     setSnapshot(JSON.stringify(loaded))
@@ -414,6 +417,12 @@ export default function DrillingInformationPage() {
       return { error: 'Nautical Miles / Kilometres Covered cannot exceed 9999.99' }
     }
     if (!form.drilling_rate) return { error: 'Rig move rate type is required' }
+    if (form.drilling_completion_date && !form.drilling_completion_time) {
+      return { error: 'Drilling Completion time is required alongside its date' }
+    }
+    if (!form.drilling_completion_date && form.drilling_completion_time) {
+      return { error: 'Drilling Completion date is required alongside its time' }
+    }
 
     return {
       payload: {
@@ -426,6 +435,9 @@ export default function DrillingInformationPage() {
         first_anchor_down_dt: `${form.first_anchor_down_date}T${form.first_anchor_down_time}:00`,
         distance_covered_kms_knots: form.distance_covered_kms_knots,
         drilling_rate: Number(form.drilling_rate),
+        drilling_completion_dt: form.drilling_completion_date
+          ? `${form.drilling_completion_date}T${form.drilling_completion_time}:00`
+          : null,
       },
     }
   }
@@ -768,49 +780,58 @@ export default function DrillingInformationPage() {
                   />
                 </div>
 
-                {/* Consumption/hours/completion — real columns this record
+                {/* Consumption/hours totals — real columns this record
                     already has (from the legacy import or a later save),
-                    but not something this form collects. View-only until a
-                    dedicated later-stage form exists to actually capture
-                    and compute them (e.g. Operating Efficiency %). */}
+                    but not something this form collects. Still view-only
+                    until a dedicated later-stage form exists to actually
+                    capture and compute them (e.g. Operating Efficiency %).
+                    Drilling Completion is the one field in this group this
+                    form does own — editable below, not just displayed. */}
                 {!creating && selectedRecord && (
-                  <div className="flex flex-col gap-2 border-t border-border pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowExtraDetails((v) => !v)}
-                      className="flex items-center gap-1.5 self-start rounded-lg border border-input px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      {showExtraDetails ? 'Hide' : 'Show'} consumption &amp; completion details
-                    </button>
-                    {showExtraDetails && (
-                      <div className="rounded-lg border border-dashed border-border/80 bg-muted/30 p-3">
-                        <p className="mb-3 text-[11px] text-muted-foreground">
-                          View only — captured by a later-stage form that doesn't exist yet.
-                        </p>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-                          <ReadOnlyField label="Total Depth" value={selectedRecord.total_depth} />
-                          <ReadOnlyField label="Diesel Consumed (M3)" value={selectedRecord.tot_consumption_diesel} />
-                          <ReadOnlyField label="Water Consumed (M3)" value={selectedRecord.tot_consumption_water} />
-                          <ReadOnlyField label="Diesel Received (M3)" value={selectedRecord.tot_received_diesel} />
-                          <ReadOnlyField label="Water Received (M3)" value={selectedRecord.tot_received_water} />
-                          <ReadOnlyField label="Water Generated (M3)" value={selectedRecord.tot_generated_water} />
-                          <ReadOnlyField label="Operating Hours" value={selectedRecord.tot_operating_hrs} />
-                          <ReadOnlyField label="Standby Hours" value={selectedRecord.tot_standby_hrs} />
-                          <ReadOnlyField label="Repair Service Hours" value={selectedRecord.tot_repair_service_hrs} />
-                          <ReadOnlyField label="Repair Rate Hours" value={selectedRecord.tot_repair_rate_hrs} />
-                          <ReadOnlyField label="Zero Rate Hours" value={selectedRecord.tot_zero_rate_hrs} />
-                          <ReadOnlyField label="Total Days" value={selectedRecord.total_days} />
-                          <ReadOnlyField
-                            label="Drilling Completion"
-                            value={
-                              selectedRecord.drilling_completion_dt
-                                ? selectedRecord.drilling_completion_dt.slice(0, 16).replace('T', ' ')
-                                : null
-                            }
+                  <div className="flex flex-col gap-3 border-t border-border pt-4">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Consumption &amp; Completion
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <Label>Drilling Completion Date/Time</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={form.drilling_completion_date}
+                            onChange={(e) => setForm((f) => ({ ...f, drilling_completion_date: e.target.value }))}
+                            disabled={disabled}
+                          />
+                          <Input
+                            type="time"
+                            value={form.drilling_completion_time}
+                            onChange={(e) => setForm((f) => ({ ...f, drilling_completion_time: e.target.value }))}
+                            disabled={disabled}
                           />
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    <div className="rounded-lg border border-dashed border-border/80 bg-muted/30 p-3">
+                      <p className="mb-3 text-[11px] text-muted-foreground">
+                        View only — captured by a later-stage form that doesn't exist yet.
+                      </p>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+                        <ReadOnlyField label="Total Depth" value={selectedRecord.total_depth} />
+                        <ReadOnlyField label="Diesel Consumed (M3)" value={selectedRecord.tot_consumption_diesel} />
+                        <ReadOnlyField label="Water Consumed (M3)" value={selectedRecord.tot_consumption_water} />
+                        <ReadOnlyField label="Diesel Received (M3)" value={selectedRecord.tot_received_diesel} />
+                        <ReadOnlyField label="Water Received (M3)" value={selectedRecord.tot_received_water} />
+                        <ReadOnlyField label="Water Generated (M3)" value={selectedRecord.tot_generated_water} />
+                        <ReadOnlyField label="Operating Hours" value={selectedRecord.tot_operating_hrs} />
+                        <ReadOnlyField label="Standby Hours" value={selectedRecord.tot_standby_hrs} />
+                        <ReadOnlyField label="Repair Service Hours" value={selectedRecord.tot_repair_service_hrs} />
+                        <ReadOnlyField label="Repair Rate Hours" value={selectedRecord.tot_repair_rate_hrs} />
+                        <ReadOnlyField label="Zero Rate Hours" value={selectedRecord.tot_zero_rate_hrs} />
+                        <ReadOnlyField label="Total Days" value={selectedRecord.total_days} />
+                      </div>
+                    </div>
                   </div>
                 )}
 

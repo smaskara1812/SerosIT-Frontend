@@ -8,6 +8,7 @@ import AppShell from '@/components/layout/AppShell'
 import UserRights from '@/routes/admin/UserRights'
 import UserManagement from '@/routes/admin/UserManagement'
 import AuditTrail from '@/routes/admin/AuditTrail'
+import EmailLog from '@/routes/admin/EmailLog'
 import MastersHub from '@/routes/masters/MastersHub'
 import MasterCrudPage from '@/routes/masters/MasterCrudPage'
 import JobDescriptionsPage from '@/routes/masters/JobDescriptionsPage'
@@ -27,6 +28,8 @@ import ItAccessoryHoldersPage from '@/routes/itasset/ItAccessoryHoldersPage'
 import ItAccessoryHolderFormPage from '@/routes/itasset/ItAccessoryHolderFormPage'
 import ItAssetReportPage from '@/routes/itasset/ItAssetReportPage'
 import DrillingInformationPage from '@/routes/drilling/DrillingInformationPage'
+import DrillingReportListPage from '@/routes/drilling/DrillingReportListPage'
+import DrillingReportFormPage from '@/routes/drilling/DrillingReportFormPage'
 import ApproverMappingPage from '@/routes/admin/ApproverMappingPage'
 
 function App() {
@@ -40,6 +43,7 @@ function App() {
             <Route path="/admin/user-rights" element={<UserRights />} />
             <Route path="/admin/user-management" element={<UserManagement />} />
             <Route path="/admin/audit-trail" element={<AuditTrail />} />
+            <Route path="/admin/email-log" element={<EmailLog />} />
             <Route path="/admin/approver-mapping" element={<ApproverMappingPage />} />
           </Route>
           <Route element={<MastersRoute />}>
@@ -68,6 +72,9 @@ function App() {
           <Route path="/it-asset/it-accessory-holders/:id/edit" element={<ItAccessoryHolderFormPage />} />
           <Route path="/it-asset/report" element={<ItAssetReportPage />} />
           <Route path="/drilling/drilling-information" element={<DrillingInformationPage />} />
+          <Route path="/drilling/drilling-report" element={<DrillingReportListPage />} />
+          <Route path="/drilling/drilling-report/new" element={<DrillingReportFormPage />} />
+          <Route path="/drilling/drilling-report/:id/edit" element={<DrillingReportFormPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>
