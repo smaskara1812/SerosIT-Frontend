@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -43,9 +43,11 @@ export default function ItAccessoriesPage() {
   const [loading, setLoading] = useState(true)
   const [deleteInfo, setDeleteInfo] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      const thisRequest = ++requestIdRef.current
       setLoading(true)
       const params = new URLSearchParams()
       if (active) params.set('active', active)
@@ -56,10 +58,14 @@ export default function ItAccessoriesPage() {
       apiFetch(`/api/masters/it-accessories/?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => {
+          if (thisRequest !== requestIdRef.current) return
           setRows(data.results || [])
           setCount(data.count || 0)
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          if (thisRequest !== requestIdRef.current) return
+          setLoading(false)
+        })
     }, 300)
     return () => clearTimeout(timer)
   }, [active, search, ordering, page, pageSize])

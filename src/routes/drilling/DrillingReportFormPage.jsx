@@ -18,8 +18,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
+import { formatApiError } from '@/lib/errors'
 import { IconChevronLeft, IconTrash, IconPlus } from '@/components/icons'
-import { Download } from 'lucide-react'
+import { Download, Check, X, ShieldCheck } from 'lucide-react'
 import AccessDenied from '@/components/AccessDenied'
 
 const MENU_KEY = 'drilling.drilling_report'
@@ -209,6 +210,7 @@ export default function DrillingReportFormPage() {
   const [saving, setSaving] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [confirmingReject, setConfirmingReject] = useState(false)
   const [revisingPrevious, setRevisingPrevious] = useState(false)
   const [reviseNote, setReviseNote] = useState('')
   const [addingOp, setAddingOp] = useState(false)
@@ -286,6 +288,15 @@ export default function DrillingReportFormPage() {
 
   useEffect(() => {
     if (!isEdit) return
+    // Reset explicitly — this route doesn't remount on an :id-only change,
+    // so a stale notFound=true or the previous record's data would
+    // otherwise persist/flash before this fetch resolves.
+    setLoading(true)
+    setNotFound(false)
+    setForm(emptyForm())
+    setSnapshot(null)
+    setSelectedRecord(null)
+    setWellInfo(emptyWellInfo())
     apiFetch(`${API}${id}/`)
       .then((r) => {
         if (!r.ok) throw new Error('not found')
@@ -391,7 +402,7 @@ export default function DrillingReportFormPage() {
       }
     } else {
       const data = await res.json().catch(() => ({}))
-      toast.error(data.detail || data.error || JSON.stringify(data) || 'Failed to save')
+      toast.error(formatApiError(data))
     }
   }
 
@@ -493,23 +504,48 @@ export default function DrillingReportFormPage() {
             </Button>
           )}
           {isEdit && role.can_revise_self && (
-            <Button size="sm" variant="secondary" onClick={() => runAction('revise-self', 'Sent back for your own review')}>
+            <Button
+              size="sm"
+              variant="secondary"
+              title="Reopens this report for your own edits — its approval status stays where it is."
+              onClick={() => runAction('revise-self', 'Sent back for your own review')}
+            >
               Revise (Self)
             </Button>
           )}
           {isEdit && role.can_revise_previous && (
-            <Button size="sm" variant="secondary" onClick={() => setRevisingPrevious(true)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              title="Sends this report back to whoever created it, so they can fix it and resubmit."
+              onClick={() => setRevisingPrevious(true)}
+            >
               Revise (Previous Level)
             </Button>
           )}
-          {isEdit && role.can_reject && (
-            <Button size="sm" variant="destructive" onClick={() => runAction('reject', 'Rejected')}>Reject</Button>
-          )}
-          {isEdit && role.can_approve && (
-            <Button size="sm" onClick={() => runAction('approve', 'Approved')}>Approve</Button>
-          )}
-          {isEdit && role.can_finalize && (
-            <Button size="sm" onClick={() => runAction('finalize', 'Finalized')}>Finalize</Button>
+          {(isEdit && (role.can_reject || role.can_approve || role.can_finalize)) && (
+            <div className="ml-1 flex items-center gap-2 border-l border-border pl-3">
+              {role.can_reject && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                  onClick={() => setConfirmingReject(true)}
+                >
+                  <X className="h-3.5 w-3.5" /> Reject
+                </Button>
+              )}
+              {role.can_approve && (
+                <Button size="sm" onClick={() => runAction('approve', 'Approved')}>
+                  <Check className="h-3.5 w-3.5" /> Approve
+                </Button>
+              )}
+              {role.can_finalize && (
+                <Button size="sm" onClick={() => runAction('finalize', 'Finalized')}>
+                  <ShieldCheck className="h-3.5 w-3.5" /> Finalize
+                </Button>
+              )}
+            </div>
           )}
           {canSave && (
             <Button onClick={save} disabled={saving || !isDirty || loading} variant={isDirty ? 'default' : 'secondary'}>
@@ -734,6 +770,19 @@ export default function DrillingReportFormPage() {
           <DialogFooter>
             <Button variant="secondary" onClick={() => setConfirmingDelete(false)}>Cancel</Button>
             <Button variant="destructive" onClick={remove}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmingReject} onOpenChange={setConfirmingReject}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject this report?</DialogTitle>
+            <DialogDescription>It will be sent back as rejected. This can't be undone from here.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setConfirmingReject(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => { setConfirmingReject(false); runAction('reject', 'Rejected') }}>Reject</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -387,9 +387,12 @@ export const mastersSchemas = {
     menuKey: 'masters.mail_alert_to_users',
     apiBase: '/api/masters/mail-alert-to-users/',
     idField: 'mail_alert_to_user_id',
-    nameField: 'email_addr',
+    // "Alert — email (To/Cc/Bcc)" — the email alone is ambiguous, since the
+    // same address can appear under several different alerts/addressee
+    // types (this is exactly what made picking one confusing from Mail
+    // Recipient Mapping's own remote-search).
+    nameField: 'display_label',
     activeField: null,
-    listSecondary: (r) => r.alert_name || '',
     fields: [
       {
         name: 'alert',
@@ -427,6 +430,64 @@ export const mastersSchemas = {
       // Checked stores 'Y', unchecked is NULL.
       { name: 'read_receipt', label: 'Read Receipt', type: 'flag-id', checkedValue: 'Y' },
       { name: 'mail_alert_from', label: 'From', type: 'date', required: true },
+    ],
+  },
+  'mail-recipient-mappings': {
+    title: 'Mail Recipient Mapping',
+    menuKey: 'masters.mail_recipient_mappings',
+    apiBase: '/api/masters/mail-recipient-mappings/',
+    idField: 'mail_recipient_mapping_id',
+    // "AlertName — email (To/Cc/Bcc)" — same combined label as the Alert To
+    // Users list itself, so which recipient/type this mapping actually
+    // points at is unambiguous.
+    nameField: 'mail_alert_to_user_label',
+    activeField: null,
+    listSecondary: (r) => `${r.approval_code_name || ''} — ${r.event_type_display || ''}`,
+    fields: [
+      {
+        name: 'approval_code',
+        label: 'Approval Code',
+        type: 'search-remote',
+        remote: '/api/masters/approval-codes/',
+        optionLabel: 'approval_code',
+        optionValue: 'approval_code_id',
+        labelField: 'approval_code_name',
+        required: true,
+      },
+      {
+        name: 'event_type',
+        label: 'Event',
+        type: 'select',
+        // Which events exist is genuinely per Approval Code, not a fixed
+        // global list — only Drilling has real notification wiring today.
+        // Add a new approval code's own event set here in the same change
+        // that builds its notification triggers, so this stays accurate
+        // rather than offering events that silently do nothing.
+        filterField: 'approval_code', // clears event_type when approval_code changes
+        optionsForField: 'approval_code_name',
+        optionsPlaceholder: 'Pick an Approval Code first…',
+        optionsEmptyText: 'No mail events are wired up for this Approval Code yet.',
+        optionsByValue: {
+          DRILLING_DTL: [
+            { value: 'FINALIZE', label: 'Finalize' },
+            { value: 'APPROVE', label: 'Approve' },
+            { value: 'REJECT', label: 'Reject' },
+            { value: 'REVISE_PREVIOUS', label: 'Revise Previous Level' },
+          ],
+        },
+        required: true,
+      },
+      {
+        name: 'mail_alert_to_user',
+        label: 'Alert To User Entry',
+        type: 'search-remote',
+        remote: '/api/masters/mail-alert-to-users/',
+        optionLabel: 'display_label',
+        optionValue: 'mail_alert_to_user_id',
+        labelField: 'mail_alert_to_user_label',
+        required: true,
+        wide: true,
+      },
     ],
   },
   'leaving-reason-details': {

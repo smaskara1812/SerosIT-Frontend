@@ -112,6 +112,7 @@ function MultiSelectField({ label, options, remote, optionValue, optionLabel, se
   const [query, setQuery] = useState('')
   const [remoteOptions, setRemoteOptions] = useState([])
   const ref = useRef(null)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     function onDocClick(e) {
@@ -124,10 +125,14 @@ function MultiSelectField({ label, options, remote, optionValue, optionLabel, se
   useEffect(() => {
     if (!remote || !open) return
     const timer = setTimeout(() => {
+      const thisRequest = ++requestIdRef.current
       const sep = remote.includes('?') ? '&' : '?'
       apiFetch(`${remote}${sep}search=${encodeURIComponent(query)}&page_size=20`)
         .then((r) => r.json())
-        .then((data) => setRemoteOptions(asList(data)))
+        .then((data) => {
+          if (thisRequest !== requestIdRef.current) return
+          setRemoteOptions(asList(data))
+        })
     }, 250)
     return () => clearTimeout(timer)
   }, [remote, query, open])
@@ -237,6 +242,7 @@ export default function ItAssetReportPage() {
   const [rows, setRows] = useState([])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const requestIdRef = useRef(0)
   const [meta, setMeta] = useState({ types: [], mfgs: [] })
 
   const advancedActiveCount =
@@ -308,6 +314,7 @@ export default function ItAssetReportPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      const thisRequest = ++requestIdRef.current
       setLoading(true)
       const params = buildParams()
       params.set('page', page)
@@ -315,10 +322,14 @@ export default function ItAssetReportPage() {
       apiFetch(`/api/reports/it-assets/?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => {
+          if (thisRequest !== requestIdRef.current) return
           setRows(data.results || [])
           setCount(data.count || 0)
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          if (thisRequest !== requestIdRef.current) return
+          setLoading(false)
+        })
     }, 300)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList } from '@/lib/api'
@@ -113,6 +113,7 @@ export default function ItAssetHoldersPage() {
   const [rows, setRows] = useState([])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const requestIdRef = useRef(0)
   const [openRow, setOpenRow] = useState(null)
   const [deleteInfo, setDeleteInfo] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -143,6 +144,7 @@ export default function ItAssetHoldersPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      const thisRequest = ++requestIdRef.current
       setLoading(true)
       const params = new URLSearchParams()
       if (assetFilter) params.set('it_asset', assetFilter)
@@ -157,10 +159,14 @@ export default function ItAssetHoldersPage() {
       apiFetch(`/api/it-asset/it-asset-holders/?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => {
+          if (thisRequest !== requestIdRef.current) return
           setRows(data.results || [])
           setCount(data.count || 0)
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          if (thisRequest !== requestIdRef.current) return
+          setLoading(false)
+        })
     }, 300)
     return () => clearTimeout(timer)
   }, [assetFilter, status, itAssetType, itAssetSubtype, ownCompany, search, ordering, page, pageSize])

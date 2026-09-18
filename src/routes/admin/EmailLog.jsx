@@ -4,6 +4,41 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { IconSearch, IconChevronDown } from '@/components/icons'
 
+// core/mail_templates.py sends real HTML bodies now; older rows (or a
+// future plain-text caller) still have plain text, so render each row
+// accordingly rather than assuming one or the other. The HTML case goes
+// into a sandboxed iframe — never dangerouslySetInnerHTML straight into
+// this page's own DOM — so nothing in a stored body (e.g. a free-text
+// revision note someone typed) can execute as script here, even though
+// core/mail_templates.py already HTML-escapes that text before it's sent.
+function looksLikeHtml(body) {
+  return /^\s*</.test(body || '')
+}
+
+function EmailBodyPreview({ body }) {
+  if (!looksLikeHtml(body)) {
+    return (
+      <pre className="whitespace-pre-wrap rounded-lg border border-border/60 bg-background p-2.5 text-muted-foreground">
+        {body}
+      </pre>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <iframe
+        title="Email body preview"
+        srcDoc={body}
+        sandbox=""
+        className="h-56 w-full rounded-lg border border-border/60 bg-white"
+      />
+      <details className="text-[11px] text-muted-foreground">
+        <summary className="cursor-pointer select-none">View HTML source</summary>
+        <pre className="mt-1 whitespace-pre-wrap rounded-lg border border-border/60 bg-background p-2.5">{body}</pre>
+      </details>
+    </div>
+  )
+}
+
 export default function EmailLog() {
   const [facets, setFacets] = useState({ users: [], triggers: [] })
   const [filters, setFilters] = useState({ status: '', trigger: '', q: '' })
@@ -72,8 +107,8 @@ export default function EmailLog() {
         >
           <option value="">All triggers</option>
           {facets.triggers.map((t) => (
-            <option key={t} value={t}>
-              {t}
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>
@@ -131,6 +166,14 @@ export default function EmailLog() {
                       >
                         {r.success ? 'Sent' : 'Failed'}
                       </span>
+                      {r.used_fallback && (
+                        <span
+                          className="ml-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
+                          title="Sent via the shared backup SMTP account after the sender's own credential failed"
+                        >
+                          via backup SMTP
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{r.trigger || '—'}</td>
                     <td className="px-4 py-2.5 text-foreground">{r.subject}</td>
@@ -153,11 +196,17 @@ export default function EmailLog() {
                               <span className="text-red-600">{r.error}</span>
                             </div>
                           )}
+                          {r.used_fallback && (
+                            <div>
+                              <span className="font-medium text-foreground">Sender: </span>
+                              <span className="text-amber-700">
+                                Retried and sent using the backup SMTP account (the sender's own credential failed or was unavailable)
+                              </span>
+                            </div>
+                          )}
                           <div>
                             <span className="mb-1 block font-medium text-foreground">Body</span>
-                            <pre className="whitespace-pre-wrap rounded-lg border border-border/60 bg-background p-2.5 text-muted-foreground">
-                              {r.body}
-                            </pre>
+                            <EmailBodyPreview body={r.body} />
                           </div>
                         </div>
                       </td>

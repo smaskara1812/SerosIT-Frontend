@@ -440,6 +440,13 @@ export const navTree = [
             icon: IconLink,
             menuKey: 'masters.mail_alert_to_users',
           },
+          {
+            key: 'mail_recipient_mappings',
+            label: 'Mail Recipient Mapping',
+            path: '/masters/mail-recipient-mappings',
+            icon: IconLink,
+            menuKey: 'masters.mail_recipient_mappings',
+          },
         ],
       },
       {

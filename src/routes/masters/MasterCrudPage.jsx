@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { mastersSchemas } from '@/config/mastersSchemas'
 import AccessDenied from '@/components/AccessDenied'
+import { formatApiError } from '@/lib/errors'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -90,6 +91,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const pageRef = useRef(1)
+  const requestIdRef = useRef(0)
   const sep = field.remote.includes('?') ? '&' : '?'
 
   // Only optionValue/optionLabel ever render, filterOptionField is the only
@@ -150,9 +152,11 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   useEffect(() => {
     if (mode !== 'search') return
     const timer = setTimeout(() => {
+      const thisRequest = ++requestIdRef.current
       apiFetch(`${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20&page=1${remoteFilterParam}`)
         .then((r) => r.json())
         .then((data) => {
+          if (thisRequest !== requestIdRef.current) return
           pageRef.current = 1
           if (Array.isArray(data)) {
             setOptions(data)
@@ -170,12 +174,14 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   function loadMore() {
     if (!hasMore || loadingMore) return
     setLoadingMore(true)
+    const thisRequest = ++requestIdRef.current
     const nextPage = pageRef.current + 1
     apiFetch(
       `${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20&page=${nextPage}${remoteFilterParam}`
     )
       .then((r) => r.json())
       .then((data) => {
+        if (thisRequest !== requestIdRef.current) return
         const results = Array.isArray(data) ? [] : data.results || []
         setOptions((prev) => [...prev, ...results])
         setHasMore(Array.isArray(data) ? false : Boolean(data.next))
@@ -445,6 +451,7 @@ export function NullableDateField({ value, onChange, disabled }) {
 function UniqueCodeField({ value, onChange, disabled, checkUnique, excludeId }) {
   const [status, setStatus] = useState('idle') // idle | checking | taken | available
   const [suggestion, setSuggestion] = useState(null)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     if (value === '' || value == null) {
@@ -453,15 +460,20 @@ function UniqueCodeField({ value, onChange, disabled, checkUnique, excludeId }) 
     }
     setStatus('checking')
     const timer = setTimeout(() => {
+      const thisRequest = ++requestIdRef.current
       const params = new URLSearchParams({ [checkUnique.param]: value })
       if (excludeId) params.set('exclude', excludeId)
       apiFetch(`${checkUnique.url}?${params}`)
         .then((r) => r.json())
         .then((data) => {
+          if (thisRequest !== requestIdRef.current) return
           setStatus(data.taken ? 'taken' : 'available')
           setSuggestion(data.suggestion ?? null)
         })
-        .catch(() => setStatus('idle'))
+        .catch(() => {
+          if (thisRequest !== requestIdRef.current) return
+          setStatus('idle')
+        })
     }, 400)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -555,9 +567,22 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
     )
   }
   if (field.type === 'select') {
-    return (
-      <TilePicker options={field.options} value={value || null} onChange={onChange} disabled={disabled} />
-    )
+    // optionsByValue + optionsForField: the option set itself depends on
+    // another field's current value (e.g. which Events are valid depends on
+    // which Approval Code is picked) — a small code-maintained registry
+    // rather than a static list, since new entries get added here exactly
+    // when that other thing (a new approval code's notification wiring)
+    // gets built, not through an admin form.
+    const options = field.optionsByValue
+      ? field.optionsByValue[form?.[field.optionsForField]] || []
+      : field.options
+    if (field.optionsByValue && !form?.[field.optionsForField]) {
+      return <p className="pt-2 text-xs text-muted-foreground">{field.optionsPlaceholder || 'Pick the field above first…'}</p>
+    }
+    if (field.optionsByValue && options.length === 0) {
+      return <p className="pt-2 text-xs text-muted-foreground">{field.optionsEmptyText || 'No options configured for this yet.'}</p>
+    }
+    return <TilePicker options={options} value={value || null} onChange={onChange} disabled={disabled} />
   }
   if (field.type === 'file') {
     return <FileUploadField field={field} value={value} onChange={onChange} disabled={disabled} form={form} />
@@ -658,26 +683,48 @@ export default function MasterCrudPage() {
   const listRef = useRef(null)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
-  // The slug-change effect below resets query/ordering/activeFilter/
-  // extraFilters to their defaults and loads page 1 itself — but React
-  // fires every effect at least once on mount/slug-change regardless of
-  // whether its own deps "changed" from that reset, so the query effect
-  // and the ordering/filter effect would each independently fire their own
-  // redundant loadPage right alongside (one of them ~300ms later, off the
-  // search debounce) if left alone. This flag lets those two skip the one
-  // pass that the slug effect already covers, without skipping any later,
-  // real user-driven change to query/ordering/filters.
-  const skipNextLoadRef = useRef(false)
+  // Strict Mode (dev only) deliberately re-invokes every effect a second
+  // time shortly after mount, to surface effects that aren't safe to run
+  // twice. The slug effect below unconditionally resets activeFilter (and
+  // everything else) back to blank — if that second Strict Mode pass fires
+  // after a real user click already landed in between, it silently wipes
+  // the selection right back out, looking like "the first click did
+  // nothing." This ref makes the reset itself run at most once per real
+  // slug value, regardless of how many times React re-invokes the effect.
+  //
+  // There used to also be a skipNextLoadRef here, meant to let the query
+  // and ordering/filter effects skip the one redundant fetch already
+  // covered by this slug effect's own loadPage call. It was removed: since
+  // /masters/:slug reuses the same MasterCrudPage instance across every
+  // masters page (React Router doesn't remount it, only `slug` changes),
+  // that ref's value persisted across page-to-page navigation. React also
+  // skips an effect entirely when none of its own dependencies changed
+  // value — so on a page where the default filter/ordering happened to
+  // already match what the previous page was left at, the effect that was
+  // supposed to clear the flag never ran, leaving it stuck `true`. The
+  // *next* real click then triggered that effect for the first time, saw
+  // the stale flag, and swallowed itself — exactly the "first click does
+  // nothing" bug. A once-in-a-while duplicate fetch on navigation (only
+  // when the destination's filters differ from where you started) is a
+  // fully acceptable cost for not reintroducing that class of bug.
+  const resetForSlugRef = useRef(null)
 
   // Shared by loadPage and exportCsv, so "export" always matches whatever
-  // search/sort/filter is currently on screen.
-  function buildFilterParams(searchQuery) {
+  // search/sort/filter is currently on screen. `overrides` lets a caller
+  // bypass ordering/activeFilter/extraFilters state entirely — needed right
+  // after a slug change, where setActiveFilter('') etc. have been called
+  // but not yet applied (state updates aren't synchronous), so reading
+  // those via closure here would still see the *previous* master's values.
+  function buildFilterParams(searchQuery, overrides = {}) {
     const params = new URLSearchParams()
     if (searchQuery) params.set('search', searchQuery)
-    if (ordering !== 'name') params.set('ordering', ordering)
-    if (hasActiveFilter && activeFilter) params.set('active', activeFilter)
+    const ord = 'ordering' in overrides ? overrides.ordering : ordering
+    const af = 'activeFilter' in overrides ? overrides.activeFilter : activeFilter
+    const ef = 'extraFilters' in overrides ? overrides.extraFilters : extraFilters
+    if (ord !== 'name') params.set('ordering', ord)
+    if (hasActiveFilter && af) params.set('active', af)
     for (const f of filterableFields) {
-      if (extraFilters[f.name]) params.set(f.name, extraFilters[f.name])
+      if (ef[f.name]) params.set(f.name, ef[f.name])
     }
     return params
   }
@@ -703,9 +750,9 @@ export default function MasterCrudPage() {
   // Lists are server-paginated (50/page) and server-searched — large
   // masters (imported legacy data already puts some in the hundreds) never
   // ship the whole table to the browser up front.
-  function loadPage(pageNum, searchQuery, { append } = {}) {
+  function loadPage(pageNum, searchQuery, { append, overrides } = {}) {
     const thisRequest = ++requestIdRef.current
-    const params = buildFilterParams(searchQuery)
+    const params = buildFilterParams(searchQuery, overrides)
     params.set('page', String(pageNum))
     if (append) setLoadingMore(true)
     else setLoading(true)
@@ -732,6 +779,11 @@ export default function MasterCrudPage() {
   }
 
   useEffect(() => {
+    // Only actually reset once per real slug value — see resetForSlugRef's
+    // own comment above for why a second, StrictMode-only invocation of
+    // this same effect must not repeat the reset.
+    if (resetForSlugRef.current === slug) return
+    resetForSlugRef.current = slug
     // A pending debounced search from the master we're leaving can otherwise
     // fire after navigation and — since it still closes over that master's
     // schema/apiBase, and the requestIdRef guard only rejects responses
@@ -745,14 +797,16 @@ export default function MasterCrudPage() {
     setActiveFilter('')
     setExtraFilters(EMPTY_EXTRA_FILTERS)
     if (listRef.current) listRef.current.scrollTop = 0
-    skipNextLoadRef.current = true
-    loadPage(1, '')
+    // Explicit overrides, not the just-reset state — setOrdering/
+    // setActiveFilter/setExtraFilters above haven't been applied yet
+    // (state updates aren't synchronous), so reading them via closure
+    // here would still fetch with whatever master we were just on.
+    loadPage(1, '', { overrides: { ordering: 'name', activeFilter: '', extraFilters: EMPTY_EXTRA_FILTERS } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   // Debounced server-side search — resets to page 1 on every new query.
   useEffect(() => {
-    if (skipNextLoadRef.current) return // already loaded by the slug-reset effect above
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
       if (listRef.current) listRef.current.scrollTop = 0
@@ -763,15 +817,12 @@ export default function MasterCrudPage() {
   }, [query])
 
   // Sort/filter changes reload immediately (no debounce needed — these are
-  // discrete clicks, not keystrokes).
+  // discrete clicks, not keystrokes). Fires once redundantly alongside the
+  // slug effect above whenever the destination page's defaults happen to
+  // differ from wherever you just were — an acceptable extra fetch, not a
+  // correctness issue (see resetForSlugRef's comment for why this doesn't
+  // try to skip that case anymore).
   useEffect(() => {
-    // Last of the two consumers (declaration order below the query effect
-    // above) — clears the flag so the *next* real change to any of these,
-    // from either effect, behaves normally again.
-    if (skipNextLoadRef.current) {
-      skipNextLoadRef.current = false
-      return
-    }
     if (listRef.current) listRef.current.scrollTop = 0
     loadPage(1, query)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -834,7 +885,11 @@ export default function MasterCrudPage() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(JSON.stringify(data))
+      if (!res.ok) {
+        setError(formatApiError(data, schema))
+        toast.error('Failed to save')
+        return
+      }
       // Merge into the already-loaded rows rather than refetching the list —
       // a full reload would drop back to page 1 and could leave a
       // just-created row invisible if it doesn't happen to sort onto it.
@@ -848,8 +903,8 @@ export default function MasterCrudPage() {
         setSnapshot(JSON.stringify(form))
       }
       toast.success(isEdit ? 'Changes saved' : `${data[schema.nameField]} created`)
-    } catch (e) {
-      setError(e.message)
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
       toast.error('Failed to save')
     } finally {
       setSaving(false)
@@ -1065,7 +1120,10 @@ export default function MasterCrudPage() {
                     key={f.name}
                     className={`flex flex-col gap-1.5 ${f.type === 'textarea' || f.wide ? 'col-span-2' : ''}`}
                   >
-                    <Label>{f.label}</Label>
+                    <Label>
+                      {f.label}
+                      {f.required && <span className="text-destructive"> *</span>}
+                    </Label>
                     <FormField
                       field={f}
                       value={form[f.name]}
@@ -1088,6 +1146,18 @@ export default function MasterCrudPage() {
                           for (const [targetField, sourceKey] of Object.entries(f.derives)) {
                             next[targetField] = raw[sourceKey]
                           }
+                        }
+                        // RemoteCombobox falls back to form[f.labelField]
+                        // once its own just-picked option scrolls out of the
+                        // live search results (e.g. the query resets after
+                        // picking) — without this, that fallback stays blank
+                        // on a freshly-picked value, which flips the
+                        // displayed label between blank and the real text on
+                        // every re-search (visible as a flicker).
+                        if (f.labelField && raw) {
+                          next[f.labelField] = raw[f.optionLabel]
+                        } else if (f.labelField && v == null) {
+                          next[f.labelField] = ''
                         }
                         setForm(next)
                       }}

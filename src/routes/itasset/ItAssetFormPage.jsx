@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { FormField, emptyForm } from '@/routes/masters/MasterCrudPage'
 import { IconChevronLeft } from '@/components/icons'
 import AccessDenied from '@/components/AccessDenied'
+import { formatApiError } from '@/lib/errors'
 
 const schema = mastersSchemas['it-assets']
 
@@ -47,6 +48,13 @@ export default function ItAssetFormPage() {
 
   useEffect(() => {
     if (!isEdit) return
+    // Reset explicitly rather than relying on useState's initial value —
+    // this route doesn't remount the component on an :id-only change, so a
+    // stale notFound=true (or the previous record's form data) would
+    // otherwise persist/flash before this fetch resolves.
+    setLoading(true)
+    setNotFound(false)
+    setForm(emptyForm(schema))
     apiFetch(`${schema.apiBase}${id}/`)
       .then((r) => {
         if (!r.ok) throw new Error('not found')
@@ -93,15 +101,19 @@ export default function ItAssetFormPage() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(JSON.stringify(data))
+      if (!res.ok) {
+        setError(formatApiError(data, schema))
+        toast.error('Failed to save')
+        return
+      }
       toast.success(isEdit ? 'Changes saved' : `${data.it_asset_sr_no} created`)
       if (isEdit) {
         navigate(`/it-asset/it-assets/${data.it_asset_id}/edit`, { replace: true })
       } else {
         navigate('/it-asset/it-assets')
       }
-    } catch (e) {
-      setError(e.message)
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
       toast.error('Failed to save')
     } finally {
       setSaving(false)

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList } from '@/lib/api'
@@ -126,6 +126,10 @@ export default function ItAssetsPage() {
   const [rows, setRows] = useState([])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  // Discards a response from a superseded filter/search change that
+  // resolves after a newer one — without this, a slower earlier request
+  // can silently overwrite a faster later one's results.
+  const requestIdRef = useRef(0)
   const [openRow, setOpenRow] = useState(null)
   const [deleteInfo, setDeleteInfo] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -171,6 +175,7 @@ export default function ItAssetsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      const thisRequest = ++requestIdRef.current
       setLoading(true)
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([k, v]) => v && params.set(k, v))
@@ -181,10 +186,14 @@ export default function ItAssetsPage() {
       apiFetch(`/api/it-asset/it-assets/?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => {
+          if (thisRequest !== requestIdRef.current) return
           setRows(data.results || [])
           setCount(data.count || 0)
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          if (thisRequest !== requestIdRef.current) return
+          setLoading(false)
+        })
     }, 300)
     return () => clearTimeout(timer)
   }, [filters, search, ordering, page, pageSize])

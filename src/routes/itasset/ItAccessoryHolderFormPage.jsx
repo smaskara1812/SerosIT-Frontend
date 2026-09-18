@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { FormField, emptyForm } from '@/routes/masters/MasterCrudPage'
 import { IconChevronLeft } from '@/components/icons'
 import AccessDenied from '@/components/AccessDenied'
+import { formatApiError } from '@/lib/errors'
 
 const schema = mastersSchemas['it-accessory-holders']
 
@@ -44,6 +45,12 @@ export default function ItAccessoryHolderFormPage() {
 
   useEffect(() => {
     if (!isEdit) return
+    // Reset explicitly — this route doesn't remount on an :id-only change,
+    // so a stale notFound=true or the previous record's data would
+    // otherwise persist/flash before this fetch resolves.
+    setLoading(true)
+    setNotFound(false)
+    setForm(emptyForm(schema))
     apiFetch(`${schema.apiBase}${id}/`)
       .then((r) => {
         if (!r.ok) throw new Error('not found')
@@ -82,15 +89,19 @@ export default function ItAccessoryHolderFormPage() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(JSON.stringify(data))
+      if (!res.ok) {
+        setError(formatApiError(data, schema))
+        toast.error('Failed to save')
+        return
+      }
       toast.success(isEdit ? 'Changes saved' : 'Holder record created')
       if (isEdit) {
         navigate(`/it-asset/it-accessory-holders/${data.it_accessory_holder_id}/edit`, { replace: true })
       } else {
         navigate('/it-asset/it-accessory-holders')
       }
-    } catch (e) {
-      setError(e.message)
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
       toast.error('Failed to save')
     } finally {
       setSaving(false)
