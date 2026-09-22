@@ -251,7 +251,7 @@ export const mastersSchemas = {
     ],
   },
   'fs-categories': {
-    title: 'Fs Categories',
+    title: 'FS Categories',
     menuKey: 'masters.fs_categories',
     apiBase: '/api/masters/fs-categories/',
     idField: 'fs_category_id',
@@ -1474,7 +1474,7 @@ export const mastersSchemas = {
   'it-asset-holders': {
     // Not routed through MasterCrudPage — same reasoning as 'it-assets'
     // (see ItAssetHoldersPage/ItAssetHolderFormPage).
-    title: 'IT Assets Holder',
+    title: 'IT Asset Holders',
     menuKey: 'it_asset.it_asset_holders',
     apiBase: '/api/it-asset/it-asset-holders/',
     idField: 'it_asset_holder_id',
@@ -1739,7 +1739,7 @@ export const mastersSchemas = {
   'it-accessory-holders': {
     // Not routed through MasterCrudPage — same reasoning as 'it-asset-holders'
     // (see ItAccessoryHoldersPage/ItAccessoryHolderFormPage).
-    title: 'IT Accessory Holder',
+    title: 'IT Accessory Holders',
     menuKey: 'it_asset.it_accessory_holders',
     apiBase: '/api/it-asset/it-accessory-holders/',
     idField: 'it_accessory_holder_id',

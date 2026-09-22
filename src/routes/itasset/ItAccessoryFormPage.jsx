@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -7,9 +7,9 @@ import { can } from '@/lib/permissions'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { IconChevronLeft } from '@/components/icons'
 import AccessDenied from '@/components/AccessDenied'
 import { formatApiError } from '@/lib/errors'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const API = '/api/masters/it-accessories/'
 const MENU_KEY = 'masters.it_accessories'
@@ -27,6 +27,7 @@ export default function ItAccessoryFormPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notFound, setNotFound] = useState(false)
+  const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify({ name: '', active: 'Y' })))
 
   useEffect(() => {
     if (!isEdit) return
@@ -37,6 +38,7 @@ export default function ItAccessoryFormPage() {
     setNotFound(false)
     setName('')
     setActive('Y')
+    setSnapshot(null)
     apiFetch(`${API}${id}/`)
       .then((r) => {
         if (!r.ok) throw new Error('not found')
@@ -45,6 +47,7 @@ export default function ItAccessoryFormPage() {
       .then((data) => {
         setName(data.it_accessory_name)
         setActive(data.it_accessory_active)
+        setSnapshot(JSON.stringify({ name: data.it_accessory_name, active: data.it_accessory_active }))
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
@@ -67,7 +70,9 @@ export default function ItAccessoryFormPage() {
         return
       }
       toast.success(isEdit ? 'Changes saved' : 'Accessory created')
+      allowNextNavigation()
       if (isEdit) {
+        setSnapshot(JSON.stringify({ name, active }))
         navigate(`/it-asset/it-accessories/${data.it_accessory_id}/edit`, { replace: true })
       } else {
         navigate('/it-asset/it-accessories')
@@ -80,23 +85,20 @@ export default function ItAccessoryFormPage() {
     }
   }
 
+  const hasChanges = snapshot !== null && JSON.stringify({ name, active }) !== snapshot
+  const { dialog: leaveDialog, allowNextNavigation } = useUnsavedChanges(hasChanges, {
+    onSave: canWrite && !saving && !loading ? handleSave : undefined,
+  })
+
   if (notFound) return <Navigate to="/it-asset/it-accessories" replace />
   if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4 pb-16">
-      <Link
-        to="/it-asset/it-accessories"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <IconChevronLeft className="h-4 w-4" />
-        IT Accessory
-      </Link>
-
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">{isEdit ? `Edit — ${name}` : 'New IT Accessory'}</h1>
         {canWrite && (
-          <Button onClick={handleSave} disabled={saving || loading}>
+          <Button onClick={handleSave} disabled={saving || loading || (isEdit && !hasChanges)}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
           </Button>
         )}
@@ -141,11 +143,13 @@ export default function ItAccessoryFormPage() {
 
       {canWrite && !loading && (
         <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || (isEdit && !hasChanges)}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
           </Button>
         </div>
       )}
+
+      {leaveDialog}
     </div>
   )
 }

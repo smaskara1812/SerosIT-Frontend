@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -19,7 +19,9 @@ import {
 } from '@/components/ui/dialog'
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { formatApiError } from '@/lib/errors'
-import { IconChevronLeft, IconTrash, IconPlus } from '@/components/icons'
+import { formatDay } from '@/lib/text'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { IconTrash, IconPlus } from '@/components/icons'
 import { Download, Check, X, ShieldCheck } from 'lucide-react'
 import AccessDenied from '@/components/AccessDenied'
 
@@ -398,6 +400,7 @@ export default function DrillingReportFormPage() {
       if (isEdit) {
         loadFromRecord(data)
       } else {
+        allowNextNavigation()
         navigate(`/drilling/drilling-report/${data.drilling_dtl_id}/edit`, { replace: true })
       }
     } else {
@@ -411,6 +414,7 @@ export default function DrillingReportFormPage() {
     setConfirmingDelete(false)
     if (res.status === 204) {
       toast.success('Drilling Report deleted')
+      allowNextNavigation()
       navigate('/drilling/drilling-report')
     } else {
       const data = await res.json().catch(() => ({}))
@@ -453,6 +457,13 @@ export default function DrillingReportFormPage() {
     setReviseNote('')
   }
 
+  const hasChanges = !isEdit
+    ? JSON.stringify(form) !== JSON.stringify(emptyForm())
+    : snapshot !== null && JSON.stringify(form) !== snapshot
+  const { dialog: leaveDialog, allowNextNavigation } = useUnsavedChanges(hasChanges, {
+    onSave: !loading && !saving && !buildPayload().error && (isEdit ? canEdit : canAdd) ? save : undefined,
+  })
+
   if (notFound) return <Navigate to="/drilling/drilling-report" replace />
   if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
 
@@ -469,20 +480,12 @@ export default function DrillingReportFormPage() {
   const disabled = !canEditFields
   const isDirty = !isEdit ? !buildPayload().error : snapshot !== null && JSON.stringify(form) !== snapshot
   const status = statusInfo(selectedRecord)
-  const heading = isEdit ? (loading ? 'Loading…' : `${form.rig_label} — ${form.drilling_dtl_dt}`) : 'New Drilling Report'
+  const heading = isEdit ? (loading ? 'Loading…' : `${form.rig_label} — ${formatDay(form.drilling_dtl_dt)}`) : 'New Drilling Report'
   const canSave = canEditFields
   const hasApprovalActions = role.can_finalize || role.can_approve || role.can_reject || role.can_revise_self || role.can_revise_previous
 
   return (
     <div className="flex flex-col gap-4 pb-16">
-      <Link
-        to="/drilling/drilling-report"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <IconChevronLeft className="h-4 w-4" />
-        Drilling Report
-      </Link>
-
       {/* Sticky action bar — status + every primary action stays reachable
           without scrolling past a long form to find Save/Finalize. */}
       <div className="sticky top-0 z-20 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-sm backdrop-blur">
@@ -584,7 +587,7 @@ export default function DrillingReportFormPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <UnitField label="Operator" value={form.pob_operator} onChange={(e) => setForm((f) => ({ ...f, pob_operator: e.target.value }))} disabled={disabled} required />
               <UnitField label="Seros" value={form.pob_essar} onChange={(e) => setForm((f) => ({ ...f, pob_essar: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Seros Serv" value={form.pob_essar_serv} onChange={(e) => setForm((f) => ({ ...f, pob_essar_serv: e.target.value }))} disabled={disabled} />
+              <UnitField label="Seros Services" value={form.pob_essar_serv} onChange={(e) => setForm((f) => ({ ...f, pob_essar_serv: e.target.value }))} disabled={disabled} />
               <UnitField label="Others" value={form.pob_others} onChange={(e) => setForm((f) => ({ ...f, pob_others: e.target.value }))} disabled={disabled} />
             </div>
           </Section>
@@ -620,8 +623,9 @@ export default function DrillingReportFormPage() {
                 <Textarea rows={5} maxLength={500} value={form.remark} onChange={(e) => setForm((f) => ({ ...f, remark: e.target.value }))} disabled={disabled} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label>Downtime Reason {form.downtime_reason ? '' : '(auto-clears when no Repair Rate / Zero Rate rows remain)'}</Label>
+                <Label>Downtime Reason</Label>
                 <Input value={form.downtime_reason} onChange={(e) => setForm((f) => ({ ...f, downtime_reason: e.target.value }))} disabled={disabled} />
+                <p className="text-[11px] text-muted-foreground">Clears automatically once no Repair Rate or Zero Rate rows remain in the time log.</p>
               </div>
             </div>
           </Section>
@@ -806,6 +810,8 @@ export default function DrillingReportFormPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {leaveDialog}
     </div>
   )
 }

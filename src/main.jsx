@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
 import './index.css'
@@ -21,13 +21,22 @@ window.addEventListener('pageshow', (event) => {
   }
 })
 
+// A data router (rather than <BrowserRouter>) so pages can use useBlocker to
+// hold navigation while they have unsaved edits. The single catch-all route
+// just hands everything to the existing <Routes> tree in App.
+function Root() {
+  return (
+    <AuthProvider>
+      <App />
+      <Toaster position="bottom-right" richColors />
+    </AuthProvider>
+  )
+}
+
+const router = createBrowserRouter([{ path: '*', element: <Root /> }])
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-        <Toaster position="bottom-right" richColors />
-      </AuthProvider>
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </StrictMode>,
 )

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -8,9 +8,9 @@ import { mastersSchemas } from '@/config/mastersSchemas'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { FormField, emptyForm } from '@/routes/masters/MasterCrudPage'
-import { IconChevronLeft } from '@/components/icons'
 import AccessDenied from '@/components/AccessDenied'
 import { formatApiError } from '@/lib/errors'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const schema = mastersSchemas['it-asset-holders']
 
@@ -50,6 +50,7 @@ export default function ItAssetHolderFormPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notFound, setNotFound] = useState(false)
+  const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify(emptyForm(schema))))
 
   useEffect(() => {
     if (!isEdit) return
@@ -59,20 +60,23 @@ export default function ItAssetHolderFormPage() {
     setLoading(true)
     setNotFound(false)
     setForm(emptyForm(schema))
+    setSnapshot(null)
     apiFetch(`${schema.apiBase}${id}/`)
       .then((r) => {
         if (!r.ok) throw new Error('not found')
         return r.json()
       })
-      .then((data) =>
-        setForm({
+      .then((data) => {
+        const loaded = {
           ...data,
           // it_asset_holder_to is a datetime (see the model note — a
           // system-closed row is an exact moment, not just a day) but the
           // date-only picker here only ever shows/edits the day part.
           it_asset_holder_to: data.it_asset_holder_to ? data.it_asset_holder_to.slice(0, 10) : null,
-        })
-      )
+        }
+        setForm(loaded)
+        setSnapshot(JSON.stringify(loaded))
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id, isEdit])
@@ -85,8 +89,8 @@ export default function ItAssetHolderFormPage() {
         return r.json()
       })
       .then((asset) => {
-        setForm((prev) => ({
-          ...prev,
+        const prefilled = {
+          ...emptyForm(schema),
           it_asset: asset.it_asset_id,
           it_asset_sr_no: asset.it_asset_sr_no,
           it_asset_tag: asset.it_asset_tag,
@@ -97,7 +101,9 @@ export default function ItAssetHolderFormPage() {
           it_asset_active: asset.it_asset_active,
           own_company_name: asset.own_company_name,
           it_asset_holder_from: new Date().toISOString().slice(0, 10),
-        }))
+        }
+        setForm(prefilled)
+        setSnapshot(JSON.stringify(prefilled))
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
@@ -152,7 +158,9 @@ export default function ItAssetHolderFormPage() {
         return
       }
       toast.success(isEdit ? 'Changes saved' : reassignAssetId ? 'Device reassigned' : 'Holder record created')
+      allowNextNavigation()
       if (isEdit) {
+        setSnapshot(JSON.stringify(form))
         navigate(`/it-asset/it-asset-holders/${data.it_asset_holder_id}/edit`, { replace: true })
       } else {
         navigate('/it-asset/it-asset-holders')
@@ -165,23 +173,20 @@ export default function ItAssetHolderFormPage() {
     }
   }
 
+  const hasChanges = snapshot !== null && JSON.stringify(form) !== snapshot
+  const { dialog: leaveDialog, allowNextNavigation } = useUnsavedChanges(hasChanges, {
+    onSave: canWrite && !saving && !loading ? handleSave : undefined,
+  })
+
   if (notFound) return <Navigate to="/it-asset/it-asset-holders" replace />
   if (!can(user, schema.menuKey, 'view')) return <AccessDenied />
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4 pb-16">
-      <Link
-        to="/it-asset/it-asset-holders"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <IconChevronLeft className="h-4 w-4" />
-        IT Assets Holder
-      </Link>
-
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">{heading}</h1>
         {canWrite && (
-          <Button onClick={handleSave} disabled={saving || loading}>
+          <Button onClick={handleSave} disabled={saving || loading || (isEdit && !hasChanges)}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
           </Button>
         )}
@@ -240,11 +245,13 @@ export default function ItAssetHolderFormPage() {
 
       {canWrite && !loading && (
         <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || (isEdit && !hasChanges)}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
           </Button>
         </div>
       )}
+
+      {leaveDialog}
     </div>
   )
 }

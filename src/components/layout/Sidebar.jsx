@@ -4,6 +4,15 @@ import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
 import { can } from '@/lib/permissions'
 import { IconChevronLeft, IconChevronRight, IconLogout } from '@/components/icons'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 // An item with no menuKey (Dashboard, Admin's own sub-pages) is never
 // permission-gated by the menu system — only the top-level adminOnly flag
@@ -14,9 +23,14 @@ function visibleItems(items, user) {
 
 const COLLAPSE_KEY = 'serosit.sidebar_collapsed'
 
+// First letter of the first and last word of a person's name ("Jagdish R.
+// Jade" -> "JJ"); falls back to the first two letters for a single word
+// (which is also what a login id used as the fallback name looks like).
 function initials(name) {
   if (!name) return '?'
-  return name.slice(0, 2).toUpperCase()
+  const words = name.trim().split(/\s+/)
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase()
 }
 
 export default function Sidebar() {
@@ -24,6 +38,8 @@ export default function Sidebar() {
     () => localStorage.getItem(COLLAPSE_KEY) === '1'
   )
   const { user, logout } = useAuth()
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false)
+  const shownName = user?.display_name || user?.username
   const { pathname } = useLocation()
 
   function toggle() {
@@ -136,12 +152,12 @@ export default function Sidebar() {
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-inner"
             style={{ background: 'linear-gradient(135deg, #5b9bff, #2563eb)' }}
           >
-            {initials(user?.username)}
+            {initials(shownName)}
           </div>
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-[13px] font-semibold text-white/90">
-                {user?.username}
+                {shownName}
               </p>
               <p className="text-[11px] text-white/35">Signed in</p>
             </div>
@@ -149,13 +165,26 @@ export default function Sidebar() {
         </div>
         <button
           type="button"
-          onClick={logout}
+          onClick={() => setConfirmingSignOut(true)}
           className={`mt-1 flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] font-medium text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white/90 ${collapsed ? 'justify-center' : ''}`}
         >
           <IconLogout className="h-[18px] w-[18px] shrink-0" />
           {!collapsed && <span>Sign out</span>}
         </button>
       </div>
+
+      <Dialog open={confirmingSignOut} onOpenChange={setConfirmingSignOut}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out?</DialogTitle>
+            <DialogDescription>You'll need to sign in again to get back in.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setConfirmingSignOut(false)}>Stay signed in</Button>
+            <Button onClick={logout}>Sign out</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   )
 }

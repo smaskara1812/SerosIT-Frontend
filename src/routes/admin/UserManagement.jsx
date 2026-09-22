@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import UserFilterTabs from '@/components/admin/UserFilterTabs'
 import { IconSearch } from '@/components/icons'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 function onListScroll(e, hasMore, loadMore) {
   const el = e.currentTarget
@@ -188,6 +189,13 @@ export default function UserManagement() {
     else toast.error('Failed to update status')
   }
 
+
+  const hasChanges = creating
+    ? editableFields(form) !== editableFields(emptyForm)
+    : snapshot !== null && isDirty
+  const { dialog: leaveDialog, confirmLeave } = useUnsavedChanges(hasChanges, {
+    onSave: isDirty && !saving ? handleSave : undefined,
+  })
   return (
     <div className="flex h-full gap-5">
       <div className="flex w-[320px] shrink-0 flex-col rounded-2xl border border-border bg-card">
@@ -199,7 +207,7 @@ export default function UserManagement() {
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-foreground">
               {counts.total}
             </span>
-            <Button size="sm" onClick={startCreate}>
+            <Button size="sm" onClick={() => confirmLeave(startCreate)}>
               + New
             </Button>
           </div>
@@ -228,7 +236,7 @@ export default function UserManagement() {
             <button
               key={u.user_id}
               type="button"
-              onClick={() => selectUser(u.user_id)}
+              onClick={() => confirmLeave(() => selectUser(u.user_id))}
               className={`flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent ${
                 selectedId === u.user_id ? 'bg-accent' : ''
               }`}
@@ -401,6 +409,8 @@ export default function UserManagement() {
           </div>
         )}
       </div>
+
+      {leaveDialog}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -8,9 +8,9 @@ import { mastersSchemas } from '@/config/mastersSchemas'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { FormField, emptyForm } from '@/routes/masters/MasterCrudPage'
-import { IconChevronLeft } from '@/components/icons'
 import AccessDenied from '@/components/AccessDenied'
 import { formatApiError } from '@/lib/errors'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const schema = mastersSchemas['it-assets']
 
@@ -45,6 +45,7 @@ export default function ItAssetFormPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notFound, setNotFound] = useState(false)
+  const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify(emptyForm(schema))))
 
   useEffect(() => {
     if (!isEdit) return
@@ -55,12 +56,16 @@ export default function ItAssetFormPage() {
     setLoading(true)
     setNotFound(false)
     setForm(emptyForm(schema))
+    setSnapshot(null)
     apiFetch(`${schema.apiBase}${id}/`)
       .then((r) => {
         if (!r.ok) throw new Error('not found')
         return r.json()
       })
-      .then((data) => setForm(data))
+      .then((data) => {
+        setForm(data)
+        setSnapshot(JSON.stringify(data))
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id, isEdit])
@@ -107,7 +112,9 @@ export default function ItAssetFormPage() {
         return
       }
       toast.success(isEdit ? 'Changes saved' : `${data.it_asset_sr_no} created`)
+      allowNextNavigation()
       if (isEdit) {
+        setSnapshot(JSON.stringify(form))
         navigate(`/it-asset/it-assets/${data.it_asset_id}/edit`, { replace: true })
       } else {
         navigate('/it-asset/it-assets')
@@ -120,23 +127,20 @@ export default function ItAssetFormPage() {
     }
   }
 
+  const hasChanges = snapshot !== null && JSON.stringify(form) !== snapshot
+  const { dialog: leaveDialog, allowNextNavigation } = useUnsavedChanges(hasChanges, {
+    onSave: canWrite && !saving && !loading ? handleSave : undefined,
+  })
+
   if (notFound) return <Navigate to="/it-asset/it-assets" replace />
   if (!can(user, schema.menuKey, 'view')) return <AccessDenied />
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4 pb-16">
-      <Link
-        to="/it-asset/it-assets"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <IconChevronLeft className="h-4 w-4" />
-        IT Assets
-      </Link>
-
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">{heading}</h1>
         {canWrite && (
-          <Button onClick={handleSave} disabled={saving || loading}>
+          <Button onClick={handleSave} disabled={saving || loading || (isEdit && !hasChanges)}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
           </Button>
         )}
@@ -189,11 +193,13 @@ export default function ItAssetFormPage() {
 
       {canWrite && !loading && (
         <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || (isEdit && !hasChanges)}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
           </Button>
         </div>
       )}
+
+      {leaveDialog}
     </div>
   )
 }

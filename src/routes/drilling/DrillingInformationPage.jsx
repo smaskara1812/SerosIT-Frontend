@@ -26,6 +26,7 @@ import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { DrillingMiniMap, DrillingWellsMap } from './DrillingMap'
 import { IconSearch, IconTrash } from '@/components/icons'
 import { Download, Map as MapIcon, List as ListIcon } from 'lucide-react'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const MENU_KEY = 'drilling.drilling_information'
 const API = '/api/drilling/drilling-information/'
@@ -516,6 +517,13 @@ export default function DrillingInformationPage() {
   // record was loaded.
   const isDirty = creating ? !buildPayload().error : snapshot !== null && JSON.stringify(form) !== snapshot
 
+
+  const hasChanges = creating
+    ? JSON.stringify(form) !== JSON.stringify(emptyForm())
+    : snapshot !== null && isDirty
+  const { dialog: leaveDialog, confirmLeave } = useUnsavedChanges(hasChanges, {
+    onSave: isDirty && !saving ? save : undefined,
+  })
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-1 gap-5 overflow-hidden">
@@ -549,7 +557,7 @@ export default function DrillingInformationPage() {
                 </button>
               )}
               {canAdd && (
-                <Button size="sm" onClick={startCreate}>
+                <Button size="sm" onClick={() => confirmLeave(startCreate)}>
                   + New
                 </Button>
               )}
@@ -634,7 +642,7 @@ export default function DrillingInformationPage() {
                 <button
                   key={r.drilling_hdr_id}
                   type="button"
-                  onClick={() => selectRow(r)}
+                  onClick={() => confirmLeave(() => selectRow(r))}
                   className={`flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent ${
                     selectedId === r.drilling_hdr_id ? 'bg-accent' : ''
                   }`}
@@ -864,6 +872,8 @@ export default function DrillingInformationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {leaveDialog}
     </div>
   )
 }

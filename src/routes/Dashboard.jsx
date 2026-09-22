@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import { apiFetch } from '@/lib/api'
 import { navTree } from '@/config/nav'
 import { can } from '@/lib/permissions'
+import { IconPlus } from '@/components/icons'
 
 // One tile per top-level nav group (Masters, IT Asset, Reports, Admin) —
 // never the full leaf list, which is what MastersHub.jsx already is for.
@@ -27,12 +28,54 @@ function quickLinks(user) {
     .filter(Boolean)
 }
 
+// One-click "start a new record" tiles. Add an entry here to add a shortcut;
+// it only shows for users who hold the given permission on `menuKey`.
+const SHORTCUTS = [
+  {
+    key: 'new-drilling-report',
+    label: 'New Drilling Daily Report',
+    hint: "Start today's report",
+    path: '/drilling/drilling-report/new',
+    menuKey: 'drilling.drilling_report',
+    action: 'add',
+    icon: IconPlus,
+  },
+]
+
+function quickShortcuts(user) {
+  return SHORTCUTS.filter((sc) => can(user, sc.menuKey, sc.action))
+}
+
 const TILE_ACCENTS = [
   { chip: '#1a3f7a', ring: 'rgba(26,63,122,0.16)' },
   { chip: '#2563eb', ring: 'rgba(37,99,235,0.16)' },
   { chip: '#0f766e', ring: 'rgba(15,118,110,0.16)' },
   { chip: '#7c3aed', ring: 'rgba(124,58,237,0.16)' },
 ]
+
+function Tile({ to, icon: Icon, label, sub, accent }) {
+  return (
+    <NavLink
+      to={to}
+      className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+    >
+      <div
+        className="absolute inset-x-0 top-0 h-1 scale-x-0 transition-transform duration-200 group-hover:scale-x-100"
+        style={{ backgroundColor: accent.chip }}
+      />
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-xl"
+        style={{ backgroundColor: accent.ring, color: accent.chip }}
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-base font-semibold text-foreground">{label}</p>
+        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+      </div>
+    </NavLink>
+  )
+}
 
 function greeting() {
   const h = new Date().getHours()
@@ -63,6 +106,8 @@ export default function Dashboard() {
   }, [])
 
   const links = quickLinks(user)
+  const firstName = (user?.display_name || user?.username || '').split(' ')[0]
+  const shortcuts = quickShortcuts(user)
 
   return (
     <div className="space-y-6">
@@ -81,9 +126,9 @@ export default function Dashboard() {
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)' }}
         />
         <p className="relative text-sm font-medium text-white/60">{greeting()}</p>
-        <h1 className="relative mt-1 text-2xl font-bold tracking-tight">{user?.username}</h1>
+        <h1 className="relative mt-1 text-2xl font-bold tracking-tight">{firstName}</h1>
         <p className="relative mt-2 max-w-md text-sm text-white/70">
-          This page is always available — no rights assignment required.
+          Here's where you can pick up your day. Use the shortcuts below to get to your work.
         </p>
         {info && (
           <div className="relative mt-5 flex flex-wrap gap-4 text-xs text-white/50">
@@ -101,39 +146,37 @@ export default function Dashboard() {
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {links.map(({ key, label, path, icon: Icon, count }, i) => {
-              const accent = TILE_ACCENTS[i % TILE_ACCENTS.length]
-              return (
-                <NavLink
-                  key={key}
-                  to={path}
-                  className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-                  style={{ '--tile-ring': accent.ring }}
-                >
-                  <div
-                    className="absolute inset-x-0 top-0 h-1 scale-x-0 transition-transform duration-200 group-hover:scale-x-100"
-                    style={{ backgroundColor: accent.chip }}
-                  />
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: accent.ring, color: accent.chip }}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-foreground">{label}</p>
-                    {count > 0 && (
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {count} {count === 1 ? 'section' : 'sections'} available to you
-                      </p>
-                    )}
-                  </div>
-                </NavLink>
-              )
-            })}
+            {links.map(({ key, label, path, icon, count }, i) => (
+              <Tile
+                key={key}
+                to={path}
+                icon={icon}
+                label={label}
+                sub={count > 0 ? `${count} ${count === 1 ? 'section' : 'sections'} available to you` : null}
+                accent={TILE_ACCENTS[i % TILE_ACCENTS.length]}
+              />
+            ))}
           </div>
         )}
       </div>
+
+      {shortcuts.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Shortcuts</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {shortcuts.map(({ key, label, hint, path, icon }, i) => (
+              <Tile
+                key={key}
+                to={path}
+                icon={icon}
+                label={label}
+                sub={hint}
+                accent={TILE_ACCENTS[i % TILE_ACCENTS.length]}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

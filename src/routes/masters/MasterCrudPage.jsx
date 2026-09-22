@@ -8,6 +8,8 @@ import { can } from '@/lib/permissions'
 import { mastersSchemas } from '@/config/mastersSchemas'
 import AccessDenied from '@/components/AccessDenied'
 import { formatApiError } from '@/lib/errors'
+import { singularize } from '@/lib/text'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -857,6 +859,15 @@ export default function MasterCrudPage() {
     ? schema.fields.filter((f) => f.required).every((f) => String(form[f.name] ?? '').trim())
     : snapshot !== null && JSON.stringify(form) !== snapshot
 
+  const hasChanges = !schema
+    ? false
+    : creating
+      ? JSON.stringify(form) !== JSON.stringify(emptyForm(schema))
+      : snapshot !== null && JSON.stringify(form) !== snapshot
+  const { dialog: leaveDialog, confirmLeave } = useUnsavedChanges(hasChanges, {
+    onSave: canWrite && !saving ? handleSave : undefined,
+  })
+
   function startCreate() {
     setCreating(true)
     setSelectedId(null)
@@ -972,7 +983,7 @@ export default function MasterCrudPage() {
               </button>
             )}
             {canAdd && (
-              <Button size="sm" onClick={startCreate}>
+              <Button size="sm" onClick={() => confirmLeave(startCreate)}>
                 + New
               </Button>
             )}
@@ -1044,8 +1055,11 @@ export default function MasterCrudPage() {
               key={r[schema.idField]}
               type="button"
               onClick={() => {
-                setCreating(false)
-                setSelectedId(r[schema.idField])
+                if (!creating && selectedId === r[schema.idField]) return
+                confirmLeave(() => {
+                  setCreating(false)
+                  setSelectedId(r[schema.idField])
+                })
               }}
               className={`flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent ${
                 selectedId === r[schema.idField] ? 'bg-accent' : ''
@@ -1086,7 +1100,7 @@ export default function MasterCrudPage() {
       <div className="flex-1 rounded-2xl border border-border bg-card">
         {!creating && !selected && (
           <div className="flex h-full items-center justify-center p-10 text-sm text-muted-foreground">
-            Select a record, or create a new one.
+            Pick a record from the list to view or edit it, or use + New to add one.
           </div>
         )}
 
@@ -1094,10 +1108,10 @@ export default function MasterCrudPage() {
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between border-b border-border p-4">
               <h2 className="text-base font-semibold text-foreground">
-                {creating ? `New ${schema.title.replace(/s$/, '')}` : selected[schema.nameField]}
+                {creating ? `New ${singularize(schema.title)}` : selected[schema.nameField]}
               </h2>
               {selected && canDelete && (
-                <Button variant="destructive" size="sm" onClick={handleDeleteClick}>
+                <Button variant="destructive" size="sm" onClick={handleDeleteClick} aria-label={`Delete ${selected[schema.nameField]}`}>
                   <IconTrash className="h-4 w-4" />
                 </Button>
               )}
@@ -1235,6 +1249,8 @@ export default function MasterCrudPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {leaveDialog}
     </div>
   )
 }

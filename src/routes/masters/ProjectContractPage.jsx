@@ -18,6 +18,7 @@ import {
 import { RemoteCombobox, NullableDateField, isDateActive } from './MasterCrudPage'
 import { IconSearch, IconChevronLeft, IconPlus, IconTrash } from '@/components/icons'
 import { ArrowDownAZ, ArrowUpZA, Download } from 'lucide-react'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const MENU_KEY = 'masters.project_contract'
 const API = '/api/masters/project-contracts/'
@@ -382,6 +383,13 @@ export default function ProjectContractPage() {
     }
   }
 
+
+  const hasChanges = creating
+    ? JSON.stringify(form) !== JSON.stringify(emptyHeader())
+    : snapshot !== null && isDirty
+  const { dialog: leaveDialog, confirmLeave } = useUnsavedChanges(hasChanges, {
+    onSave: isDirty && !saving ? handleSave : undefined,
+  })
   return (
     <div className="flex h-full flex-col gap-3">
       <Link
@@ -412,7 +420,7 @@ export default function ProjectContractPage() {
                 </button>
               )}
               {canAdd && (
-                <Button size="sm" onClick={startCreate}>
+                <Button size="sm" onClick={() => confirmLeave(startCreate)}>
                   + New
                 </Button>
               )}
@@ -462,7 +470,7 @@ export default function ProjectContractPage() {
               <button
                 key={r.prj_contract_id}
                 type="button"
-                onClick={() => selectContract(r.prj_contract_id)}
+                onClick={() => confirmLeave(() => selectContract(r.prj_contract_id))}
                 className={`flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent ${
                   selectedId === r.prj_contract_id ? 'bg-accent' : ''
                 }`}
@@ -680,6 +688,8 @@ export default function ProjectContractPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {leaveDialog}
     </div>
   )
 }

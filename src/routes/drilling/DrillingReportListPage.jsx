@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
 import { IconSearch } from '@/components/icons'
 import { Download } from 'lucide-react'
+import { formatDay } from '@/lib/text'
 
 const MENU_KEY = 'drilling.drilling_report'
 const API = '/api/drilling/drilling-report/'
@@ -296,7 +297,7 @@ export default function DrillingReportListPage() {
                   className="cursor-pointer border-b border-border/60 transition-colors last:border-b-0 hover:bg-accent/60"
                 >
                   <td className="px-4 py-2.5 font-semibold text-foreground">{r.rig_name}</td>
-                  <td className="px-4 py-2.5 font-mono text-muted-foreground">{r.drilling_dtl_dt}</td>
+                  <td className="px-4 py-2.5 font-mono text-muted-foreground">{formatDay(r.drilling_dtl_dt)}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{r.location || '—'}</td>
                   <td className="max-w-[220px] truncate px-4 py-2.5 text-muted-foreground" title={r.contract_no}>{r.contract_no || '—'}</td>
                   <td className="px-4 py-2.5">

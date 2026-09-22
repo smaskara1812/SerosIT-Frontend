@@ -124,7 +124,7 @@ export default function SecondarySidebar() {
         type="button"
         onClick={toggle}
         aria-label={collapsed ? 'Expand section menu' : 'Collapse section menu'}
-        className="absolute -right-3.5 top-14 flex h-7 w-7 items-center justify-center rounded-full shadow-[0_2px_8px_rgba(23,53,110,0.18)] ring-1 ring-black/[0.04] transition-all duration-150 hover:scale-105 hover:shadow-[0_3px_10px_rgba(23,53,110,0.24)]"
+        className="absolute -right-3.5 top-28 flex h-7 w-7 items-center justify-center rounded-full shadow-[0_2px_8px_rgba(23,53,110,0.18)] ring-1 ring-black/[0.04] transition-all duration-150 hover:scale-105 hover:shadow-[0_3px_10px_rgba(23,53,110,0.24)]"
         style={{
           backgroundColor: '#ffffff',
           color: 'var(--ss-text-act)',

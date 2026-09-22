@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { IconSearch, IconTrash, IconPlus } from '@/components/icons'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const MENU_KEY = 'admin.approver_mapping'
 const API = '/api/masters/approver-mappings/'
@@ -349,6 +350,13 @@ export default function ApproverMappingPage() {
   const disabled = !creating && !canEdit
   const isDirty = creating ? !buildPayload().error : snapshot !== null && JSON.stringify(form) !== snapshot
 
+
+  const hasChanges = creating
+    ? JSON.stringify(form) !== JSON.stringify(emptyForm())
+    : snapshot !== null && isDirty
+  const { dialog: leaveDialog, confirmLeave } = useUnsavedChanges(hasChanges, {
+    onSave: isDirty && !saving ? save : undefined,
+  })
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-1 gap-5 overflow-hidden">
@@ -363,7 +371,7 @@ export default function ApproverMappingPage() {
               </span>
             </div>
             {canAdd && (
-              <Button size="sm" onClick={startCreate}>
+              <Button size="sm" onClick={() => confirmLeave(startCreate)}>
                 + New
               </Button>
             )}
@@ -448,7 +456,7 @@ export default function ApproverMappingPage() {
               <button
                 key={r.approver_mapping_id}
                 type="button"
-                onClick={() => selectRow(r)}
+                onClick={() => confirmLeave(() => selectRow(r))}
                 className={`flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent ${
                   selectedId === r.approver_mapping_id ? 'bg-accent' : ''
                 }`}
@@ -673,6 +681,8 @@ export default function ApproverMappingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {leaveDialog}
     </div>
   )
 }

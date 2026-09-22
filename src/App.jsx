@@ -30,6 +30,7 @@ import ItAssetReportPage from '@/routes/itasset/ItAssetReportPage'
 import DrillingInformationPage from '@/routes/drilling/DrillingInformationPage'
 import DrillingReportListPage from '@/routes/drilling/DrillingReportListPage'
 import DrillingReportFormPage from '@/routes/drilling/DrillingReportFormPage'
+import PerformanceDashboardPage from '@/routes/drilling/PerformanceDashboardPage'
 import ApproverMappingPage from '@/routes/admin/ApproverMappingPage'
 
 function App() {
@@ -75,6 +76,7 @@ function App() {
           <Route path="/drilling/drilling-report" element={<DrillingReportListPage />} />
           <Route path="/drilling/drilling-report/new" element={<DrillingReportFormPage />} />
           <Route path="/drilling/drilling-report/:id/edit" element={<DrillingReportFormPage />} />
+          <Route path="/drilling/performance-dashboard" element={<PerformanceDashboardPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>

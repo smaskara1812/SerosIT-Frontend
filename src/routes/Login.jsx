@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { IconEye, IconEyeOff, IconAlertCircle } from '@/components/icons'
 
+const SEEN_KEY = 'serosit.has_signed_in'
+
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -13,6 +15,8 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false)
   const { login, isAuthenticated, isLoading } = useAuth()
   const navigate = useNavigate()
+  let returning = false
+  try { returning = localStorage.getItem(SEEN_KEY) === '1' } catch { /* private mode */ }
 
   if (isAuthenticated) return <Navigate to="/" replace />
   if (isLoading) return null
@@ -23,6 +27,7 @@ export default function Login() {
     setSubmitting(true)
     try {
       await login(username, password)
+      try { localStorage.setItem(SEEN_KEY, '1') } catch { /* private mode */ }
       navigate('/', { replace: true })
     } catch {
       setError('Invalid username or password')
@@ -64,9 +69,9 @@ export default function Login() {
           </div>
 
           <h1 className="text-center text-2xl font-extrabold tracking-tight text-white">
-            Welcome back
+            {returning ? 'Welcome back' : 'Welcome'}
           </h1>
-          <p className="mt-1.5 mb-7 text-center text-sm text-white/45">
+          <p className="mt-1.5 mb-7 text-center text-sm text-white/75">
             Sign in to continue to SerosIT
           </p>
 
@@ -81,7 +86,7 @@ export default function Login() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="username"
-                className="text-[11px] font-bold uppercase tracking-wider text-white/50"
+                className="text-[11px] font-bold uppercase tracking-wider text-white/75"
               >
                 Username
               </label>
@@ -93,14 +98,14 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="h-11 rounded-xl border-white/15 bg-white/8 px-4 text-[0.9rem] text-white placeholder:text-white/30 focus-visible:border-blue-400/60 focus-visible:bg-white/13 focus-visible:ring-blue-400/20"
+                className="h-11 rounded-xl border-white/15 bg-white/8 px-4 text-[0.9rem] text-white placeholder:text-white/55 focus-visible:border-blue-400/60 focus-visible:bg-white/13 focus-visible:ring-blue-400/20"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
-                className="text-[11px] font-bold uppercase tracking-wider text-white/50"
+                className="text-[11px] font-bold uppercase tracking-wider text-white/75"
               >
                 Password
               </label>
@@ -113,13 +118,13 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-11 rounded-xl border-white/15 bg-white/8 px-4 pr-11 text-[0.9rem] text-white placeholder:text-white/30 focus-visible:border-blue-400/60 focus-visible:bg-white/13 focus-visible:ring-blue-400/20"
+                  className="h-11 rounded-xl border-white/15 bg-white/8 px-4 pr-11 text-[0.9rem] text-white placeholder:text-white/55 focus-visible:border-blue-400/60 focus-visible:bg-white/13 focus-visible:ring-blue-400/20"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/35 transition-colors hover:text-white/80"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/65 transition-colors hover:text-white"
                 >
                   {showPassword ? (
                     <IconEyeOff className="h-4 w-4" />
@@ -139,7 +144,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-[11px] text-white/25">
+          <p className="mt-6 text-center text-[11px] text-white/60">
             Seros · Internal tool · Confidential
           </p>
         </div>
