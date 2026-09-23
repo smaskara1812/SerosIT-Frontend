@@ -2574,4 +2574,60 @@ export const mastersSchemas = {
       { name: 'completion_dt', label: 'Completion Date', type: 'date' },
     ],
   },
+  activities: {
+    title: 'Activity',
+    menuKey: 'qhse.activities',
+    apiBase: '/api/qhse/activities/',
+    idField: 'activity_id',
+    nameField: 'activity_name',
+    activeField: 'activity_active',
+    listSecondary: (r) => `${r.activity_type_display} · ${r.activity_nature_display}`,
+    fields: [
+      { name: 'activity_name', label: 'Name', required: true },
+      {
+        name: 'activity_type',
+        label: 'Type',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'I', label: 'Inspection' },
+          { value: 'A', label: 'Activity' },
+        ],
+      },
+      {
+        name: 'activity_nature',
+        label: 'Nature',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'M', label: 'Mandatory' },
+          { value: 'N', label: 'Non Mandatory' },
+        ],
+      },
+      {
+        name: 'activity_location',
+        label: 'Location',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'V', label: 'Vessel' },
+          { value: 'O', label: 'Office' },
+          { value: 'P', label: 'Port' },
+          { value: 'R', label: 'Rig' },
+        ],
+      },
+      {
+        name: 'intimate_vessel',
+        label: 'Intimate Vessel',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Y', label: 'Yes' },
+          { value: 'N', label: 'No' },
+        ],
+      },
+      { name: 'activity_validity_days', label: 'Validity (Days)', type: 'number', required: true },
+      { name: 'activity_active', label: 'Active', type: 'active-select' },
+    ],
+  },
 }

@@ -515,6 +515,13 @@ export const navTree = [
             icon: IconAlertTriangle,
             menuKey: 'masters.hazard_types',
           },
+          {
+            key: 'qhse_activities',
+            label: 'Activity',
+            path: '/masters/activities',
+            icon: IconActivity,
+            menuKey: 'qhse.activities',
+          },
         ],
       },
       {
