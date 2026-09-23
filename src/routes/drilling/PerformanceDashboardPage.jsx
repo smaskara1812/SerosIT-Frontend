@@ -373,7 +373,14 @@ export default function PerformanceDashboardPage() {
       .then((r) => r.json())
       .then((data) => {
         if (thisRequest !== requestIdRef.current) return
-        setResult((prev) => ({ ...data, rows: [...(prev?.rows || []), ...data.rows] }))
+        // Pages after the first don't recompute totals/count (expensive
+        // full-range aggregates) — keep the values from page 1.
+        setResult((prev) => ({
+          ...data,
+          totals: data.totals ?? prev?.totals,
+          count: data.count ?? prev?.count,
+          rows: [...(prev?.rows || []), ...data.rows],
+        }))
         setPage(nextPage)
       })
       .finally(() => {
@@ -386,7 +393,7 @@ export default function PerformanceDashboardPage() {
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 300) loadNextPage()
   }
 
-  async function exportCsv() {
+  async function exportExcel() {
     if (appliedParams == null) return
     const res = await apiFetch(`/api/drilling/performance-dashboard/export/?${appliedParams}`)
     if (!res.ok) return
@@ -394,7 +401,7 @@ export default function PerformanceDashboardPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `performance-dashboard-${todayIso()}.csv`
+    a.download = `performance-dashboard-${todayIso()}.xlsx`
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -536,9 +543,9 @@ export default function PerformanceDashboardPage() {
         </Button>
 
         {canExport && (
-          <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0 || filtersAreStale}>
+          <Button variant="outline" onClick={exportExcel} disabled={rows.length === 0 || filtersAreStale}>
             <Download className="h-3.5 w-3.5" />
-            Export CSV
+            Export Excel
           </Button>
         )}
       </div>

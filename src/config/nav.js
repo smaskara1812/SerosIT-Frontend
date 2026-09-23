@@ -822,6 +822,52 @@ export const navTree = [
             icon: IconTrendingUp,
             menuKey: 'drilling.performance_dashboard',
           },
+          {
+            key: 'operations_analytics',
+            label: 'Operations Analytics',
+            path: '/drilling/operations-analytics',
+            icon: IconActivity,
+            menuKey: 'drilling.operations_analytics',
+          },
+          {
+            key: 'drilling_tripping_analysis',
+            label: 'Drilling & Tripping Analysis',
+            path: '/drilling/drilling-tripping-analysis',
+            icon: IconTrendingUp,
+            menuKey: 'drilling.drilling_tripping_analysis',
+          },
+          {
+            key: 'drilling_daily_data',
+            label: 'Drilling Daily Data',
+            path: '/drilling/drilling-daily-data',
+            icon: IconClipboard,
+            menuKey: 'drilling.drilling_daily_data',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'qhse',
+    label: 'QHSE',
+    icon: IconShieldCheck,
+    sections: [
+      {
+        items: [
+          {
+            key: 'rig_certificates',
+            label: 'Rig Certificates',
+            path: '/qhse/rig-certificates',
+            icon: IconFileSignature,
+            menuKey: 'qhse.rig_certificates',
+          },
+          {
+            key: 'rig_certificate_schedule',
+            label: 'Rig Certificate Schedule',
+            path: '/qhse/rig-certificate-schedule',
+            icon: IconClipboard,
+            menuKey: 'qhse.rig_certificate_schedule',
+          },
         ],
       },
     ],
