@@ -889,6 +889,13 @@ export const navTree = [
             icon: IconTrendingUp,
             menuKey: 'qhse.activity_closure_analysis',
           },
+          {
+            key: 'incident_details',
+            label: 'Incident Details',
+            path: '/qhse/incident-details',
+            icon: IconAlertTriangle,
+            menuKey: 'qhse.incident_details',
+          },
         ],
       },
     ],
