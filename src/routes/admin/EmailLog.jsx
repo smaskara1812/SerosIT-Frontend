@@ -3,6 +3,7 @@ import { apiFetch } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { IconSearch, IconChevronDown } from '@/components/icons'
+import { Paperclip } from 'lucide-react'
 
 // core/mail_templates.py sends real HTML bodies now; older rows (or a
 // future plain-text caller) still have plain text, so render each row
@@ -176,7 +177,17 @@ export default function EmailLog() {
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{r.trigger || '—'}</td>
-                    <td className="px-4 py-2.5 text-foreground">{r.subject}</td>
+                    <td className="px-4 py-2.5 text-foreground">
+                      <span className="inline-flex items-center gap-1.5">
+                        {r.subject}
+                        {r.attachment_names && (
+                          <Paperclip
+                            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                            title={r.attachment_names}
+                          />
+                        )}
+                      </span>
+                    </td>
                     <td className="max-w-[220px] truncate px-4 py-2.5 text-muted-foreground" title={r.recipients}>
                       {r.recipients}
                     </td>
@@ -190,6 +201,12 @@ export default function EmailLog() {
                             <span className="font-medium text-foreground">Recipients: </span>
                             <span className="text-muted-foreground">{r.recipients}</span>
                           </div>
+                          {r.attachment_names && (
+                            <div>
+                              <span className="font-medium text-foreground">Attachments: </span>
+                              <span className="text-muted-foreground">{r.attachment_names}</span>
+                            </div>
+                          )}
                           {!r.success && r.error && (
                             <div>
                               <span className="font-medium text-foreground">Error: </span>

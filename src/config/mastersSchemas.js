@@ -490,6 +490,56 @@ export const mastersSchemas = {
       },
     ],
   },
+  'notification-triggers': {
+    title: 'Notification Triggers',
+    menuKey: 'masters.notification_triggers',
+    apiBase: '/api/masters/notification-triggers/',
+    idField: 'notification_trigger_id',
+    nameField: 'entity_key',
+    activeField: 'notification_trigger_active',
+    listSecondary: (r) => `${r.action || ''} → ${r.alert_name || ''}`,
+    fields: [
+      {
+        name: 'entity_key',
+        label: 'Trigger Point',
+        type: 'select',
+        // A curated list, not free text — entity_key/action must match a
+        // real notification_triggers.trigger() call site's own literal
+        // strings exactly, or this row silently never fires (no error
+        // anywhere). Add the new option here in the SAME change that adds
+        // a new trigger() call in code, so this list never offers a
+        // trigger point that doesn't actually exist yet.
+        options: [{ value: 'qhse.incident_details', label: 'QHSE → Incident Details' }],
+        required: true,
+        wide: true,
+      },
+      {
+        name: 'action',
+        label: 'Action',
+        type: 'select',
+        filterField: 'entity_key', // clears action when entity_key changes
+        optionsForField: 'entity_key',
+        optionsPlaceholder: 'Pick a Trigger Point first…',
+        optionsEmptyText: 'No actions are wired up for this trigger point yet.',
+        optionsByValue: {
+          'qhse.incident_details': [{ value: 'create', label: 'Create' }],
+        },
+        required: true,
+      },
+      {
+        name: 'alert',
+        label: 'Alert',
+        type: 'search-remote',
+        remote: '/api/masters/mail-alerts/',
+        optionLabel: 'alert_name',
+        optionValue: 'alert_id',
+        labelField: 'alert_name',
+        required: true,
+        wide: true,
+      },
+      { name: 'notification_trigger_active', label: 'Active', type: 'active-select' },
+    ],
+  },
   'leaving-reason-details': {
     title: 'Leaving Reason Details',
     menuKey: 'masters.leaving_reason_details',

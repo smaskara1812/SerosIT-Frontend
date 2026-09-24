@@ -447,6 +447,13 @@ export const navTree = [
             icon: IconLink,
             menuKey: 'masters.mail_recipient_mappings',
           },
+          {
+            key: 'notification_triggers',
+            label: 'Notification Triggers',
+            path: '/masters/notification-triggers',
+            icon: IconLink,
+            menuKey: 'masters.notification_triggers',
+          },
         ],
       },
       {

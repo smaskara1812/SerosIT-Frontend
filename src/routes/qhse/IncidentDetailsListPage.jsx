@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil } from 'lucide-react'
+import { Pencil, Printer } from 'lucide-react'
 
 const MENU_KEY = 'qhse.incident_details'
 
@@ -206,6 +206,35 @@ export default function IncidentDetailsListPage() {
     }
   }
 
+  async function printFlashReport(r) {
+    // Open the tab synchronously (in direct response to the click) so
+    // popup blockers don't reject it — the blob isn't ready yet, so it
+    // starts blank and gets its location set once the fetch resolves.
+    const tab = window.open('', '_blank')
+    const res = await apiFetch(`/api/qhse/incidents/${r.incident_id}/flash-report/`)
+    if (!res.ok) {
+      toast.error('Failed to generate report')
+      if (tab) tab.close()
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    if (tab) {
+      tab.location.href = url
+    } else if (!window.open(url, '_blank')) {
+      // Popup blocked even for the synchronous open — fall back to a
+      // direct download so the user still gets the file.
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Incident Flash Report - ${r.rig_incident_no || r.incident_no}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      toast.info('Popup blocked — report downloaded instead')
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+  }
+
   const rigOptions = useMemo(
     () => [{ value: '', label: 'All' }, ...rigs.map((r) => ({ value: String(r.rig_id), label: r.rig_name }))],
     [rigs]
@@ -286,6 +315,17 @@ export default function IncidentDetailsListPage() {
                     <td className="px-3 py-2.5">{r.person_injured === 'Y' ? 'Yes' : 'No'}</td>
                     <td className="px-2 py-2.5">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          title="Print Flash Report"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            printFlashReport(r)
+                          }}
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </button>
                         {canEdit && (
                           <button
                             type="button"
