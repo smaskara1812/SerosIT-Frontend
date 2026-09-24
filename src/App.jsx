@@ -35,6 +35,8 @@ import OperationsAnalyticsPage from '@/routes/drilling/OperationsAnalyticsPage'
 import DrillingTrippingAnalysisPage from '@/routes/drilling/DrillingTrippingAnalysisPage'
 import DrillingDailyDataPage from '@/routes/drilling/DrillingDailyDataPage'
 import ApproverMappingPage from '@/routes/admin/ApproverMappingPage'
+import ActivityMonitorPage from '@/routes/qhse/ActivityMonitorPage'
+import ActivityClosureAnalysisPage from '@/routes/qhse/ActivityClosureAnalysisPage'
 
 function App() {
   return (
@@ -83,6 +85,8 @@ function App() {
           <Route path="/drilling/operations-analytics" element={<OperationsAnalyticsPage />} />
           <Route path="/drilling/drilling-tripping-analysis" element={<DrillingTrippingAnalysisPage />} />
           <Route path="/drilling/drilling-daily-data" element={<DrillingDailyDataPage />} />
+          <Route path="/qhse/activity-monitor" element={<ActivityMonitorPage />} />
+          <Route path="/qhse/activity-closure-analysis" element={<ActivityClosureAnalysisPage />} />
           <Route path="/qhse/:slug" element={<MasterCrudPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
