@@ -347,6 +347,13 @@ export const mastersSchemas = {
     nameField: 'alert_name',
     activeField: null,
     listSecondary: (r) => r.mail_subject || '',
+    // "View recipients" shortcut on each row — jumps to the Alert To Users
+    // page pre-filtered to this alert, so you don't have to copy the alert
+    // name and search for it there by hand.
+    rowLink: (r) => ({
+      to: `/masters/mail-alert-to-users?alert=${r.alert_id}&alertName=${encodeURIComponent(r.alert_name || '')}`,
+      title: 'View recipients configured for this alert',
+    }),
     fields: [
       {
         name: 'alert_type',
@@ -393,6 +400,12 @@ export const mastersSchemas = {
     // Recipient Mapping's own remote-search).
     nameField: 'display_label',
     activeField: null,
+    // Backs the Alert Details page's "View recipients" deep link
+    // (/masters/mail-alert-to-users?alert=<id>&alertName=<name>) — `field`
+    // is the real backend filter param (BaseMasterViewSet.filterable_fields
+    // on MailAlertToUserViewSet), `param`/`labelParam` are the URL query
+    // params the link carries the alert id/name in.
+    linkFilter: { param: 'alert', field: 'alert', labelParam: 'alertName' },
     fields: [
       {
         name: 'alert',
@@ -437,6 +450,8 @@ export const mastersSchemas = {
     menuKey: 'masters.mail_recipient_mappings',
     apiBase: '/api/masters/mail-recipient-mappings/',
     idField: 'mail_recipient_mapping_id',
+    helpText:
+      "For approval-workflow emails (Finalize / Approve / Reject / Revise Previous Level), currently only wired up for Drilling Report — more approval workflows will be added here as the application grows. For each Approval Code + Event, the main recipients are worked out automatically from that workflow's approver chain — this page only adds EXTRA people on top (e.g. a manager who should always be copied). It never controls who the base approvers are, and it has no effect outside these approval-chain events. Looking for who gets a specific alert's emails in general (no approval chain involved)? See Notification Triggers below.",
     // "AlertName — email (To/Cc/Bcc)" — same combined label as the Alert To
     // Users list itself, so which recipient/type this mapping actually
     // points at is unambiguous.
@@ -498,6 +513,8 @@ export const mastersSchemas = {
     nameField: 'entity_key',
     activeField: 'notification_trigger_active',
     listSecondary: (r) => `${r.action || ''} → ${r.alert_name || ''}`,
+    helpText:
+      "For simple event notifications (e.g. 'email people when a QHSE Incident is created') — anywhere with no approval chain. Each row here just says 'when this happens, use this Alert's recipient list.' There is no automatic base list: whoever receives the email is 100% whoever you've added under Alert To Users for the chosen Alert — add or remove people there, not here. This is unrelated to Mail Recipient Mapping, which only handles approval-workflow emails (Drilling Report today, more workflows later).",
     fields: [
       {
         name: 'entity_key',

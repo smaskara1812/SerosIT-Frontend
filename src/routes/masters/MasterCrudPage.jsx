@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -37,7 +37,7 @@ import {
   IconCheck,
   IconAlertCircle,
 } from '@/components/icons'
-import { ArrowDownAZ, ArrowUpZA, Download } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, X } from 'lucide-react'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
@@ -649,6 +649,8 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
 
 export default function MasterCrudPage() {
   const { slug } = useParams()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const schema = mastersSchemas[slug]
   const { user } = useAuth()
   const canAdd = can(user, schema?.menuKey, 'add')
@@ -673,6 +675,14 @@ export default function MasterCrudPage() {
   // choice sets, not FK ids.
   const [extraFilters, setExtraFilters] = useState(EMPTY_EXTRA_FILTERS)
   const filterableFields = useMemo(() => schema.fields.filter((f) => f.filterable), [schema])
+  // Deep-link filter carried in via URL query params (e.g. Alert Details'
+  // "View recipients" button landing here with ?alert=<id>&alertName=<name>)
+  // — separate from extraFilters/filterableFields above since it's driven by
+  // navigation, not a dropdown, and doesn't need schema.fields to declare it.
+  const linkFilterValue = schema.linkFilter ? searchParams.get(schema.linkFilter.param) : null
+  const linkFilterLabel = schema.linkFilter
+    ? searchParams.get(schema.linkFilter.labelParam) || linkFilterValue
+    : null
   const hasActiveFilter = Boolean(schema.activeField || schema.dateActiveField)
   const [selectedId, setSelectedId] = useState(null)
   const [creating, setCreating] = useState(false)
@@ -728,6 +738,7 @@ export default function MasterCrudPage() {
     for (const f of filterableFields) {
       if (ef[f.name]) params.set(f.name, ef[f.name])
     }
+    if (linkFilterValue) params.set(schema.linkFilter.field, linkFilterValue)
     return params
   }
 
@@ -828,7 +839,16 @@ export default function MasterCrudPage() {
     if (listRef.current) listRef.current.scrollTop = 0
     loadPage(1, query)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordering, activeFilter, extraFilters])
+  }, [ordering, activeFilter, extraFilters, linkFilterValue])
+
+  function clearLinkFilter() {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete(schema.linkFilter.param)
+      next.delete(schema.linkFilter.labelParam)
+      return next
+    })
+  }
 
   function handleListScroll(e) {
     const el = e.currentTarget
@@ -962,6 +982,12 @@ export default function MasterCrudPage() {
           {schema.hubLabel ?? 'All Masters'}
         </Link>
       )}
+      {schema.helpText && (
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/50 px-3.5 py-2.5 text-xs leading-relaxed text-muted-foreground">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p>{schema.helpText}</p>
+        </div>
+      )}
       <div className="flex flex-1 gap-5 overflow-hidden">
       <div className="flex w-[300px] shrink-0 flex-col rounded-2xl border border-border bg-card">
         <div className="flex items-center justify-between p-3 pb-2">
@@ -990,6 +1016,19 @@ export default function MasterCrudPage() {
           </div>
         </div>
         <div className="flex flex-col gap-2 px-3 pb-3">
+          {linkFilterValue && (
+            <div className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-medium text-primary">
+              <span className="min-w-0 flex-1 truncate">Filtered to alert: {linkFilterLabel}</span>
+              <button
+                type="button"
+                title="Clear filter"
+                onClick={clearLinkFilter}
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-primary/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
           <div className="relative">
             <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -1088,6 +1127,26 @@ export default function MasterCrudPage() {
                     isDateActive(r[schema.dateActiveField]) ? 'bg-emerald-500' : 'bg-gray-300'
                   }`}
                 />
+              )}
+              {schema.rowLink && (
+                <span
+                  role="link"
+                  tabIndex={0}
+                  title={schema.rowLink(r).title}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigate(schema.rowLink(r).to)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return
+                    e.stopPropagation()
+                    e.preventDefault()
+                    navigate(schema.rowLink(r).to)
+                  }}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </span>
               )}
             </button>
           ))}

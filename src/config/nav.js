@@ -56,6 +56,7 @@ import {
   Landmark,
   MailWarning,
   Drill,
+  Gauge,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -68,7 +69,46 @@ import {
 // items with one only show for users who can view that key (see
 // lib/permissions.js `can()`).
 export const navTree = [
-  { key: 'dashboard', label: 'Dashboard', path: '/', icon: IconDashboard },
+  { key: 'home', label: 'Home', path: '/', icon: IconDashboard },
+  {
+    key: 'dashboards',
+    label: 'Dashboards',
+    icon: Gauge,
+    sections: [
+      {
+        items: [
+          {
+            key: 'rig_utilisation',
+            label: 'Rig Utilisation',
+            path: '/dashboards/rig-utilisation',
+            icon: IconTrendingUp,
+            menuKey: 'dashboards.rig_utilisation',
+          },
+          {
+            key: 'drilling_performance',
+            label: 'Drilling Performance',
+            path: '/dashboards/drilling-performance',
+            icon: Drill,
+            menuKey: 'dashboards.drilling_performance',
+          },
+          {
+            key: 'fleet_operating_picture',
+            label: 'Fleet Operating Picture',
+            path: '/dashboards/fleet-operating-picture',
+            icon: Map,
+            menuKey: 'dashboards.fleet_operating_picture',
+          },
+          {
+            key: 'contract_exposure',
+            label: 'Contract Exposure',
+            path: '/dashboards/contract-exposure',
+            icon: Landmark,
+            menuKey: 'dashboards.contract_exposure',
+          },
+        ],
+      },
+    ],
+  },
   {
     key: 'masters',
     label: 'Masters',
@@ -902,6 +942,20 @@ export const navTree = [
             path: '/qhse/incident-details',
             icon: IconAlertTriangle,
             menuKey: 'qhse.incident_details',
+          },
+          {
+            key: 'incident_root_cause',
+            label: 'Incident Root Cause',
+            path: '/qhse/incident-root-cause',
+            icon: IconGitBranch,
+            menuKey: 'qhse.incident_root_cause',
+          },
+          {
+            key: 'incident_actions',
+            label: 'Incident Actions',
+            path: '/qhse/incident-actions',
+            icon: ClipboardList,
+            menuKey: 'qhse.incident_actions',
           },
         ],
       },

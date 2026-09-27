@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from '@/routes/Login'
-import Dashboard from '@/routes/Dashboard'
+import Home from '@/routes/Home'
 import ProtectedRoute from '@/routes/ProtectedRoute'
 import AdminRoute from '@/routes/AdminRoute'
 import MastersRoute from '@/routes/MastersRoute'
@@ -39,6 +39,12 @@ import ActivityMonitorPage from '@/routes/qhse/ActivityMonitorPage'
 import ActivityClosureAnalysisPage from '@/routes/qhse/ActivityClosureAnalysisPage'
 import IncidentDetailsListPage from '@/routes/qhse/IncidentDetailsListPage'
 import IncidentDetailsFormPage from '@/routes/qhse/IncidentDetailsFormPage'
+import IncidentRootCausePage from '@/routes/qhse/IncidentRootCausePage'
+import IncidentActionsPage from '@/routes/qhse/IncidentActionsPage'
+import RigUtilisationDashboardPage from '@/routes/dashboards/RigUtilisationDashboardPage'
+import DrillingPerformanceDashboardPage from '@/routes/dashboards/DrillingPerformanceDashboardPage'
+import FleetOperatingPicturePage from '@/routes/dashboards/FleetOperatingPicturePage'
+import ContractExposureDashboardPage from '@/routes/dashboards/ContractExposureDashboardPage'
 
 function App() {
   return (
@@ -46,7 +52,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Home />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/user-rights" element={<UserRights />} />
             <Route path="/admin/user-management" element={<UserManagement />} />
@@ -92,7 +98,13 @@ function App() {
           <Route path="/qhse/incident-details" element={<IncidentDetailsListPage />} />
           <Route path="/qhse/incident-details/new" element={<IncidentDetailsFormPage />} />
           <Route path="/qhse/incident-details/:id/edit" element={<IncidentDetailsFormPage />} />
+          <Route path="/qhse/incident-root-cause" element={<IncidentRootCausePage />} />
+          <Route path="/qhse/incident-actions" element={<IncidentActionsPage />} />
           <Route path="/qhse/:slug" element={<MasterCrudPage />} />
+          <Route path="/dashboards/rig-utilisation" element={<RigUtilisationDashboardPage />} />
+          <Route path="/dashboards/drilling-performance" element={<DrillingPerformanceDashboardPage />} />
+          <Route path="/dashboards/fleet-operating-picture" element={<FleetOperatingPicturePage />} />
+          <Route path="/dashboards/contract-exposure" element={<ContractExposureDashboardPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>

@@ -13,7 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import UserFilterTabs from '@/components/admin/UserFilterTabs'
-import { IconSearch, IconCheck } from '@/components/icons'
+import { IconSearch, IconCheck, IconChevronDown } from '@/components/icons'
 import { BookmarkPlus, X } from 'lucide-react'
 
 const ACTIONS = ['view', 'add', 'edit', 'delete', 'export']
@@ -134,6 +134,13 @@ export default function UserRights() {
   // shortcuts (e.g. "Req Master View Only") layered on top of the 3
   // built-in ones above. Loaded once; the list itself rarely changes.
   const [customPresets, setCustomPresets] = useState([])
+
+  // Section search/collapse — page-level state (not per-user), so a
+  // group's collapsed state and the search box persist while switching
+  // between users, since the grid's own section structure is the same
+  // for everyone (just which checkboxes are on differs).
+  const [permSearch, setPermSearch] = useState('')
+  const [collapsedGroups, setCollapsedGroups] = useState(() => new Set())
   const [presetDialogOpen, setPresetDialogOpen] = useState(false)
   const [presetName, setPresetName] = useState('')
   const [presetDescription, setPresetDescription] = useState('')
@@ -173,6 +180,39 @@ export default function UserRights() {
     }
     return [...byGroup.entries()]
   }, [detail])
+
+  // While searching, a group only shows the rows that actually match (not
+  // the whole section) and always renders expanded — collapsing a group
+  // that's already been filtered down to its matches would just hide the
+  // thing you searched for.
+  const searchActive = permSearch.trim().length > 0
+  const filteredGrouped = useMemo(() => {
+    const q = permSearch.trim().toLowerCase()
+    if (!q) return grouped
+    return grouped
+      .map(([group, menus]) => [
+        group,
+        menus.filter((m) => m.label.toLowerCase().includes(q) || (group || '').toLowerCase().includes(q)),
+      ])
+      .filter(([, menus]) => menus.length > 0)
+  }, [grouped, permSearch])
+
+  function toggleGroupCollapsed(group) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(group)) next.delete(group)
+      else next.add(group)
+      return next
+    })
+  }
+
+  function collapseAll() {
+    setCollapsedGroups(new Set(grouped.map(([group]) => group)))
+  }
+
+  function expandAll() {
+    setCollapsedGroups(new Set())
+  }
 
   function togglePerm(menuKey, action) {
     setDetail((prev) =>
@@ -497,6 +537,43 @@ export default function UserRights() {
               </div>
             )}
 
+            {!loadingDetail && (
+              <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+                <div className="relative w-64">
+                  <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search pages…"
+                    value={permSearch}
+                    onChange={(e) => setPermSearch(e.target.value)}
+                    className="h-8 pl-8 text-xs"
+                  />
+                </div>
+                {!searchActive && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={expandAll}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-[11px] font-semibold text-foreground transition-colors hover:border-[#1a3f7a] hover:text-[#1a3f7a]"
+                    >
+                      Expand all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={collapseAll}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-[#1a3f7a] hover:text-[#1a3f7a]"
+                    >
+                      Collapse all
+                    </button>
+                  </div>
+                )}
+                <span className="ml-auto text-[11px] text-muted-foreground">
+                  {searchActive
+                    ? `${filteredGrouped.reduce((n, [, menus]) => n + menus.length, 0)} match${filteredGrouped.reduce((n, [, menus]) => n + menus.length, 0) === 1 ? '' : 'es'}`
+                    : `${grouped.length} section${grouped.length === 1 ? '' : 's'}`}
+                </span>
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto p-4">
               {loadingDetail && <p className="text-sm text-muted-foreground">Loading…</p>}
 
@@ -507,14 +584,32 @@ export default function UserRights() {
                 </p>
               )}
 
+              {!loadingDetail && filteredGrouped.length === 0 && (
+                <p className="p-6 text-center text-sm text-muted-foreground">
+                  No pages match "{permSearch}".
+                </p>
+              )}
+
               {!loadingDetail &&
-                grouped.map(([group, menus]) => (
-                  <div key={group} className="mb-6">
+                filteredGrouped.map(([group, menus]) => {
+                  const isCollapsed = !searchActive && collapsedGroups.has(group)
+                  return (
+                  <div key={group} className="mb-3">
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <button
+                        type="button"
+                        onClick={() => toggleGroupCollapsed(group)}
+                        className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <IconChevronDown
+                          className={`h-3 w-3 shrink-0 transition-transform ${isCollapsed ? '-rotate-90' : ''}`}
+                        />
                         {group || 'General'}
-                      </p>
-                      {!isAppAdmin && (
+                        <span className="font-mono text-[10px] font-normal normal-case text-muted-foreground/70">
+                          ({menus.length})
+                        </span>
+                      </button>
+                      {!isAppAdmin && !isCollapsed && (
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -533,6 +628,7 @@ export default function UserRights() {
                         </div>
                       )}
                     </div>
+                    {!isCollapsed && (
                     <div className="overflow-hidden rounded-xl border border-border">
                       <table className="w-full table-fixed text-sm">
                         <colgroup>
@@ -587,8 +683,10 @@ export default function UserRights() {
                         </tbody>
                       </table>
                     </div>
+                    )}
                   </div>
-                ))}
+                  )
+                })}
             </div>
           </div>
         )}

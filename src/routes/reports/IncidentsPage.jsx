@@ -249,13 +249,13 @@ export default function IncidentsPage() {
             <colgroup>
               <col className="w-10" />
               <col className="w-[116px]" />
-              <col className="w-[76px]" />
+              <col className="w-[140px]" />
               <col className="w-[92px]" />
               <col className="w-[80px]" />
               <col className="w-[128px]" />
               <col className="w-[68px]" />
               <col className="w-[68px]" />
-              <col />
+              <col className="w-[220px]" />
               <col className="w-9" />
             </colgroup>
             <thead>
@@ -267,7 +267,7 @@ export default function IncidentsPage() {
                   <SortHeader key={c.key} col={c} ordering={ordering} onClick={() => toggleSort(c.key)} />
                 ))}
                 <th className="px-3 py-2.5 text-left text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
-                  Incident No
+                  Rig Incident No
                 </th>
                 <th className="px-3 py-2.5 text-left text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
                   Rig
@@ -301,7 +301,9 @@ export default function IncidentsPage() {
                       <td className="truncate px-3 py-2.5">
                         {r.incident_date ? new Date(r.incident_date).toLocaleDateString() : '—'}
                       </td>
-                      <td className="truncate px-3 py-2.5">{r.incident_no}</td>
+                      <td className="truncate px-3 py-2.5" title={`Incident #${r.incident_no}`}>
+                        {r.rig_incident_no || '—'}
+                      </td>
                       <td className="truncate px-3 py-2.5" title={r.rig_name}>
                         {r.rig_name}
                       </td>
