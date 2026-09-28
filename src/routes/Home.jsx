@@ -31,8 +31,13 @@ function quickLinks(user) {
     .filter(Boolean)
 }
 
-// One-click "start a new record" tiles. Add an entry here to add a shortcut;
-// it only shows for users who hold the given permission on `menuKey`.
+// One-click "start a new record" tiles that show for every user by
+// default, no picking required — reserved for the one workflow explicitly
+// meant to be a default landing shortcut, not a curated catalogue of every
+// big form (those live in the customizable picker instead — see
+// ACTION_SHORTCUTS in lib/shortcuts.js). Add an entry here to add a
+// shortcut; it only shows for users who hold the given permission on
+// `menuKey`.
 const SHORTCUTS = [
   {
     key: 'new-drilling-report',

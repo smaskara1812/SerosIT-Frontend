@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Activity, Clock, Gauge, Layers, TriangleAlert } from 'lucide-react'
+import { Activity, ArrowLeft, Clock, Gauge, Layers, TriangleAlert } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
@@ -58,25 +58,28 @@ export default function RigUtilisationDashboardPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Which month the "Hours by Category" chart is drilled into — null shows
+  // the fleet-wide by-month view; set (a "YYYY-MM" string) shows that one
+  // month's totals broken down by rig instead.
+  const [drilledMonth, setDrilledMonth] = useState(null)
 
   useEffect(() => {
     const params = new URLSearchParams()
     if (year) params.set('year', String(year))
     if (selectedRigIds.size > 0) params.set('rigs', [...selectedRigIds].join(','))
-    setLoading(true)
-    setError('')
     apiFetch(`/api/dashboards/rig-utilisation/?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error('Failed to load dashboard')
         return r.json()
       })
       .then((d) => {
+        setError('')
         setData(d)
         setYear((prev) => prev ?? d.year)
+        setDrilledMonth(null)
       })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, selectedRigIds])
 
   usePageSubtitle(data ? `${data.summary.total_rigs} rig(s) · ${data.year}` : null)
@@ -115,6 +118,15 @@ export default function RigUtilisationDashboardPage() {
     [data]
   )
 
+  // Same categories, but for one clicked month, one bar per rig instead of
+  // one bar per month — the drill-down view.
+  const hoursByRigForDrilledMonth = useMemo(() => {
+    if (!data || !drilledMonth) return []
+    return data.hours_by_rig_month
+      .filter((r) => r.month === drilledMonth)
+      .sort((a, b) => a.rig_name.localeCompare(b.rig_name))
+  }, [data, drilledMonth])
+
   if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
 
   return (
@@ -148,7 +160,11 @@ export default function RigUtilisationDashboardPage() {
             <KpiCard icon={TriangleAlert} label="NPT Hrs" value={fmtNum(data.summary.npt_hrs)} accent="var(--chart-4)" />
           </div>
 
-          <ChartCard icon={Gauge} title="Utilisation % by Rig, by Month" subtitle={`— ${data.year}`} accent="var(--chart-1)">
+          <ChartCard icon={Gauge} title="Utilisation % Trend, by Rig" subtitle={`— monthly, ${data.year}`} accent="var(--chart-1)">
+            <p className="-mt-2 mb-3 text-[11px] text-muted-foreground">
+              Month-to-month change per rig. For a single ranked score per rig for the whole year, see "Utilisation
+              by Rig — Year Average" below.
+            </p>
             {trendData.length === 0 ? (
               <EmptyChartState>No drilling report data for this period.</EmptyChartState>
             ) : (
@@ -159,7 +175,7 @@ export default function RigUtilisationDashboardPage() {
                   <YAxis unit="%" stroke="var(--muted-foreground)" fontSize={12} />
                   <Tooltip
                     labelFormatter={monthLabel}
-                    formatter={(v) => [v == null ? '—' : `${Number(v).toFixed(1)}%`]}
+                    formatter={(v, name) => [v == null ? '—' : `${Number(v).toFixed(1)}%`, name]}
                     contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -180,8 +196,41 @@ export default function RigUtilisationDashboardPage() {
           </ChartCard>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ChartCard icon={Clock} title="Hours by Category, by Month" subtitle="— fleet total" accent="var(--chart-3)">
-              {hoursData.length === 0 ? (
+            <ChartCard
+              icon={Clock}
+              title={drilledMonth ? `Hours by Category — ${monthLabel(drilledMonth)} ${data.year}` : 'Hours by Category, by Month'}
+              subtitle={drilledMonth ? '— by rig' : '— fleet total, click a month to drill in'}
+              accent="var(--chart-3)"
+            >
+              {drilledMonth && (
+                <button
+                  type="button"
+                  onClick={() => setDrilledMonth(null)}
+                  className="-mt-2 mb-3 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  <ArrowLeft className="h-3 w-3" /> Back to all months
+                </button>
+              )}
+              {drilledMonth ? (
+                hoursByRigForDrilledMonth.length === 0 ? (
+                  <EmptyChartState>No drilling report data for this month.</EmptyChartState>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={hoursByRigForDrilledMonth}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="rig_name" stroke="var(--muted-foreground)" fontSize={12} />
+                      <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      {HOUR_CATEGORIES.map((c) => (
+                        <Bar key={c.key} dataKey={c.key} name={c.label} stackId="hours" fill={c.color} />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )
+              ) : hoursData.length === 0 ? (
                 <EmptyChartState>No drilling report data for this period.</EmptyChartState>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
@@ -194,14 +243,26 @@ export default function RigUtilisationDashboardPage() {
                     />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     {HOUR_CATEGORIES.map((c) => (
-                      <Bar key={c.key} dataKey={c.key} name={c.label} stackId="hours" fill={c.color} />
+                      <Bar
+                        key={c.key}
+                        dataKey={c.key}
+                        name={c.label}
+                        stackId="hours"
+                        fill={c.color}
+                        cursor="pointer"
+                        onClick={(bar) => setDrilledMonth(bar?.payload?.month ?? bar?.month)}
+                      />
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
               )}
             </ChartCard>
 
-            <ChartCard icon={Gauge} title="Utilisation by Rig" subtitle={`— ${data.year}`} accent="var(--chart-4)">
+            <ChartCard icon={Gauge} title="Utilisation by Rig — Year Average" subtitle={`— ranked, ${data.year}`} accent="var(--chart-4)">
+              <p className="-mt-2 mb-3 text-[11px] text-muted-foreground">
+                One value per rig for the whole year — use this to compare rigs against each other, not to see
+                trends over time.
+              </p>
               {data.utilisation_by_rig.length === 0 ? (
                 <EmptyChartState>No drilling report data for this period.</EmptyChartState>
               ) : (

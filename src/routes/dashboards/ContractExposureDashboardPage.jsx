@@ -34,20 +34,18 @@ export default function ContractExposureDashboardPage() {
     const params = new URLSearchParams()
     if (year) params.set('year', String(year))
     if (selectedRigIds.size > 0) params.set('rigs', [...selectedRigIds].join(','))
-    setLoading(true)
-    setError('')
     apiFetch(`/api/dashboards/contract-exposure/?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error('Failed to load dashboard')
         return r.json()
       })
       .then((d) => {
+        setError('')
         setData(d)
         setYear((prev) => prev ?? d.year)
       })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, selectedRigIds])
 
   usePageSubtitle(data ? `${data.rows.length} rig(s) · ${data.year}` : null)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, CalendarClock, FileCheck2, MapPinned, PauseCircle, TriangleAlert } from 'lucide-react'
+import { Activity, CalendarClock, FileCheck2, Info, MapPinned, PauseCircle, TriangleAlert } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
@@ -25,14 +25,15 @@ export default function FleetOperatingPicturePage() {
   useEffect(() => {
     const params = new URLSearchParams()
     if (selectedRigIds.size > 0) params.set('rigs', [...selectedRigIds].join(','))
-    setLoading(true)
-    setError('')
     apiFetch(`/api/dashboards/fleet-operating-picture/?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error('Failed to load dashboard')
         return r.json()
       })
-      .then(setData)
+      .then((d) => {
+        setError('')
+        setData(d)
+      })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false))
   }, [selectedRigIds])
@@ -171,6 +172,18 @@ export default function FleetOperatingPicturePage() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/50 px-3.5 py-2.5 text-xs leading-relaxed text-muted-foreground">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              This page always compares against today's real calendar date, not a selected year — "Days on Well,"
+              "Days Since Report," and "Silent" are all measured from today. If the underlying daily reports haven't
+              been entered recently (e.g. this environment's data currently stops around April 2026), most open-well
+              rigs will show as Silent even though nothing is actually wrong — that's expected on a dataset that
+              isn't being updated live, not a bug in the page. On a system with reports entered daily, this reflects
+              real, current staleness.
+            </p>
           </div>
         </>
       )}
