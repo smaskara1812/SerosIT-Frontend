@@ -45,6 +45,11 @@ import RigUtilisationDashboardPage from '@/routes/dashboards/RigUtilisationDashb
 import DrillingPerformanceDashboardPage from '@/routes/dashboards/DrillingPerformanceDashboardPage'
 import FleetOperatingPicturePage from '@/routes/dashboards/FleetOperatingPicturePage'
 import ContractExposureDashboardPage from '@/routes/dashboards/ContractExposureDashboardPage'
+import ItAssetDashboardPage from '@/routes/dashboards/ItAssetDashboardPage'
+import NptAnalysisDashboardPage from '@/routes/dashboards/NptAnalysisDashboardPage'
+// Rig Health Index pulled from the app for now — page and its backend
+// view (rig_health_dashboard.py) are kept, just not wired up here.
+// import RigHealthDashboardPage from '@/routes/dashboards/RigHealthDashboardPage'
 
 function App() {
   return (
@@ -105,6 +110,8 @@ function App() {
           <Route path="/dashboards/drilling-performance" element={<DrillingPerformanceDashboardPage />} />
           <Route path="/dashboards/fleet-operating-picture" element={<FleetOperatingPicturePage />} />
           <Route path="/dashboards/contract-exposure" element={<ContractExposureDashboardPage />} />
+          <Route path="/dashboards/it-asset-overview" element={<ItAssetDashboardPage />} />
+          <Route path="/dashboards/npt-analysis" element={<NptAnalysisDashboardPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>

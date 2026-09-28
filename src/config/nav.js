@@ -57,6 +57,7 @@ import {
   MailWarning,
   Drill,
   Gauge,
+  HardDrive,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -105,6 +106,23 @@ export const navTree = [
             icon: Landmark,
             menuKey: 'dashboards.contract_exposure',
           },
+          {
+            key: 'npt_analysis',
+            label: 'NPT Analysis',
+            path: '/dashboards/npt-analysis',
+            icon: IconAlertTriangle,
+            menuKey: 'dashboards.npt_analysis',
+          },
+          {
+            key: 'it_asset_overview',
+            label: 'IT Asset Overview',
+            path: '/dashboards/it-asset-overview',
+            icon: HardDrive,
+            menuKey: 'dashboards.it_asset_overview',
+          },
+          // Rig Health Index pulled from the nav for now (not removed —
+          // see RigHealthDashboardPage.jsx / rig_health_dashboard.py,
+          // still routed in App.jsx, just not linked from anywhere).
         ],
       },
     ],

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList } from '@/lib/api'
 import { usePageSubtitle } from '@/context/TopbarContext'
@@ -39,6 +39,30 @@ const ALLOCATED_OPTIONS = [
   { value: 'N', label: 'Unassigned' },
   { value: 'S', label: 'Scrap' },
   { value: 'L', label: 'Lost' },
+]
+
+const WARRANTY_STATUS_OPTIONS = [
+  { value: '', label: 'All' },
+  { value: 'valid', label: 'Valid' },
+  { value: 'expiring_soon', label: 'Expiring ≤90d' },
+  { value: 'expired', label: 'Expired' },
+  { value: 'no_data', label: 'No Data' },
+]
+
+// Filter keys this page will seed itself from on first load — used by the
+// IT Asset Overview dashboard's quick actions and clickable chart segments
+// to deep-link straight into a pre-filtered list (e.g. "Warranty Expired"
+// KPI -> ?warranty_status=expired).
+const URL_SEEDABLE_FILTERS = [
+  'active',
+  'holder_type',
+  'allocated',
+  'it_asset_type',
+  'it_asset_subtype',
+  'it_asset_mfg',
+  'own_company',
+  'warranty_status',
+  'pur_year',
 ]
 
 function todayStr() {
@@ -105,18 +129,22 @@ function SortHeader({ col, ordering, onClick }) {
 export default function ItAssetsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const canAdd = can(user, 'it_asset.it_assets', 'add')
   const canEdit = can(user, 'it_asset.it_assets', 'edit')
   const canDelete = can(user, 'it_asset.it_assets', 'delete')
 
-  const [filters, setFilters] = useState({
-    active: '',
-    holder_type: '',
-    allocated: '',
-    it_asset_type: '',
-    it_asset_subtype: '',
-    it_asset_mfg: '',
-    own_company: '',
+  // Seeds filters from the URL on first load only, so a deep link from the
+  // IT Asset Overview dashboard (a KPI, chart segment, or quick-action
+  // button) opens straight into the matching filtered view — the user can
+  // still change any of them normally afterwards.
+  const [filters, setFilters] = useState(() => {
+    const seeded = { active: '', holder_type: '', allocated: '', it_asset_type: '', it_asset_subtype: '', it_asset_mfg: '', own_company: '', warranty_status: '', pur_year: '' }
+    URL_SEEDABLE_FILTERS.forEach((key) => {
+      const v = searchParams.get(key)
+      if (v) seeded[key] = v
+    })
+    return seeded
   })
   const [search, setSearch] = useState('')
   const [ordering, setOrdering] = useState('-pur_dt')
@@ -404,6 +432,25 @@ export default function ItAssetsPage() {
             options={companyOptions}
             width="w-[170px]"
           />
+          <SelectField
+            label="Warranty"
+            value={filters.warranty_status}
+            onChange={(v) => setFilter('warranty_status', v)}
+            options={WARRANTY_STATUS_OPTIONS}
+            width="w-[140px]"
+          />
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Purchase Year
+            </span>
+            <Input
+              type="number"
+              placeholder="Any"
+              value={filters.pur_year}
+              onChange={(e) => setFilter('pur_year', e.target.value)}
+              className="h-9 w-[100px]"
+            />
+          </label>
           {canAdd && (
             <Button size="lg" className="ml-auto" onClick={() => navigate('/it-asset/it-assets/new')}>
               + New IT Asset

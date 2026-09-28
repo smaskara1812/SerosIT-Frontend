@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { ArrowUpRight, ListFilter } from 'lucide-react'
 import { IconChevronDown } from '@/components/icons'
 
 // Shared building blocks for every analytics dashboard page (Rig
@@ -7,12 +9,112 @@ import { IconChevronDown } from '@/components/icons'
 // instead of three independently-styled pages, and so a future dashboard
 // gets this look for free.
 
+// ---------------------------------------------------------------------
+// URL-backed filter state. Every dashboard's year/rig(s)/type/company
+// filters used to live in plain useState, which meant a refresh silently
+// reset the view and there was no way to send a colleague "2025, these
+// three rigs" as a link. These three hooks are drop-in replacements for
+// useState with the exact same read/write shape (including the
+// `setValue(prevValue => ...)` functional-updater pattern every dashboard
+// already uses), so a page adopts URL state by changing only its
+// declaration line, not its logic. They write with `replace: true` so
+// changing a filter doesn't spam browser history with one entry per click.
+// ---------------------------------------------------------------------
+
+// A single numeric param (e.g. ?year=2024). Mirrors useState(null)'s shape.
+export function useUrlYear(paramKey = 'year') {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const raw = searchParams.get(paramKey)
+  const year = raw && /^\d+$/.test(raw) ? Number(raw) : null
+
+  function setYear(updater) {
+    setSearchParams(
+      (prev) => {
+        const currentRaw = prev.get(paramKey)
+        const current = currentRaw && /^\d+$/.test(currentRaw) ? Number(currentRaw) : null
+        const next = typeof updater === 'function' ? updater(current) : updater
+        const params = new URLSearchParams(prev)
+        if (next) params.set(paramKey, String(next))
+        else params.delete(paramKey)
+        return params
+      },
+      { replace: true }
+    )
+  }
+
+  return [year, setYear]
+}
+
+// A comma-joined set of numeric ids (e.g. ?rigs=3,7,12). Mirrors
+// useState(() => new Set())'s shape, including Set-returning updaters.
+export function useUrlIdSet(paramKey) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const raw = searchParams.get(paramKey)
+  const ids = useMemo(() => {
+    if (!raw) return new Set()
+    return new Set(
+      raw
+        .split(',')
+        .map((x) => Number(x.trim()))
+        .filter((n) => !Number.isNaN(n))
+    )
+  }, [raw])
+
+  function setIds(updater) {
+    setSearchParams(
+      (prev) => {
+        const currentRaw = prev.get(paramKey)
+        const current = currentRaw
+          ? new Set(
+              currentRaw
+                .split(',')
+                .map((x) => Number(x.trim()))
+                .filter((n) => !Number.isNaN(n))
+            )
+          : new Set()
+        const next = typeof updater === 'function' ? updater(current) : updater
+        const params = new URLSearchParams(prev)
+        if (next.size > 0) params.set(paramKey, [...next].join(','))
+        else params.delete(paramKey)
+        return params
+      },
+      { replace: true }
+    )
+  }
+
+  return [ids, setIds]
+}
+
+// A single free-text param (e.g. ?status=silent) — used for the "KPI as
+// filter" pattern (KpiCard's onFilter/filterActive below), so which
+// exception a table is narrowed to is also shareable/resumable.
+export function useUrlString(paramKey) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const value = searchParams.get(paramKey) || ''
+
+  function setValue(updater) {
+    setSearchParams(
+      (prev) => {
+        const current = prev.get(paramKey) || ''
+        const next = typeof updater === 'function' ? updater(current) : updater
+        const params = new URLSearchParams(prev)
+        if (next) params.set(paramKey, next)
+        else params.delete(paramKey)
+        return params
+      },
+      { replace: true }
+    )
+  }
+
+  return [value, setValue]
+}
+
 // A KPI card with an icon chip in its own accent colour — accent should be
 // one of the Seros chart tokens (var(--chart-1..5)) for a normal metric, or
 // 'var(--destructive)' for a metric that's actively a problem (e.g. Silent
 // Rigs > 0). Never invent a new colour here; pick from what's already on
 // the page.
-export function KpiCard({ icon: Icon, label, value, sub, accent = 'var(--chart-1)', warning = false }) {
+export function KpiCard({ icon: Icon, label, value, sub, accent = 'var(--chart-1)', warning = false, onViewList }) {
   const tint = warning ? 'var(--destructive)' : accent
   return (
     // shrink-0: this card's own `overflow-hidden` (for the accent bar's
@@ -21,6 +123,12 @@ export function KpiCard({ icon: Icon, label, value, sub, accent = 'var(--chart-1
     // total content will silently squash this card toward zero height
     // instead of growing the page, with nothing visibly wrong except the
     // card just isn't there. See ChartCard below for the same rule.
+    //
+    // The card itself is never a click target — only the small "view
+    // list" button (rendered when onViewList is passed) is. Other
+    // dashboards train users to click chart elements for an in-page
+    // drill-down, so a whole KPI card silently navigating away on click
+    // would be a surprising, inconsistent habit-trap.
     <div className="relative flex min-w-[168px] flex-1 shrink-0 flex-col gap-2.5 overflow-hidden rounded-2xl border border-border bg-card p-4">
       <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tint }} />
       <div className="flex items-center gap-2.5">
@@ -33,6 +141,16 @@ export function KpiCard({ icon: Icon, label, value, sub, accent = 'var(--chart-1
           </div>
         )}
         <p className="truncate text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+        {onViewList && (
+          <button
+            type="button"
+            onClick={onViewList}
+            title="View in asset list"
+            className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       <p className={`text-2xl font-bold ${warning ? 'text-destructive' : 'text-foreground'}`}>{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
@@ -65,6 +183,53 @@ export function ChartCard({ icon: Icon, title, subtitle, accent = 'var(--chart-1
 
 export function EmptyChartState({ children = 'No data for this period.' }) {
   return <p className="p-8 text-center text-sm text-muted-foreground">{children}</p>
+}
+
+// A row of one-click deep-links from a dashboard straight into the
+// underlying list page with a specific filter pre-applied (e.g. "Warranty
+// Expired" -> /it-asset/it-assets?warranty_status=expired). Kept visually
+// distinct from KPI cards and chart segments (which are also clickable
+// where it makes sense) since these are fixed, always-available shortcuts
+// rather than derived from the current data.
+export function QuickActions({ label = 'Quick actions', children }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3">
+      <p className="mr-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+      {children}
+    </div>
+  )
+}
+
+// `dotColor` is an alternative to `icon` for a per-segment action (e.g. one
+// button per pie slice or bar) where the colour itself — matching that
+// segment's own chart colour — is the identifying mark rather than an icon.
+export function QuickActionButton({ icon: Icon, children, onClick, accent = 'var(--chart-1)', dotColor, title }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="flex items-center gap-1.5 rounded-full border border-border bg-transparent px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+    >
+      {Icon && <Icon className="h-3.5 w-3.5" style={{ color: accent }} />}
+      {dotColor && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dotColor }} />}
+      {children}
+    </button>
+  )
+}
+
+// A labelled row of per-segment "view list" buttons placed below a chart —
+// never on the chart itself. Other dashboards train users to click chart
+// elements for an in-page drill-down, so a bar/slice that instead silently
+// navigates away to a different page would be a jarring, inconsistent
+// surprise; a visible button is an explicit, unambiguous trigger instead.
+export function ChartActionRow({ label = 'View in asset list', children }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+      <p className="mr-1 text-[11px] font-semibold text-muted-foreground">{label}</p>
+      {children}
+    </div>
+  )
 }
 
 // The filter toolbar every dashboard opens with — Year/Rig pickers plus a
