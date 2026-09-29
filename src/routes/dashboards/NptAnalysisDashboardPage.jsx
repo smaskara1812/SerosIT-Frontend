@@ -7,6 +7,7 @@ import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { ChartCard, DashboardToolbar, EmptyChartState, KpiCard, MultiSelectPopover, YearSelect } from './DashboardUI'
+import { useUrlIdSet, useUrlYear } from './dashboardUrlState'
 
 const MENU_KEY = 'dashboards.npt_analysis'
 
@@ -24,8 +25,8 @@ function fmtNum(v) {
 export default function NptAnalysisDashboardPage() {
   const { user } = useAuth()
 
-  const [year, setYear] = useState(null)
-  const [selectedRigIds, setSelectedRigIds] = useState(() => new Set())
+  const [year, setYear] = useUrlYear()
+  const [selectedRigIds, setSelectedRigIds] = useUrlIdSet('rigs')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -50,7 +51,7 @@ export default function NptAnalysisDashboardPage() {
       })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false))
-  }, [year, selectedRigIds])
+  }, [year, selectedRigIds, setYear])
 
   usePageSubtitle(data ? `${fmtNum(data.summary.total_npt_hrs)} NPT hr(s) · ${data.year}` : null)
 

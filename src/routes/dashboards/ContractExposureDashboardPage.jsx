@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { CalendarClock, FileCheck2, Landmark, PauseCircle, TriangleAlert } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
@@ -7,6 +7,7 @@ import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { ChartCard, DashboardToolbar, EmptyChartState, KpiCard, MultiSelectPopover, YearSelect } from './DashboardUI'
+import { useUrlIdSet, useUrlString, useUrlYear } from './dashboardUrlState'
 
 const MENU_KEY = 'dashboards.contract_exposure'
 
@@ -24,8 +25,11 @@ function fmtNum(v) {
 export default function ContractExposureDashboardPage() {
   const { user } = useAuth()
 
-  const [year, setYear] = useState(null)
-  const [selectedRigIds, setSelectedRigIds] = useState(() => new Set())
+  const [year, setYear] = useUrlYear()
+  const [selectedRigIds, setSelectedRigIds] = useUrlIdSet('rigs')
+  // Which row status the coverage table is narrowed to — set by a KpiCard's
+  // onFilter (Coverage Gaps / Ending ≤30d) rather than by navigating away.
+  const [statusFilter, setStatusFilter] = useUrlString('status')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -46,7 +50,7 @@ export default function ContractExposureDashboardPage() {
       })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false))
-  }, [year, selectedRigIds])
+  }, [year, selectedRigIds, setYear])
 
   usePageSubtitle(data ? `${data.rows.length} rig(s) · ${data.year}` : null)
 
@@ -61,6 +65,21 @@ export default function ContractExposureDashboardPage() {
       return next
     })
   }
+
+  // One source of truth for each row's status, shared by the pill it
+  // renders and the KPI-driven table filter below — the pill and the
+  // "Coverage Gaps"/"Ending ≤30d" KPI cards would silently drift apart if
+  // this logic lived in two places.
+  function rowStatus(r) {
+    if (!r.contract_no) return r.rig_active === 'Y' ? 'gap' : 'idle'
+    if (r.days_remaining != null && r.days_remaining <= 30) return 'ending_soon'
+    return 'active'
+  }
+
+  const rowsWithStatus = useMemo(() => (data ? data.rows.map((r) => ({ ...r, status: rowStatus(r) })) : []), [data])
+  const visibleRows = statusFilter ? rowsWithStatus.filter((r) => r.status === statusFilter) : rowsWithStatus
+
+  const STATUS_FILTER_LABELS = { gap: 'Coverage Gaps', ending_soon: 'Ending ≤30d' }
 
   if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
 
@@ -94,8 +113,17 @@ export default function ContractExposureDashboardPage() {
               value={data.summary.coverage_gaps}
               sub="Active, no current contract"
               warning={data.summary.coverage_gaps > 0}
+              onFilter={() => setStatusFilter((prev) => (prev === 'gap' ? '' : 'gap'))}
+              filterActive={statusFilter === 'gap'}
             />
-            <KpiCard icon={CalendarClock} label="Ending ≤30d" value={data.summary.ending_30d} accent="var(--destructive)" />
+            <KpiCard
+              icon={CalendarClock}
+              label="Ending ≤30d"
+              value={data.summary.ending_30d}
+              accent="var(--destructive)"
+              onFilter={() => setStatusFilter((prev) => (prev === 'ending_soon' ? '' : 'ending_soon'))}
+              filterActive={statusFilter === 'ending_soon'}
+            />
             <KpiCard icon={CalendarClock} label="Ending ≤60d" value={data.summary.ending_60d} accent="var(--chart-4)" />
             <KpiCard icon={CalendarClock} label="Ending ≤90d" value={data.summary.ending_90d} accent="var(--chart-5)" />
           </div>
@@ -124,6 +152,19 @@ export default function ContractExposureDashboardPage() {
           </ChartCard>
 
           <ChartCard icon={FileCheck2} title="Contract Coverage by Rig" subtitle={`— as of ${fmtDate(data.as_of)}`} accent="var(--chart-1)" bodyClassName="p-0">
+            {statusFilter && (
+              <div className="flex items-center gap-2 border-b border-border bg-primary/5 px-3.5 py-2 text-xs text-foreground">
+                <TriangleAlert className="h-3.5 w-3.5 text-destructive" />
+                Showing {visibleRows.length} of {rowsWithStatus.length} rigs — {STATUS_FILTER_LABELS[statusFilter]} only.
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('')}
+                  className="ml-auto font-semibold text-primary hover:underline"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -138,7 +179,14 @@ export default function ContractExposureDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.rows.map((r, i) => (
+                  {visibleRows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                        No rigs match this filter.
+                      </td>
+                    </tr>
+                  )}
+                  {visibleRows.map((r, i) => (
                     <tr key={r.rig_id} className={`border-b border-border/60 last:border-b-0 hover:bg-muted/40 ${i % 2 === 1 ? 'bg-muted/20' : ''}`}>
                       <td className="px-3 py-2.5 font-medium text-foreground">
                         <span className="flex items-center gap-1.5">
@@ -155,17 +203,15 @@ export default function ContractExposureDashboardPage() {
                         {r.days_remaining != null && <span className="block text-[11px]">{r.days_remaining}d left</span>}
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        {!r.contract_no ? (
-                          r.rig_active === 'Y' ? (
-                            <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
-                              Gap
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                              Idle
-                            </span>
-                          )
-                        ) : r.days_remaining != null && r.days_remaining <= 30 ? (
+                        {r.status === 'gap' ? (
+                          <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+                            Gap
+                          </span>
+                        ) : r.status === 'idle' ? (
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                            Idle
+                          </span>
+                        ) : r.status === 'ending_soon' ? (
                           <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                             Ending Soon
                           </span>

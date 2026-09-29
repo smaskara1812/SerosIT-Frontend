@@ -17,6 +17,7 @@ import {
   QuickActionButton,
   QuickActions,
 } from './DashboardUI'
+import { useUrlIdSet } from './dashboardUrlState'
 
 const MENU_KEY = 'dashboards.it_asset_overview'
 
@@ -32,8 +33,8 @@ export default function ItAssetDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [selectedTypeIds, setSelectedTypeIds] = useState(() => new Set())
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState(() => new Set())
+  const [selectedTypeIds, setSelectedTypeIds] = useUrlIdSet('types')
+  const [selectedCompanyIds, setSelectedCompanyIds] = useUrlIdSet('companies')
   const [drilledYear, setDrilledYear] = useState(null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)

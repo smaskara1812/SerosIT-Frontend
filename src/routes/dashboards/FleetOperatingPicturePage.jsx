@@ -6,6 +6,7 @@ import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { DashboardToolbar, KpiCard, MultiSelectPopover } from './DashboardUI'
+import { useUrlIdSet, useUrlString } from './dashboardUrlState'
 
 const MENU_KEY = 'dashboards.fleet_operating_picture'
 
@@ -17,7 +18,11 @@ function fmtDate(d) {
 export default function FleetOperatingPicturePage() {
   const { user } = useAuth()
 
-  const [selectedRigIds, setSelectedRigIds] = useState(() => new Set())
+  const [selectedRigIds, setSelectedRigIds] = useUrlIdSet('rigs')
+  // Which exception the table below is narrowed to — set by a KpiCard's
+  // onFilter (e.g. "Silent Rigs") rather than by navigating anywhere, so
+  // the click stays on the page and the filtered view is itself shareable.
+  const [statusFilter, setStatusFilter] = useUrlString('status')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -51,6 +56,8 @@ export default function FleetOperatingPicturePage() {
       return next
     })
   }
+
+  const visibleRows = data && statusFilter === 'silent' ? data.rows.filter((r) => r.is_silent) : data?.rows ?? []
 
   if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
 
@@ -86,6 +93,8 @@ export default function FleetOperatingPicturePage() {
               label="Silent Rigs"
               value={data.summary.silent_rigs}
               warning={data.summary.silent_rigs > 0}
+              onFilter={() => setStatusFilter((prev) => (prev === 'silent' ? '' : 'silent'))}
+              filterActive={statusFilter === 'silent'}
             />
             <KpiCard icon={CalendarClock} label="Contracts Ending ≤30d" value={data.summary.contracts_ending_soon} accent="var(--chart-4)" />
           </div>
@@ -98,6 +107,19 @@ export default function FleetOperatingPicturePage() {
               the page-level scroll container handle it. */}
           <div className="shrink-0 overflow-hidden rounded-2xl border border-border bg-card">
             <div className="h-[3px] w-full" style={{ background: 'var(--chart-1)' }} />
+            {statusFilter === 'silent' && (
+              <div className="flex items-center gap-2 border-b border-border bg-primary/5 px-3.5 py-2 text-xs text-foreground">
+                <TriangleAlert className="h-3.5 w-3.5 text-destructive" />
+                Showing {visibleRows.length} of {data.rows.length} rigs — Silent only.
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('')}
+                  className="ml-auto font-semibold text-primary hover:underline"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -114,7 +136,14 @@ export default function FleetOperatingPicturePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.rows.map((r, i) => (
+                  {visibleRows.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                        No rigs match this filter.
+                      </td>
+                    </tr>
+                  )}
+                  {visibleRows.map((r, i) => (
                     <tr
                       key={r.rig_id}
                       className={`border-b border-border/60 last:border-b-0 hover:bg-muted/40 ${i % 2 === 1 ? 'bg-muted/20' : ''}`}

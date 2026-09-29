@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, ListFilter } from 'lucide-react'
 import { IconChevronDown } from '@/components/icons'
 
@@ -8,113 +7,27 @@ import { IconChevronDown } from '@/components/icons'
 // comes next) — extracted so all three read as one consistent product
 // instead of three independently-styled pages, and so a future dashboard
 // gets this look for free.
-
-// ---------------------------------------------------------------------
-// URL-backed filter state. Every dashboard's year/rig(s)/type/company
-// filters used to live in plain useState, which meant a refresh silently
-// reset the view and there was no way to send a colleague "2025, these
-// three rigs" as a link. These three hooks are drop-in replacements for
-// useState with the exact same read/write shape (including the
-// `setValue(prevValue => ...)` functional-updater pattern every dashboard
-// already uses), so a page adopts URL state by changing only its
-// declaration line, not its logic. They write with `replace: true` so
-// changing a filter doesn't spam browser history with one entry per click.
-// ---------------------------------------------------------------------
-
-// A single numeric param (e.g. ?year=2024). Mirrors useState(null)'s shape.
-export function useUrlYear(paramKey = 'year') {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const raw = searchParams.get(paramKey)
-  const year = raw && /^\d+$/.test(raw) ? Number(raw) : null
-
-  function setYear(updater) {
-    setSearchParams(
-      (prev) => {
-        const currentRaw = prev.get(paramKey)
-        const current = currentRaw && /^\d+$/.test(currentRaw) ? Number(currentRaw) : null
-        const next = typeof updater === 'function' ? updater(current) : updater
-        const params = new URLSearchParams(prev)
-        if (next) params.set(paramKey, String(next))
-        else params.delete(paramKey)
-        return params
-      },
-      { replace: true }
-    )
-  }
-
-  return [year, setYear]
-}
-
-// A comma-joined set of numeric ids (e.g. ?rigs=3,7,12). Mirrors
-// useState(() => new Set())'s shape, including Set-returning updaters.
-export function useUrlIdSet(paramKey) {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const raw = searchParams.get(paramKey)
-  const ids = useMemo(() => {
-    if (!raw) return new Set()
-    return new Set(
-      raw
-        .split(',')
-        .map((x) => Number(x.trim()))
-        .filter((n) => !Number.isNaN(n))
-    )
-  }, [raw])
-
-  function setIds(updater) {
-    setSearchParams(
-      (prev) => {
-        const currentRaw = prev.get(paramKey)
-        const current = currentRaw
-          ? new Set(
-              currentRaw
-                .split(',')
-                .map((x) => Number(x.trim()))
-                .filter((n) => !Number.isNaN(n))
-            )
-          : new Set()
-        const next = typeof updater === 'function' ? updater(current) : updater
-        const params = new URLSearchParams(prev)
-        if (next.size > 0) params.set(paramKey, [...next].join(','))
-        else params.delete(paramKey)
-        return params
-      },
-      { replace: true }
-    )
-  }
-
-  return [ids, setIds]
-}
-
-// A single free-text param (e.g. ?status=silent) — used for the "KPI as
-// filter" pattern (KpiCard's onFilter/filterActive below), so which
-// exception a table is narrowed to is also shareable/resumable.
-export function useUrlString(paramKey) {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const value = searchParams.get(paramKey) || ''
-
-  function setValue(updater) {
-    setSearchParams(
-      (prev) => {
-        const current = prev.get(paramKey) || ''
-        const next = typeof updater === 'function' ? updater(current) : updater
-        const params = new URLSearchParams(prev)
-        if (next) params.set(paramKey, next)
-        else params.delete(paramKey)
-        return params
-      },
-      { replace: true }
-    )
-  }
-
-  return [value, setValue]
-}
+//
+// The URL-backed filter hooks (useUrlYear/useUrlIdSet/useUrlString) live in
+// ./dashboardUrlState.js, not here — Vite's Fast Refresh only works on a
+// file that exports components, and mixing hooks in here broke it.
 
 // A KPI card with an icon chip in its own accent colour — accent should be
 // one of the Seros chart tokens (var(--chart-1..5)) for a normal metric, or
 // 'var(--destructive)' for a metric that's actively a problem (e.g. Silent
 // Rigs > 0). Never invent a new colour here; pick from what's already on
 // the page.
-export function KpiCard({ icon: Icon, label, value, sub, accent = 'var(--chart-1)', warning = false, onViewList }) {
+export function KpiCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  accent = 'var(--chart-1)',
+  warning = false,
+  onViewList,
+  onFilter,
+  filterActive = false,
+}) {
   const tint = warning ? 'var(--destructive)' : accent
   return (
     // shrink-0: this card's own `overflow-hidden` (for the accent bar's
@@ -124,12 +37,16 @@ export function KpiCard({ icon: Icon, label, value, sub, accent = 'var(--chart-1
     // instead of growing the page, with nothing visibly wrong except the
     // card just isn't there. See ChartCard below for the same rule.
     //
-    // The card itself is never a click target — only the small "view
-    // list" button (rendered when onViewList is passed) is. Other
+    // The card itself is never a click target — only the small button
+    // (view-list OR filter, rendered when that prop is passed) is. Other
     // dashboards train users to click chart elements for an in-page
-    // drill-down, so a whole KPI card silently navigating away on click
-    // would be a surprising, inconsistent habit-trap.
-    <div className="relative flex min-w-[168px] flex-1 shrink-0 flex-col gap-2.5 overflow-hidden rounded-2xl border border-border bg-card p-4">
+    // drill-down, so a whole KPI card silently acting on click would be a
+    // surprising, inconsistent habit-trap.
+    <div
+      className={`relative flex min-w-[168px] flex-1 shrink-0 flex-col gap-2.5 overflow-hidden rounded-2xl border p-4 transition-colors ${
+        filterActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
+      }`}
+    >
       <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tint }} />
       <div className="flex items-center gap-2.5">
         {Icon && (
@@ -151,9 +68,29 @@ export function KpiCard({ icon: Icon, label, value, sub, accent = 'var(--chart-1
             <ArrowUpRight className="h-3.5 w-3.5" />
           </button>
         )}
+        {onFilter && (
+          // Narrows the table already on this page to just this
+          // exception — the click stays on the page, unlike onViewList
+          // above which leaves it. filterActive keeps this button (and
+          // the card's own border/tint) lit so it's obvious the table
+          // below is currently narrowed, and why.
+          <button
+            type="button"
+            onClick={onFilter}
+            title={filterActive ? 'Clear this filter' : 'Filter the list below to this'}
+            className={`ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors ${
+              filterActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            <ListFilter className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       <p className={`text-2xl font-bold ${warning ? 'text-destructive' : 'text-foreground'}`}>{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+      {filterActive && <p className="text-[11px] font-semibold text-primary">Filtering list below</p>}
     </div>
   )
 }

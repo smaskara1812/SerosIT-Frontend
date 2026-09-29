@@ -7,6 +7,7 @@ import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { ChartCard, DashboardToolbar, EmptyChartState, KpiCard, MultiSelectPopover, YearSelect } from './DashboardUI'
+import { useUrlIdSet, useUrlYear } from './dashboardUrlState'
 
 const MENU_KEY = 'dashboards.rig_utilisation'
 
@@ -53,8 +54,8 @@ function fmtNum(v) {
 export default function RigUtilisationDashboardPage() {
   const { user } = useAuth()
 
-  const [year, setYear] = useState(null)
-  const [selectedRigIds, setSelectedRigIds] = useState(() => new Set())
+  const [year, setYear] = useUrlYear()
+  const [selectedRigIds, setSelectedRigIds] = useUrlIdSet('rigs')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -80,7 +81,7 @@ export default function RigUtilisationDashboardPage() {
       })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false))
-  }, [year, selectedRigIds])
+  }, [year, selectedRigIds, setYear])
 
   usePageSubtitle(data ? `${data.summary.total_rigs} rig(s) · ${data.year}` : null)
 
