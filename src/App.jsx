@@ -41,12 +41,14 @@ import IncidentDetailsListPage from '@/routes/qhse/IncidentDetailsListPage'
 import IncidentDetailsFormPage from '@/routes/qhse/IncidentDetailsFormPage'
 import IncidentRootCausePage from '@/routes/qhse/IncidentRootCausePage'
 import IncidentActionsPage from '@/routes/qhse/IncidentActionsPage'
+import IncidentRegisterPage from '@/routes/qhse/IncidentRegisterPage'
 import RigUtilisationDashboardPage from '@/routes/dashboards/RigUtilisationDashboardPage'
 import DrillingPerformanceDashboardPage from '@/routes/dashboards/DrillingPerformanceDashboardPage'
 import FleetOperatingPicturePage from '@/routes/dashboards/FleetOperatingPicturePage'
 import ContractExposureDashboardPage from '@/routes/dashboards/ContractExposureDashboardPage'
 import ItAssetDashboardPage from '@/routes/dashboards/ItAssetDashboardPage'
 import NptAnalysisDashboardPage from '@/routes/dashboards/NptAnalysisDashboardPage'
+import IncidentDashboardPage from '@/routes/dashboards/IncidentDashboardPage'
 // Rig Health Index pulled from the app for now — page and its backend
 // view (rig_health_dashboard.py) are kept, just not wired up here.
 // import RigHealthDashboardPage from '@/routes/dashboards/RigHealthDashboardPage'
@@ -105,6 +107,7 @@ function App() {
           <Route path="/qhse/incident-details/:id/edit" element={<IncidentDetailsFormPage />} />
           <Route path="/qhse/incident-root-cause" element={<IncidentRootCausePage />} />
           <Route path="/qhse/incident-actions" element={<IncidentActionsPage />} />
+          <Route path="/qhse/incident-register" element={<IncidentRegisterPage />} />
           <Route path="/qhse/:slug" element={<MasterCrudPage />} />
           <Route path="/dashboards/rig-utilisation" element={<RigUtilisationDashboardPage />} />
           <Route path="/dashboards/drilling-performance" element={<DrillingPerformanceDashboardPage />} />
@@ -112,6 +115,7 @@ function App() {
           <Route path="/dashboards/contract-exposure" element={<ContractExposureDashboardPage />} />
           <Route path="/dashboards/it-asset-overview" element={<ItAssetDashboardPage />} />
           <Route path="/dashboards/npt-analysis" element={<NptAnalysisDashboardPage />} />
+          <Route path="/dashboards/incident-dashboard" element={<IncidentDashboardPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>

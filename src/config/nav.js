@@ -58,6 +58,7 @@ import {
   Drill,
   Gauge,
   HardDrive,
+  Grid3x3,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -119,6 +120,13 @@ export const navTree = [
             path: '/dashboards/it-asset-overview',
             icon: HardDrive,
             menuKey: 'dashboards.it_asset_overview',
+          },
+          {
+            key: 'incident_dashboard',
+            label: 'Incident Dashboard',
+            path: '/dashboards/incident-dashboard',
+            icon: Grid3x3,
+            menuKey: 'dashboards.incident_dashboard',
           },
           // Rig Health Index pulled from the nav for now (not removed —
           // see RigHealthDashboardPage.jsx / rig_health_dashboard.py,
@@ -974,6 +982,13 @@ export const navTree = [
             path: '/qhse/incident-actions',
             icon: ClipboardList,
             menuKey: 'qhse.incident_actions',
+          },
+          {
+            key: 'incident_register',
+            label: 'Incident Register',
+            path: '/qhse/incident-register',
+            icon: IconClipboard,
+            menuKey: 'qhse.incident_register',
           },
         ],
       },

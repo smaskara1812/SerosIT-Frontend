@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, ListFilter } from 'lucide-react'
-import { IconChevronDown } from '@/components/icons'
+import { ArrowUpRight, Info, ListFilter } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+
+// MultiSelectPopover moved to components/MultiSelectPopover.jsx once
+// Incident Register needed it too (it's not dashboard-specific) —
+// re-exported here so the six dashboard pages' existing
+// `import { MultiSelectPopover } from './DashboardUI'` keeps working.
+export { MultiSelectPopover } from '@/components/MultiSelectPopover'
 
 // Shared building blocks for every analytics dashboard page (Rig
 // Utilisation, Drilling Performance, Fleet Operating Picture, and whatever
@@ -106,14 +111,16 @@ export function ChartCard({ icon: Icon, title, subtitle, accent = 'var(--chart-1
     // nothing instead of the page growing and scrolling.
     <div className={`shrink-0 overflow-hidden rounded-2xl border border-border bg-card ${className}`}>
       <div className="h-[3px] w-full" style={{ background: accent }} />
-      <div className={bodyClassName}>
-        <div className="mb-3 flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4 shrink-0" style={{ color: accent }} />}
-          <p className="text-sm font-semibold text-foreground">{title}</p>
-          {subtitle && <span className="text-xs font-normal text-muted-foreground">{subtitle}</span>}
-        </div>
-        {children}
+      {/* Header padding is fixed here, independent of bodyClassName, so a
+          card whose body goes edge-to-edge (bodyClassName="p-0", e.g. a
+          pivot table) doesn't drag the title/icon flush into the card's
+          own rounded top corner. */}
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
+        {Icon && <Icon className="h-5 w-5 shrink-0" style={{ color: accent }} />}
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        {subtitle && <span className="text-xs font-normal text-muted-foreground">{subtitle}</span>}
       </div>
+      <div className={bodyClassName === 'p-4' ? 'px-4 pb-4' : bodyClassName}>{children}</div>
     </div>
   )
 }
@@ -171,12 +178,30 @@ export function ChartActionRow({ label = 'View in asset list', children }) {
 
 // The filter toolbar every dashboard opens with — Year/Rig pickers plus a
 // short explainer, styled as a toolbar rather than a plain bordered box.
+// `note` used to render as a permanent paragraph of explainer text taking
+// up real toolbar space on every single visit — moved behind a hover-only
+// info icon instead, so the explanation is still one hover away but isn't
+// competing with the actual filter controls for attention every time the
+// page loads.
 export function DashboardToolbar({ children, note }) {
   return (
     <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm">
       {children}
       {note && (
-        <p className="ml-auto max-w-md text-[11px] leading-relaxed text-muted-foreground">{note}</p>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              />
+            }
+          >
+            <Info className="h-4 w-4" />
+            <span className="sr-only">About this dashboard</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm text-left leading-relaxed">{note}</TooltipContent>
+        </Tooltip>
       )}
     </div>
   )
@@ -201,64 +226,3 @@ export function YearSelect({ value, options, onChange }) {
   )
 }
 
-// Compact "N selected" checklist popover, shared by every dashboard's Rig
-// filter.
-export function MultiSelectPopover({ label, placeholder = 'All rigs', items, selected, onToggle, onSelectAll, getKey, getLabel, allSelected }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    function onDocClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDocClick)
-    return () => document.removeEventListener('mousedown', onDocClick)
-  }, [])
-
-  const triggerText =
-    selected.size === 0 || allSelected
-      ? placeholder
-      : selected.size === 1
-        ? getLabel(items.find((i) => getKey(i) === [...selected][0]) || {})
-        : `${selected.size} selected`
-
-  return (
-    <div className="relative flex flex-col gap-1.5" ref={ref} style={{ width: 220 }}>
-      <p className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">{label}</p>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 text-left text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-      >
-        <span className={!allSelected && selected.size ? 'truncate text-foreground' : 'text-muted-foreground'}>{triggerText}</span>
-        <IconChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 z-40 mt-1 w-[260px] rounded-lg border border-border bg-popover p-2 shadow-lg">
-          <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium text-foreground hover:bg-muted">
-            <input type="checkbox" checked={allSelected} onChange={onSelectAll} className="h-3.5 w-3.5 accent-primary" />
-            All rigs
-          </label>
-          <div className="my-1 border-t border-border" />
-          <div className="max-h-56 overflow-y-auto">
-            {items.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">None available.</div>}
-            {items.map((item) => {
-              const key = getKey(item)
-              return (
-                <label key={key} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(key)}
-                    onChange={() => onToggle(key)}
-                    className="h-3.5 w-3.5 accent-primary"
-                  />
-                  <span className="truncate">{getLabel(item)}</span>
-                </label>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
