@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
 import { Pencil, X, UserMinus, Repeat } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
@@ -76,7 +77,7 @@ function SortHeader({ col, ordering, onClick }) {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 function isOngoing(toDate) {

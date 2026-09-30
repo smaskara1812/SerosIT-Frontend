@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Download } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const MENU_KEY = 'drilling.drilling_daily_data'
 
@@ -50,7 +51,7 @@ function fmtCell(v) {
 }
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 export default function DrillingDailyDataPage() {

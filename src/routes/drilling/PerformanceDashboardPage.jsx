@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { IconChevronDown } from '@/components/icons'
 import { Download } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const MENU_KEY = 'drilling.performance_dashboard'
 
@@ -184,7 +185,7 @@ function MultiSelectPopover({ label, placeholder = 'All', width = 220, items, se
 }
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 export default function PerformanceDashboardPage() {

@@ -990,6 +990,13 @@ export const navTree = [
             icon: IconClipboard,
             menuKey: 'qhse.incident_register',
           },
+          {
+            key: 'hazard_id_card',
+            label: 'Hazard ID Card',
+            path: '/qhse/hazard-id-card',
+            icon: IconShieldCheck,
+            menuKey: 'qhse.hazard_id_card',
+          },
         ],
       },
     ],

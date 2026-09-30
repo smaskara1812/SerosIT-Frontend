@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Download } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const MENU_KEY = 'qhse.activity_closure_analysis'
 
@@ -23,7 +24,7 @@ function fmtDate(v) {
 }
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 export default function ActivityClosureAnalysisPage() {

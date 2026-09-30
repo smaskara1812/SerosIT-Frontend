@@ -38,13 +38,14 @@ import {
   IconAlertCircle,
 } from '@/components/icons'
 import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, X } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
 // computed once per render rather than per row.
 export function isDateActive(toValue) {
   if (!toValue) return true
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   return toValue >= today
 }
 

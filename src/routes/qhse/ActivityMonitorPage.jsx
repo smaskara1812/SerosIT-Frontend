@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { IconSearch, IconAlertCircle } from '@/components/icons'
 import { Download } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const MENU_KEY = 'qhse.activity_monitor'
 
@@ -37,7 +38,7 @@ const RIG_FIELD = {
 const RIG_REQUIRED_LOCATIONS = new Set(['V', 'R'])
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 function fmtDate(v) {

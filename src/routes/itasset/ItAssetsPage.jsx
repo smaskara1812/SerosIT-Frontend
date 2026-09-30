@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
 import { Pencil, History, Archive, ArchiveRestore, SearchX, Undo2 } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const ACTIVE_OPTIONS = [
   { value: '', label: 'All' },
@@ -66,7 +67,7 @@ const URL_SEEDABLE_FILTERS = [
 ]
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 const HOLDER_TYPE_LABEL = { C: 'Common', I: 'Individual', V: 'Vessel', L: 'Location' }

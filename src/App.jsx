@@ -39,6 +39,8 @@ import ActivityMonitorPage from '@/routes/qhse/ActivityMonitorPage'
 import ActivityClosureAnalysisPage from '@/routes/qhse/ActivityClosureAnalysisPage'
 import IncidentDetailsListPage from '@/routes/qhse/IncidentDetailsListPage'
 import IncidentDetailsFormPage from '@/routes/qhse/IncidentDetailsFormPage'
+import HazardIdCardListPage from '@/routes/qhse/HazardIdCardListPage'
+import HazardIdCardFormPage from '@/routes/qhse/HazardIdCardFormPage'
 import IncidentRootCausePage from '@/routes/qhse/IncidentRootCausePage'
 import IncidentActionsPage from '@/routes/qhse/IncidentActionsPage'
 import IncidentRegisterPage from '@/routes/qhse/IncidentRegisterPage'
@@ -105,6 +107,9 @@ function App() {
           <Route path="/qhse/incident-details" element={<IncidentDetailsListPage />} />
           <Route path="/qhse/incident-details/new" element={<IncidentDetailsFormPage />} />
           <Route path="/qhse/incident-details/:id/edit" element={<IncidentDetailsFormPage />} />
+          <Route path="/qhse/hazard-id-card" element={<HazardIdCardListPage />} />
+          <Route path="/qhse/hazard-id-card/new" element={<HazardIdCardFormPage />} />
+          <Route path="/qhse/hazard-id-card/:id/edit" element={<HazardIdCardFormPage />} />
           <Route path="/qhse/incident-root-cause" element={<IncidentRootCausePage />} />
           <Route path="/qhse/incident-actions" element={<IncidentActionsPage />} />
           <Route path="/qhse/incident-register" element={<IncidentRegisterPage />} />

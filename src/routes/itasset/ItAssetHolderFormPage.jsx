@@ -11,6 +11,7 @@ import { FormField, emptyForm } from '@/routes/masters/MasterCrudPage'
 import AccessDenied from '@/components/AccessDenied'
 import { formatApiError } from '@/lib/errors'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const schema = mastersSchemas['it-asset-holders']
 
@@ -100,7 +101,7 @@ export default function ItAssetHolderFormPage() {
           it_asset_mfg_name: asset.it_asset_mfg_name,
           it_asset_active: asset.it_asset_active,
           own_company_name: asset.own_company_name,
-          it_asset_holder_from: new Date().toISOString().slice(0, 10),
+          it_asset_holder_from: localDateStr(),
         }
         setForm(prefilled)
         setSnapshot(JSON.stringify(prefilled))

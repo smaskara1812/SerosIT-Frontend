@@ -63,14 +63,22 @@ function emptyNewOp() {
   }
 }
 
-// Combines the day's own date with a bare hh:mm into a full ISO timestamp —
-// a shift that runs past midnight (legacy's own Evening shift table does
-// this, e.g. 23:00-00:00) rolls into the next calendar day.
+// Combines the day's own date with a bare hh:mm into a full naive ISO
+// timestamp — a shift that runs past midnight (legacy's own Evening shift
+// table does this, e.g. 23:00-00:00) rolls into the next calendar day.
+// Uses a Date object only for that day-increment arithmetic, then reads
+// its LOCAL getters back out (never toISOString(), which would convert to
+// UTC and re-attach a "Z" the backend's now-naive DateTimeField would
+// misread as the wall-clock time itself, shifting it by the IST offset).
 function toIso(dateStr, timeStr, rollIfBefore) {
   if (!dateStr || !timeStr) return null
-  const base = new Date(`${dateStr}T${timeStr}:00`)
+  const base = new Date(`${dateStr}T00:00:00`)
   if (rollIfBefore && timeStr <= rollIfBefore) base.setDate(base.getDate() + 1)
-  return base.toISOString()
+  const pad = (n) => String(n).padStart(2, '0')
+  const y = base.getFullYear()
+  const m = pad(base.getMonth() + 1)
+  const d = pad(base.getDate())
+  return `${y}-${m}-${d}T${timeStr}:00`
 }
 
 // Native <input type="time"> renders 12h-with-AM/PM or 24h purely based on

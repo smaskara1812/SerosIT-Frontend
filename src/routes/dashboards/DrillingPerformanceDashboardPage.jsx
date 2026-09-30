@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ArrowLeft, Gauge, ListChecks, Ruler, TriangleAlert, Clock3 } from 'lucide-react'
+import { ArrowLeft, Droplets, Fuel, Gauge, ListChecks, Ruler, TriangleAlert, Clock3 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
@@ -48,6 +48,8 @@ export default function DrillingPerformanceDashboardPage() {
   // shows that chart's normal fleet/rig-level view.
   const [drilledSection, setDrilledSection] = useState(null)
   const [drilledMetresRigId, setDrilledMetresRigId] = useState(null)
+  const [drilledDieselRigId, setDrilledDieselRigId] = useState(null)
+  const [drilledWaterRigId, setDrilledWaterRigId] = useState(null)
   const [drilledFlatRigId, setDrilledFlatRigId] = useState(null)
 
   useEffect(() => {
@@ -65,6 +67,8 @@ export default function DrillingPerformanceDashboardPage() {
         setYear((prev) => prev ?? d.year)
         setDrilledSection(null)
         setDrilledMetresRigId(null)
+        setDrilledDieselRigId(null)
+        setDrilledWaterRigId(null)
         setDrilledFlatRigId(null)
       })
       .catch(() => setError('Failed to load dashboard data.'))
@@ -104,6 +108,26 @@ export default function DrillingPerformanceDashboardPage() {
       .sort((a, b) => a.month.localeCompare(b.month))
   }, [data, drilledMetresRigId])
   const drilledMetresRigName = data?.metres_by_rig.find((r) => r.rig_id === drilledMetresRigId)?.rig_name
+
+  // Diesel Consumption by Rig drill-down: that rig's monthly litres.
+  const dieselMonthRows = useMemo(() => {
+    if (!data || !drilledDieselRigId) return []
+    return data.diesel_by_rig_month
+      .filter((r) => r.rig_id === drilledDieselRigId)
+      .map((r) => ({ ...r, monthLabel: monthLabel(r.month) }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+  }, [data, drilledDieselRigId])
+  const drilledDieselRigName = data?.diesel_by_rig.find((r) => r.rig_id === drilledDieselRigId)?.rig_name
+
+  // Water Consumption by Rig drill-down: that rig's monthly litres.
+  const waterMonthRows = useMemo(() => {
+    if (!data || !drilledWaterRigId) return []
+    return data.water_by_rig_month
+      .filter((r) => r.rig_id === drilledWaterRigId)
+      .map((r) => ({ ...r, monthLabel: monthLabel(r.month) }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+  }, [data, drilledWaterRigId])
+  const drilledWaterRigName = data?.water_by_rig.find((r) => r.rig_id === drilledWaterRigId)?.rig_name
 
   // Flat Time by Rig drill-down: that rig's monthly flat hours.
   const flatMonthRows = useMemo(() => {
@@ -155,7 +179,28 @@ export default function DrillingPerformanceDashboardPage() {
               sub="Drilling logged, zero progress"
               warning={data.summary.flat_hours > 0}
             />
+            <KpiCard icon={Fuel} label="Diesel Consumed" value={`${fmtNum(data.summary.diesel_consumed)} L`} accent="var(--chart-4)" />
+            <KpiCard icon={Droplets} label="Water Consumed" value={`${fmtNum(data.summary.water_consumed)} L`} accent="var(--chart-2)" />
           </div>
+
+          <ChartCard icon={Clock3} title="Rig Hours Breakdown" subtitle={`— fleet total, ${data.year}`} accent="var(--chart-5)">
+            {data.hours_breakdown.every((h) => h.hours === 0) ? (
+              <EmptyChartState>No drilling report data for this period.</EmptyChartState>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={data.hours_breakdown} layout="vertical" margin={{ left: 24 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis type="number" unit=" hrs" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis type="category" dataKey="category" width={90} stroke="var(--muted-foreground)" fontSize={12} />
+                  <Tooltip
+                    formatter={(v) => [`${fmtNum(v)} hrs`, 'Hours']}
+                    contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                  />
+                  <Bar dataKey="hours" fill="var(--chart-5)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </ChartCard>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <ChartCard
@@ -315,6 +360,104 @@ export default function DrillingPerformanceDashboardPage() {
                       radius={[4, 4, 0, 0]}
                       cursor="pointer"
                       onClick={(bar) => setDrilledFlatRigId(bar?.payload?.rig_id ?? bar?.rig_id)}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <ChartCard
+              icon={Fuel}
+              title={drilledDieselRigId ? `Diesel Consumption — ${drilledDieselRigName}` : 'Diesel Consumption by Rig'}
+              subtitle={drilledDieselRigId ? `— by month, ${data.year}` : `— ${data.year}, click a rig to drill in`}
+              accent="var(--chart-4)"
+            >
+              {drilledDieselRigId && <BackLink onClick={() => setDrilledDieselRigId(null)}>Back to all rigs</BackLink>}
+              {drilledDieselRigId ? (
+                dieselMonthRows.length === 0 ? (
+                  <EmptyChartState>No drilling data for this rig.</EmptyChartState>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={dieselMonthRows}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="monthLabel" stroke="var(--muted-foreground)" fontSize={12} />
+                      <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                      <Tooltip
+                        formatter={(v) => [`${fmtNum(v)} L`, 'Diesel']}
+                        contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                      />
+                      <Bar dataKey="litres" fill="var(--chart-4)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )
+              ) : data.diesel_by_rig.length === 0 ? (
+                <EmptyChartState>No drilling data for this period.</EmptyChartState>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.diesel_by_rig}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="rig_name" stroke="var(--muted-foreground)" fontSize={12} />
+                    <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                    <Tooltip
+                      formatter={(v) => [`${fmtNum(v)} L`, 'Diesel']}
+                      contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                    />
+                    <Bar
+                      dataKey="litres"
+                      fill="var(--chart-4)"
+                      radius={[4, 4, 0, 0]}
+                      cursor="pointer"
+                      onClick={(bar) => setDrilledDieselRigId(bar?.payload?.rig_id ?? bar?.rig_id)}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
+
+            <ChartCard
+              icon={Droplets}
+              title={drilledWaterRigId ? `Water Consumption — ${drilledWaterRigName}` : 'Water Consumption by Rig'}
+              subtitle={drilledWaterRigId ? `— by month, ${data.year}` : `— ${data.year}, click a rig to drill in`}
+              accent="var(--chart-2)"
+            >
+              {drilledWaterRigId && <BackLink onClick={() => setDrilledWaterRigId(null)}>Back to all rigs</BackLink>}
+              {drilledWaterRigId ? (
+                waterMonthRows.length === 0 ? (
+                  <EmptyChartState>No drilling data for this rig.</EmptyChartState>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={waterMonthRows}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="monthLabel" stroke="var(--muted-foreground)" fontSize={12} />
+                      <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                      <Tooltip
+                        formatter={(v) => [`${fmtNum(v)} L`, 'Water']}
+                        contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                      />
+                      <Bar dataKey="litres" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )
+              ) : data.water_by_rig.length === 0 ? (
+                <EmptyChartState>No drilling data for this period.</EmptyChartState>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.water_by_rig}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="rig_name" stroke="var(--muted-foreground)" fontSize={12} />
+                    <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                    <Tooltip
+                      formatter={(v) => [`${fmtNum(v)} L`, 'Water']}
+                      contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                    />
+                    <Bar
+                      dataKey="litres"
+                      fill="var(--chart-2)"
+                      radius={[4, 4, 0, 0]}
+                      cursor="pointer"
+                      onClick={(bar) => setDrilledWaterRigId(bar?.payload?.rig_id ?? bar?.rig_id)}
                     />
                   </BarChart>
                 </ResponsiveContainer>

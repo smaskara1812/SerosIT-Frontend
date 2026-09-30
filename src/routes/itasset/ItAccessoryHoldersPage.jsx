@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
 import { Pencil } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
@@ -57,7 +58,7 @@ function DetailField({ label, value, wide }) {
 
 function isOngoing(toDate) {
   if (!toDate) return true
-  return toDate >= new Date().toISOString().slice(0, 10)
+  return toDate >= localDateStr()
 }
 
 export default function ItAccessoryHoldersPage() {

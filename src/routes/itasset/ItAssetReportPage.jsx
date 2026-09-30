@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
 import { IconSearch, IconChevronDown, IconX } from '@/components/icons'
 import { Download, RotateCcw } from 'lucide-react'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const ACTIVE_OPTIONS = [
   { value: 'Y', label: 'Active' },
@@ -270,12 +271,12 @@ export default function ItAssetReportPage() {
 
   function applyDatePreset(preset) {
     const today = new Date()
-    const to = today.toISOString().slice(0, 10)
+    const to = localDateStr(today)
     let from
     if (preset === '30d') {
       const d = new Date(today)
       d.setDate(d.getDate() - 30)
-      from = d.toISOString().slice(0, 10)
+      from = localDateStr(d)
     } else if (preset === 'ytd') {
       from = `${today.getFullYear()}-01-01`
     }
