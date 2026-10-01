@@ -36,12 +36,14 @@ function fmtDate(v) {
 }
 
 function SelectField({ label, value, onChange, options, width = 'w-[140px]' }) {
+  const selected = options.find((o) => o.value === value)
   return (
     <label className="flex flex-col gap-1">
       <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        title={selected?.label}
         className={`h-9 truncate rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/50 ${width}`}
       >
         {options.map((o) => (
@@ -186,7 +188,7 @@ export default function HseDrillRecordListPage() {
     [meta.years]
   )
   const drillTypeOptions = useMemo(
-    () => [{ value: '', label: 'All' }, ...(meta.drill_types || []).map((d) => ({ value: String(d.id), label: d.name }))],
+    () => [{ value: '', label: 'All' }, ...(meta.drill_types || []).map((d) => ({ value: String(d.id), label: d.label || d.name }))],
     [meta.drill_types]
   )
 
@@ -197,7 +199,7 @@ export default function HseDrillRecordListPage() {
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-3">
         <SelectField label="Year" value={filters.year} onChange={(v) => setFilter('year', v)} options={yearOptions} width="w-[90px]" />
         <SelectField label="Rig" value={filters.rig} onChange={(v) => setFilter('rig', v)} options={rigOptions} width="w-[150px]" />
-        <SelectField label="Type of Drill" value={filters.hse_drill} onChange={(v) => setFilter('hse_drill', v)} options={drillTypeOptions} width="w-[180px]" />
+        <SelectField label="Type of Drill" value={filters.hse_drill} onChange={(v) => setFilter('hse_drill', v)} options={drillTypeOptions} width="w-[260px]" />
         <label className="flex min-w-[220px] flex-1 flex-col gap-1">
           <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Search</span>
           <div className="relative">
