@@ -106,9 +106,16 @@ export async function fetchCurrentUser() {
 
 export async function logoutRequest() {
   // Best-effort — the audit entry matters, but a failed request here should
-  // never block actually logging the user out client-side.
+  // never block actually logging the user out client-side. The refresh
+  // token has to be sent explicitly — the backend has no other way to
+  // know which one to blacklist, and without this "Sign out" only ever
+  // cleared it client-side while it stayed valid server-side for its full
+  // 7-day lifetime.
   try {
-    await apiFetch('/api/auth/logout/', { method: 'POST' })
+    await apiFetch('/api/auth/logout/', {
+      method: 'POST',
+      body: JSON.stringify({ refresh: tokenStore.getRefresh() }),
+    })
   } catch {
     // ignore
   }

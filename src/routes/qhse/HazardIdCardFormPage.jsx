@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -134,6 +134,15 @@ export default function HazardIdCardFormPage() {
   const [savedStatus, setSavedStatus] = useState(null)
   const closedLocked = isEdit && savedStatus === 'C'
 
+  // Set right before loading an existing record's rig into state, so the
+  // rig-context effect below (which normally previews the *current*
+  // contract for whatever rig is picked) knows this particular firing is
+  // the initial load, not the user picking a rig — and leaves the card's
+  // already-stored Project No. alone instead of overwriting it with
+  // "whatever contract this rig happens to be on today" before the user
+  // has touched anything.
+  const skipContractOverwriteRef = useRef(false)
+
   useEffect(() => {
     apiFetch('/api/qhse/hazard-id-card/meta/')
       .then((r) => r.json())
@@ -151,6 +160,7 @@ export default function HazardIdCardFormPage() {
       })
       .then((data) => {
         const record = formToRecord(data)
+        skipContractOverwriteRef.current = true
         setForm(record)
         setCardNo(data.haz_id_card_no)
         setSnapshot(JSON.stringify(record))
@@ -167,11 +177,19 @@ export default function HazardIdCardFormPage() {
   useEffect(() => {
     if (!form.rig) return
     let cancelled = false
+    const skipOverwrite = skipContractOverwriteRef.current
+    skipContractOverwriteRef.current = false
     apiFetch(`/api/qhse/hazard-id-card/rig-context/?rig=${form.rig}`)
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return
-        setForm((f) => ({ ...f, contract_label: data.contract?.label || 'No active contract for this rig' }))
+        // Vessel depts always refresh (harmless — they're just dropdown
+        // options for whichever rig is now picked). Project No. only
+        // updates when this is a genuine rig change, not the initial load
+        // of an existing record's own rig — see skipContractOverwriteRef.
+        if (!skipOverwrite) {
+          setForm((f) => ({ ...f, contract_label: data.contract?.label || 'No active contract for this rig' }))
+        }
         setVesselDepts(data.vessel_depts || [])
       })
     return () => {
@@ -399,6 +417,14 @@ export default function HazardIdCardFormPage() {
               <TilePicker options={STATUS_OPTIONS} value={form.haz_id_card_status} onChange={(v) => set({ haz_id_card_status: v })} disabled={!writable} />
             </Field>
           </SectionCard>
+
+          {writable && (
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={saving || (isEdit && !hasChanges)}>
+                {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
+              </Button>
+            </div>
+          )}
         </>
       )}
       {leaveDialog}

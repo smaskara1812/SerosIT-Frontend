@@ -44,6 +44,10 @@ import HazardIdCardFormPage from '@/routes/qhse/HazardIdCardFormPage'
 import IncidentRootCausePage from '@/routes/qhse/IncidentRootCausePage'
 import IncidentActionsPage from '@/routes/qhse/IncidentActionsPage'
 import IncidentRegisterPage from '@/routes/qhse/IncidentRegisterPage'
+import MisHseReturnPage from '@/routes/qhse/MisHseReturnPage'
+import MisHseReviewPage from '@/routes/qhse/MisHseReviewPage'
+import HseDrillRecordListPage from '@/routes/qhse/HseDrillRecordListPage'
+import HseDrillRecordFormPage from '@/routes/qhse/HseDrillRecordFormPage'
 import RigUtilisationDashboardPage from '@/routes/dashboards/RigUtilisationDashboardPage'
 import DrillingPerformanceDashboardPage from '@/routes/dashboards/DrillingPerformanceDashboardPage'
 import FleetOperatingPicturePage from '@/routes/dashboards/FleetOperatingPicturePage'
@@ -103,6 +107,11 @@ function App() {
           <Route path="/drilling/drilling-tripping-analysis" element={<DrillingTrippingAnalysisPage />} />
           <Route path="/drilling/drilling-daily-data" element={<DrillingDailyDataPage />} />
           <Route path="/qhse/activity-monitor" element={<ActivityMonitorPage />} />
+          <Route path="/qhse/mis-hse-return" element={<MisHseReturnPage />} />
+          <Route path="/qhse/mis-hse-review" element={<MisHseReviewPage />} />
+          <Route path="/qhse/hse-drill-record" element={<HseDrillRecordListPage />} />
+          <Route path="/qhse/hse-drill-record/new" element={<HseDrillRecordFormPage />} />
+          <Route path="/qhse/hse-drill-record/:id/edit" element={<HseDrillRecordFormPage />} />
           <Route path="/qhse/activity-closure-analysis" element={<ActivityClosureAnalysisPage />} />
           <Route path="/qhse/incident-details" element={<IncidentDetailsListPage />} />
           <Route path="/qhse/incident-details/new" element={<IncidentDetailsFormPage />} />

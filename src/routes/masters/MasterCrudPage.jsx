@@ -255,6 +255,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
               ? 'Type to search…'
               : 'Search…'
         }
+        disabled={disabled || blocked}
         showClear
         className="w-full"
       />

@@ -90,6 +90,9 @@ export default function ActivityMonitorPage() {
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('open')
+  // '' = the backend's own status-based default (overdue-first for Open,
+  // newest-first otherwise) — only set explicitly when the user picks one.
+  const [ordering, setOrdering] = useState('')
   const [activityFilter, setActivityFilter] = useState(null)
   const [activityFilterLabel, setActivityFilterLabel] = useState('')
   const [rigFilter, setRigFilter] = useState(null)
@@ -118,6 +121,7 @@ export default function ActivityMonitorPage() {
     const params = new URLSearchParams()
     if (searchQuery) params.set('search', searchQuery)
     if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (ordering) params.set('ordering', ordering)
     if (activityFilter) params.set('activity', activityFilter)
     if (rigFilter) params.set('rig', rigFilter)
     params.set('page', String(pageNum))
@@ -152,7 +156,7 @@ export default function ActivityMonitorPage() {
     }, 300)
     return () => clearTimeout(searchTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, statusFilter, activityFilter, rigFilter])
+  }, [query, statusFilter, ordering, activityFilter, rigFilter])
 
   function handleListScroll(e) {
     const el = e.currentTarget
@@ -403,6 +407,15 @@ export default function ActivityMonitorPage() {
               <option value="completed">Completed</option>
               <option value="all">All</option>
             </select>
+            <select
+              value={ordering}
+              onChange={(e) => setOrdering(e.target.value)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-xs text-foreground outline-none focus:border-ring"
+            >
+              <option value="">Sort: {statusFilter === 'open' ? 'Most overdue first' : 'Newest first'} (default)</option>
+              <option value="scheduled_asc">Sort: Oldest schedule first</option>
+              <option value="scheduled_desc">Sort: Newest schedule first</option>
+            </select>
             <div className="flex flex-col gap-1">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Filter by Activity
@@ -449,8 +462,10 @@ export default function ActivityMonitorPage() {
                   </p>
                 </div>
                 <span
-                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${r.is_completed ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                  title={r.is_completed ? 'Completed' : 'Open'}
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    r.is_completed ? 'bg-emerald-500' : r.scheduled_dt < todayIso() ? 'bg-destructive' : 'bg-amber-500'
+                  }`}
+                  title={r.is_completed ? 'Completed' : r.scheduled_dt < todayIso() ? 'Overdue' : 'Open — upcoming'}
                 />
               </button>
             ))}
@@ -609,7 +624,7 @@ export default function ActivityMonitorPage() {
                     {!detail.is_completed && (
                       <>
                         <div className="mt-6 mb-3 rounded-lg bg-muted px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Grouping &amp; Validity
+                          Completion
                         </div>
                         <div className="grid max-w-xl grid-cols-2 gap-4">
                           <div className="flex flex-col gap-1.5">
