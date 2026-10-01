@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil } from 'lucide-react'
+import { Pencil, Printer, ClipboardList } from 'lucide-react'
 
 const MENU_KEY = 'qhse.hse_drill_record'
 
@@ -160,6 +160,26 @@ export default function HseDrillRecordListPage() {
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) loadPage(page + 1, query, true)
   }
 
+  async function printReport(r) {
+    const tab = window.open('', '_blank')
+    const res = await apiFetch(`/api/qhse/hse-drill-record/${r.drill_record_hdr_id}/print/`)
+    if (!res.ok) {
+      toast.error('Failed to generate report')
+      if (tab) tab.close()
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    if (tab) {
+      tab.location.href = url
+    } else if (!window.open(url, '_blank')) {
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `HSE Drill Record - ${r.drill_record_no}.pdf`
+      a.click()
+    }
+  }
+
   async function confirmDelete() {
     if (!deleteTarget) return
     setDeleting(true)
@@ -254,6 +274,22 @@ export default function HseDrillRecordListPage() {
                   <td className="px-3 py-2.5">{r.head_count}</td>
                   <td className="px-2 py-2.5">
                     <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        title="Drill Details (Events, Observations, Improvements, Corrective Action, Photos)"
+                        onClick={() => navigate(`/qhse/hse-drill-record/${r.drill_record_hdr_id}/details`)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <ClipboardList className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Print"
+                        onClick={() => printReport(r)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                      </button>
                       {canEdit && (
                         <button
                           type="button"

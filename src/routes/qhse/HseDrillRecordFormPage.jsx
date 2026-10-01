@@ -288,11 +288,18 @@ export default function HseDrillRecordFormPage() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-16">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">{heading}</h1>
-        {canWrite && !loading && (
-          <Button onClick={handleSave} disabled={saving || (isEdit && !hasChanges)}>
-            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add'}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {isEdit && !loading && (
+            <Button variant="outline" onClick={() => navigate(`/qhse/hse-drill-record/${id}/details`)}>
+              Drill Details →
+            </Button>
+          )}
+          {canWrite && !loading && (
+            <Button onClick={handleSave} disabled={saving || (isEdit && !hasChanges)}>
+              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
