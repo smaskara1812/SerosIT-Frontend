@@ -54,6 +54,15 @@ export const ACTION_SHORTCUTS = [
     icon: IconPlus,
     groupLabel: 'Quick Actions',
   },
+  {
+    key: 'action-new-hse-drill-record',
+    label: 'New HSE Drill Record',
+    path: '/qhse/hse-drill-record/new',
+    menuKey: 'qhse.hse_drill_record',
+    permAction: 'add',
+    icon: IconPlus,
+    groupLabel: 'Quick Actions',
+  },
   // New Drilling Daily Report is deliberately NOT listed here — it's
   // already an always-on default in Home.jsx's own SHORTCUTS, and pinning
   // it again here would just duplicate that tile.

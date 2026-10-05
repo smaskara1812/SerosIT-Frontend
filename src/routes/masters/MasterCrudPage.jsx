@@ -657,7 +657,7 @@ export default function MasterCrudPage() {
   const { user } = useAuth()
   const canAdd = can(user, schema?.menuKey, 'add')
   const canEdit = can(user, schema?.menuKey, 'edit')
-  const canDelete = can(user, schema?.menuKey, 'delete')
+  const canDelete = can(user, schema?.menuKey, 'delete') && !schema?.noDelete
   const canExport = can(user, schema?.menuKey, 'export')
 
   const [rows, setRows] = useState([])
@@ -1236,7 +1236,7 @@ export default function MasterCrudPage() {
                         }
                         setForm(next)
                       }}
-                      disabled={!canWrite || f.readOnly}
+                      disabled={!canWrite || f.readOnly || (f.lockOnEdit && !creating)}
                       filterValue={f.filterField ? form[f.filterField] : undefined}
                       form={form}
                       recordId={selected ? selected[schema.idField] : null}
