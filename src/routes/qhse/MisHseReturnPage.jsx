@@ -6,6 +6,7 @@ import { can } from '@/lib/permissions'
 import { formatApiError } from '@/lib/errors'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
+import { MonthYearSelect } from '@/components/PeriodSelects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -409,9 +410,9 @@ export default function MisHseReturnPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>
-                  Period (yyyy-mm)<span className="text-destructive"> *</span>
+                  Period<span className="text-destructive"> *</span>
                 </Label>
-                <Input type="month" value={form.report_month} onChange={(e) => set({ report_month: e.target.value })} />
+                <MonthYearSelect value={form.report_month} onChange={(v) => set({ report_month: v })} />
               </div>
             </div>
             {canAdd && (
@@ -443,7 +444,7 @@ export default function MisHseReturnPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Period</Label>
-                <Input type="month" value={form.report_month} readOnly disabled className="bg-muted" />
+                <MonthYearSelect value={form.report_month} disabled onChange={() => {}} />
               </div>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
+import { MonthYearSelect, YearSelect } from '@/components/PeriodSelects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -247,6 +248,12 @@ export default function MisHseReviewPage() {
 
   if (!canView) return <AccessDenied />
 
+  // The pickers only offer years that actually have data — every older or
+  // newer year would just come back empty, and nothing on file is out of reach.
+  const earliestYear = Number((meta.data_range.earliest || '').slice(0, 4))
+  const latestYear = Number((meta.data_range.latest || '').slice(0, 4))
+  const yearRange = earliestYear && latestYear ? { minYear: earliestYear, maxYear: latestYear } : {}
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-16">
       <div className="flex items-center justify-between">
@@ -279,7 +286,7 @@ export default function MisHseReviewPage() {
 
           {filters.period_type === 'MONTHLY' && (
             <Field label="Month/Year">
-              <Input type="month" value={filters.month} onChange={(e) => set({ month: e.target.value })} />
+              <MonthYearSelect {...yearRange} value={filters.month} onChange={(v) => set({ month: v })} />
             </Field>
           )}
           {filters.period_type === 'QUARTERLY' && (
@@ -288,27 +295,22 @@ export default function MisHseReviewPage() {
                 <PlainSelect value={filters.quarter} onChange={(v) => set({ quarter: v })} options={QUARTER_OPTIONS} />
               </Field>
               <Field label="Annual/Quarter Year">
-                <Input
-                  type="number"
-                  placeholder="yyyy"
-                  value={filters.year}
-                  onChange={(e) => set({ year: e.target.value })}
-                />
+                <YearSelect {...yearRange} value={filters.year} onChange={(v) => set({ year: v })} />
               </Field>
             </>
           )}
           {filters.period_type === 'ANNUAL' && (
             <Field label="Annual Year">
-              <Input type="number" placeholder="yyyy" value={filters.year} onChange={(e) => set({ year: e.target.value })} />
+              <YearSelect {...yearRange} value={filters.year} onChange={(v) => set({ year: v })} />
             </Field>
           )}
           {filters.period_type === 'DATE_RANGE' && (
             <>
               <Field label="Month/Year">
-                <Input type="month" value={filters.from_month} onChange={(e) => set({ from_month: e.target.value })} />
+                <MonthYearSelect {...yearRange} value={filters.from_month} onChange={(v) => set({ from_month: v })} />
               </Field>
               <Field label="To Month/Year">
-                <Input type="month" value={filters.to_month} onChange={(e) => set({ to_month: e.target.value })} />
+                <MonthYearSelect {...yearRange} value={filters.to_month} onChange={(v) => set({ to_month: v })} />
               </Field>
             </>
           )}
