@@ -52,6 +52,10 @@ import HseDrillRecordDetailsPage from '@/routes/qhse/HseDrillRecordDetailsPage'
 import HseWeeklyDrillListPage from '@/routes/qhse/HseWeeklyDrillListPage'
 import HseWeeklyDrillFormPage from '@/routes/qhse/HseWeeklyDrillFormPage'
 import HseDrillReportPage from '@/routes/qhse/HseDrillReportPage'
+import HseLeadingIndicatorsListPage from '@/routes/qhse/HseLeadingIndicatorsListPage'
+import HseLeadingIndicatorsFormPage from '@/routes/qhse/HseLeadingIndicatorsFormPage'
+import HseLaggingIndicatorsListPage from '@/routes/qhse/HseLaggingIndicatorsListPage'
+import HseLaggingIndicatorsFormPage from '@/routes/qhse/HseLaggingIndicatorsFormPage'
 import RigUtilisationDashboardPage from '@/routes/dashboards/RigUtilisationDashboardPage'
 import DrillingPerformanceDashboardPage from '@/routes/dashboards/DrillingPerformanceDashboardPage'
 import FleetOperatingPicturePage from '@/routes/dashboards/FleetOperatingPicturePage'
@@ -118,6 +122,12 @@ function App() {
           <Route path="/qhse/hse-drill-record/:id/edit" element={<HseDrillRecordFormPage />} />
           <Route path="/qhse/hse-drill-record/:id/details" element={<HseDrillRecordDetailsPage />} />
           <Route path="/qhse/hse-drill-report" element={<HseDrillReportPage />} />
+          <Route path="/qhse/leading-indicators" element={<HseLeadingIndicatorsListPage />} />
+          <Route path="/qhse/leading-indicators/new" element={<HseLeadingIndicatorsFormPage />} />
+          <Route path="/qhse/leading-indicators/:id/edit" element={<HseLeadingIndicatorsFormPage />} />
+          <Route path="/qhse/lagging-indicators" element={<HseLaggingIndicatorsListPage />} />
+          <Route path="/qhse/lagging-indicators/new" element={<HseLaggingIndicatorsFormPage />} />
+          <Route path="/qhse/lagging-indicators/:id/edit" element={<HseLaggingIndicatorsFormPage />} />
           <Route path="/qhse/hse-weekly-drill" element={<HseWeeklyDrillListPage />} />
           <Route path="/qhse/hse-weekly-drill/new" element={<HseWeeklyDrillFormPage />} />
           <Route path="/qhse/hse-weekly-drill/:id/edit" element={<HseWeeklyDrillFormPage />} />

@@ -255,7 +255,7 @@ export default function HseDrillRecordChildPanel({ hdrId, drillDate, canAdd, can
 
       {isPhotosTab ? (
         <>
-          {canAdd && (
+          {(canAdd || canEdit) && (
             <div className="mb-4">
               <label
                 className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-input px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted ${uploading ? 'pointer-events-none opacity-50' : ''}`}
@@ -285,7 +285,7 @@ export default function HseDrillRecordChildPanel({ hdrId, drillDate, canAdd, can
                       Image file not available
                     </div>
                   )}
-                  {canDelete && (
+                  {(canAdd || canEdit) && (
                     <button
                       type="button"
                       title="Delete"
