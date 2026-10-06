@@ -130,7 +130,7 @@ export default function UserManagement() {
           body: JSON.stringify(form),
         })
         const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Failed to save')
+        if (!res.ok) throw new Error(data.error || "Your changes weren't saved. Please try again.")
         setSnapshot(editableFields(form))
         await reloadUsers()
         toast.success('Changes saved')

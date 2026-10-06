@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { formatApiError, showFormError } from '@/lib/errors'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import AccessDenied from '@/components/AccessDenied'
 import { MonthYearSelect } from '@/components/PeriodSelects'
@@ -145,18 +145,14 @@ export default function HseLeadingIndicatorsFormPage() {
     })
   }
 
-  function showError(message) {
-    setError(message)
-    toast.error(message.split('\n').filter((l) => l && !l.startsWith('Please fix'))[0] || message)
-    requestAnimationFrame(() => bannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
-  }
+  const showError = (message) => showFormError(message, { setError, bannerRef })
 
   async function handleAdd() {
     setError('')
-    if (!form.rig) return showError('Rig must be selected.')
-    if (!form.period) return showError('Period must be selected.')
-    if (!form.company) return showError('Company must be selected.')
-    if (!form.report_no.trim()) return showError('Report No. must be entered.')
+    if (!form.rig) return showError('Please choose a Rig.')
+    if (!form.period) return showError('Please choose the Period (month and year).')
+    if (!form.company) return showError('Please choose a Company.')
+    if (!form.report_no.trim()) return showError('Please enter the Report No.')
     setSaving(true)
     try {
       const res = await apiFetch(kind.apiBase, {

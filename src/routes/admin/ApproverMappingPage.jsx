@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { formatApiError } from '@/lib/errors'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -326,7 +327,7 @@ export default function ApproverMappingPage() {
       selectRow(data)
     } else {
       const data = await res.json().catch(() => ({}))
-      toast.error(data.detail || data.error || 'Failed to save')
+      toast.error(formatApiError(data))
     }
   }
 

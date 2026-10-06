@@ -8,6 +8,7 @@ import { can } from '@/lib/permissions'
 import { navLeavesByPath, isLeafAccessible } from '@/lib/shortcuts'
 import { IconPlus } from '@/components/icons'
 import ShortcutsPicker from '@/routes/ShortcutsPicker'
+import PageSearch from '@/components/PageSearch'
 
 // One tile per top-level nav group (Masters, IT Asset, Reports, Admin) —
 // never the full leaf list, which is what MastersHub.jsx already is for.
@@ -204,7 +205,7 @@ export default function Home() {
       setCustomPaths(data.paths)
       setPickerOpen(false)
     } catch {
-      toast.error('Failed to save shortcuts')
+      toast.error("Couldn't save your shortcuts. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -242,6 +243,8 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      <PageSearch />
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-foreground">Jump back in</h2>

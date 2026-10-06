@@ -297,7 +297,7 @@ export default function UserRights() {
         body: JSON.stringify({ name, description: presetDescription.trim(), menus }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to save preset')
+      if (!res.ok) throw new Error(data.error || "The preset wasn't saved. Please try again.")
       setCustomPresets((prev) =>
         [...prev, { id: data.id, name: data.name, description: presetDescription.trim(), menus }].sort(
           (a, b) => a.name.localeCompare(b.name)
@@ -342,7 +342,7 @@ export default function UserRights() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.detail || data.error || 'Failed to save permissions')
+        throw new Error(data.detail || data.error || "Permissions weren't saved. Please try again.")
       }
       setUsers((prev) =>
         prev.map((u) => (u.user_id === selected.user_id ? { ...u, is_app_admin: isAppAdmin } : u))

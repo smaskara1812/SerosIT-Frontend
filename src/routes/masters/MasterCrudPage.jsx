@@ -7,7 +7,8 @@ import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { mastersSchemas } from '@/config/mastersSchemas'
 import AccessDenied from '@/components/AccessDenied'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldFrame } from '@/components/FieldFrame'
 import { singularize } from '@/lib/text'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { Input } from '@/components/ui/input'
@@ -692,6 +693,8 @@ export default function MasterCrudPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const bannerRef = useRef(null)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [deleteInfo, setDeleteInfo] = useState(null)
   const [snapshot, setSnapshot] = useState(null)
   const listRef = useRef(null)
@@ -875,6 +878,7 @@ export default function MasterCrudPage() {
     setForm(loaded)
     setSnapshot(JSON.stringify(loaded))
     setError('')
+    setFieldErrors({})
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isDirty = creating
@@ -896,11 +900,13 @@ export default function MasterCrudPage() {
     setForm(emptyForm(schema))
     setSnapshot(null)
     setError('')
+    setFieldErrors({})
   }
 
   async function handleSave() {
     setSaving(true)
     setError('')
+    setFieldErrors({})
     try {
       const isEdit = Boolean(selected)
       const url = isEdit ? `${schema.apiBase}${selected[schema.idField]}/` : schema.apiBase
@@ -919,8 +925,9 @@ export default function MasterCrudPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data, schema))
-        toast.error('Failed to save')
+        showFormError(formatApiError(data, schema), { setError, bannerRef })
+        setFieldErrors(buildFieldErrors(data, schema))
+        scrollToFirstFieldError()
         return
       }
       // Merge into the already-loaded rows rather than refetching the list —
@@ -937,8 +944,7 @@ export default function MasterCrudPage() {
       }
       toast.success(isEdit ? 'Changes saved' : `${data[schema.nameField]} created`)
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
-      toast.error('Failed to save')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -1180,7 +1186,7 @@ export default function MasterCrudPage() {
 
             <div className="flex-1 overflow-y-auto p-4">
               {error && (
-                <p className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p ref={bannerRef} className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">
                   {error}
                 </p>
               )}
@@ -1199,48 +1205,51 @@ export default function MasterCrudPage() {
                       {f.label}
                       {f.required && <span className="text-destructive"> *</span>}
                     </Label>
-                    <FormField
-                      field={f}
-                      value={form[f.name]}
-                      onChange={(v, raw) => {
-                        const next = { ...form, [f.name]: v }
-                        // Changing a field that other select-remote fields
-                        // filter on (e.g. Category) invalidates whatever
-                        // they'd already picked from the old option set.
-                        for (const other of schema.fields) {
-                          if (
-                            other.filterField === f.name ||
-                            other.filterFields?.some((ff) => ff.field === f.name)
-                          )
-                            next[other.name] = null
-                        }
-                        // Some fields (e.g. Rig Type from a picked Rig
-                        // Subtype) are derived from the selected option
-                        // itself rather than chosen independently.
-                        if (f.derives && raw) {
-                          for (const [targetField, sourceKey] of Object.entries(f.derives)) {
-                            next[targetField] = raw[sourceKey]
+                    <FieldFrame error={fieldErrors[f.name]}>
+                      <FormField
+                        field={f}
+                        value={form[f.name]}
+                        onChange={(v, raw) => {
+                          const next = { ...form, [f.name]: v }
+                          // Changing a field that other select-remote fields
+                          // filter on (e.g. Category) invalidates whatever
+                          // they'd already picked from the old option set.
+                          for (const other of schema.fields) {
+                            if (
+                              other.filterField === f.name ||
+                              other.filterFields?.some((ff) => ff.field === f.name)
+                            )
+                              next[other.name] = null
                           }
-                        }
-                        // RemoteCombobox falls back to form[f.labelField]
-                        // once its own just-picked option scrolls out of the
-                        // live search results (e.g. the query resets after
-                        // picking) — without this, that fallback stays blank
-                        // on a freshly-picked value, which flips the
-                        // displayed label between blank and the real text on
-                        // every re-search (visible as a flicker).
-                        if (f.labelField && raw) {
-                          next[f.labelField] = raw[f.optionLabel]
-                        } else if (f.labelField && v == null) {
-                          next[f.labelField] = ''
-                        }
-                        setForm(next)
-                      }}
-                      disabled={!canWrite || f.readOnly || (f.lockOnEdit && !creating)}
-                      filterValue={f.filterField ? form[f.filterField] : undefined}
-                      form={form}
-                      recordId={selected ? selected[schema.idField] : null}
-                    />
+                          // Some fields (e.g. Rig Type from a picked Rig
+                          // Subtype) are derived from the selected option
+                          // itself rather than chosen independently.
+                          if (f.derives && raw) {
+                            for (const [targetField, sourceKey] of Object.entries(f.derives)) {
+                              next[targetField] = raw[sourceKey]
+                            }
+                          }
+                          // RemoteCombobox falls back to form[f.labelField]
+                          // once its own just-picked option scrolls out of the
+                          // live search results (e.g. the query resets after
+                          // picking) — without this, that fallback stays blank
+                          // on a freshly-picked value, which flips the
+                          // displayed label between blank and the real text on
+                          // every re-search (visible as a flicker).
+                          if (f.labelField && raw) {
+                            next[f.labelField] = raw[f.optionLabel]
+                          } else if (f.labelField && v == null) {
+                            next[f.labelField] = ''
+                          }
+                          setForm(next)
+                          setFieldErrors((prev) => (prev[f.name] ? { ...prev, [f.name]: undefined } : prev))
+                        }}
+                        disabled={!canWrite || f.readOnly || (f.lockOnEdit && !creating)}
+                        filterValue={f.filterField ? form[f.filterField] : undefined}
+                        form={form}
+                        recordId={selected ? selected[schema.idField] : null}
+                      />
+                    </FieldFrame>
                     {/* NullableDateField already says "No end date" / "Set a
                         date" itself, so the hint would just repeat that. */}
                     {f.hint && f.type !== 'date' && (

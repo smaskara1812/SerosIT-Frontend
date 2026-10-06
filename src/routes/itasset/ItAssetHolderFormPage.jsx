@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { FormField, emptyForm } from '@/routes/masters/MasterCrudPage'
 import AccessDenied from '@/components/AccessDenied'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { localDateStr } from '@/lib/naiveDateTime'
 
@@ -50,6 +51,8 @@ export default function ItAssetHolderFormPage() {
   const [loading, setLoading] = useState(isEdit || Boolean(reassignAssetId))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const bannerRef = useRef(null)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [notFound, setNotFound] = useState(false)
   const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify(emptyForm(schema))))
 
@@ -124,11 +127,13 @@ export default function ItAssetHolderFormPage() {
       }
     }
     setForm(next)
+    setFieldErrors((prev) => (prev[f.name] ? { ...prev, [f.name]: undefined } : prev))
   }
 
   async function handleSave() {
     setSaving(true)
     setError('')
+    setFieldErrors({})
     try {
       const payload = { ...form }
       for (const f of schema.fields) {
@@ -154,8 +159,9 @@ export default function ItAssetHolderFormPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data, schema))
-        toast.error('Failed to save')
+        showFormError(formatApiError(data, schema), { setError, bannerRef })
+        setFieldErrors(buildFieldErrors(data, schema))
+        scrollToFirstFieldError()
         return
       }
       toast.success(isEdit ? 'Changes saved' : reassignAssetId ? 'Device reassigned' : 'Holder record created')
@@ -167,8 +173,7 @@ export default function ItAssetHolderFormPage() {
         navigate('/it-asset/it-asset-holders')
       }
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
-      toast.error('Failed to save')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -200,7 +205,7 @@ export default function ItAssetHolderFormPage() {
         </p>
       )}
       {error && (
-        <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+        <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>
       )}
       {!canWrite && (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
@@ -226,6 +231,7 @@ export default function ItAssetHolderFormPage() {
                     {f.label}
                     {f.required && <span className="text-destructive"> *</span>}
                   </Label>
+                  <FieldFrame error={fieldErrors[f.name]}>
                   <FormField
                     field={f}
                     value={form[f.name]}
@@ -234,6 +240,7 @@ export default function ItAssetHolderFormPage() {
                     form={form}
                     recordId={isEdit ? id : null}
                   />
+                  </FieldFrame>
                   {f.hint && f.type !== 'date' && (
                     <p className="text-[11px] text-muted-foreground">{f.hint}</p>
                   )}

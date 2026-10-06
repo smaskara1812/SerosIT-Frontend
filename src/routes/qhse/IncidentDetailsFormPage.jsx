@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
@@ -13,6 +14,26 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { X } from 'lucide-react'
+
+const FIELD_LABELS = {
+  rig: 'Rig', rig_incident_no: 'Rig Incident No.', unit_name: 'Unit', incident_party: 'Incident Belongs To',
+  incident_date: 'Incident Date and Time', incident_reported_dt: 'Incident Reported Date and Time', well_no: 'Well No.',
+  country: 'Country', operator: 'Operator', drilling_superintendent: 'Drilling Superintendent', safety_officer: 'Safety Officer',
+  incident_type: 'Nature of Accident/Incident', incident_severity: 'Incident Severity (Actual)',
+  incident_severity_potential: 'Incident Severity (Potential)', person_injured: 'Person Injured', third_party: 'Belongs To',
+  contractor: 'TP Contractor Name', fs_emp: 'Employee', emp_name: 'Name of Person', rank: 'Designation (Rank)',
+  rank_name: 'Designation', total_rig_exp_months: 'Total Rig Experience (months)',
+  part_of_body_1: 'Part of Body Injured 1', part_of_body_2: 'Part of Body Injured 2',
+  part_of_body_3: 'Part of Body Injured 3', part_of_body_4: 'Part of Body Injured 4',
+  incident_descr: 'Description', immediate_incident_cause: 'Immediate Cause', immediate_incident_cause_2: 'Immediate Cause 2',
+  immediate_cause_descr: 'Immediate Cause Description', rig_operation: 'Rig Operation', work_location: 'Work Location',
+  contact_expo_type: 'Contact / Exposure Type', corrective_action: 'Corrective Action', preventive_action: 'Preventive Action',
+  npt_hrs_loss: 'Loss in Hours: NPT', manhours_loss: 'Manhours', financial_loss_currency: 'Currency',
+  financial_loss_amt: 'Financial Loss Amount', reported_by: 'Reported By', rptd_by_rank: "Reporter's Rank", comments: 'Comments',
+}
+
+// The date and time inputs are separate on screen but one field on the server.
+const FORM_TO_API = { incident_time: 'incident_date', incident_reported_time: 'incident_reported_dt' }
 
 const MENU_KEY = 'qhse.incident_details'
 
@@ -172,14 +193,14 @@ function SectionCard({ title, children }) {
   )
 }
 
-function Field({ label, required, children, wide }) {
+function Field({ label, name, required, children, wide }) {
   return (
     <div className={`flex flex-col gap-1.5 ${wide ? 'sm:col-span-2' : ''}`}>
       <Label>
         {label}
         {required && <span className="text-destructive"> *</span>}
       </Label>
-      {children}
+      <FieldFrame name={name}>{children}</FieldFrame>
     </div>
   )
 }
@@ -197,6 +218,8 @@ export default function IncidentDetailsFormPage() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const bannerRef = useRef(null)
   const [notFound, setNotFound] = useState(false)
   const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify(emptyForm())))
 
@@ -221,6 +244,10 @@ export default function IncidentDetailsFormPage() {
   }, [id, isEdit])
 
   function set(patch) {
+    setFieldErrors((prev) => {
+      const keys = Object.keys(patch).map((k) => FORM_TO_API[k] || k).filter((k) => prev[k])
+      return keys.length ? { ...prev, ...Object.fromEntries(keys.map((k) => [k, undefined])) } : prev
+    })
     setForm((f) => ({ ...f, ...patch }))
   }
 
@@ -274,13 +301,15 @@ export default function IncidentDetailsFormPage() {
   async function handleSave() {
     setSaving(true)
     setError('')
+    setFieldErrors({})
     try {
       const url = isEdit ? `/api/qhse/incidents/${id}/` : '/api/qhse/incidents/'
       const res = await apiFetch(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(buildPayload()) })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data))
-        toast.error('Failed to save')
+        showFormError(formatApiError(data, FIELD_LABELS), { setError, bannerRef })
+        setFieldErrors(buildFieldErrors(data, FIELD_LABELS))
+        scrollToFirstFieldError()
         return
       }
       allowNextNavigation()
@@ -293,8 +322,7 @@ export default function IncidentDetailsFormPage() {
         navigate(`/qhse/incident-details/${data.incident_id}/edit`, { replace: true })
       }
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
-      toast.error('Failed to save')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -345,7 +373,7 @@ export default function IncidentDetailsFormPage() {
   const heading = isEdit ? (incidentNo ? `Incident #${incidentNo}` : 'Edit Incident') : 'New Incident'
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4 pb-16">
+    <FieldErrorScope errors={fieldErrors} className="mx-auto flex max-w-4xl flex-col gap-4 pb-16">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">{heading}</h1>
         {canWrite && !loading && (
@@ -355,7 +383,9 @@ export default function IncidentDetailsFormPage() {
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {error && (
+        <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>
+      )}
       {!canWrite && !loading && (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
           You have view-only access to Incident Details.
@@ -367,64 +397,64 @@ export default function IncidentDetailsFormPage() {
       ) : (
         <>
           <SectionCard title="Incident">
-            <Field label="Rig Incident No.">
+            <Field name="rig_incident_no" label="Rig Incident No.">
               <Input value={form.rig_incident_no} onChange={(e) => set({ rig_incident_no: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Unit">
+            <Field name="unit_name" label="Unit">
               <Input value={form.unit_name} onChange={(e) => set({ unit_name: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Rig" required>
+            <Field name="rig" label="Rig" required>
               <RemoteCombobox field={RIG_FIELD} value={form.rig} labelValue={form.rig_label} onChange={(v, raw) => set({ rig: v, rig_label: raw?.rig_name || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Incident Belongs To" required>
+            <Field name="incident_party" label="Incident Belongs To" required>
               <BelongsToSelect value={form.incident_party} onChange={(v) => set({ incident_party: v })} disabled={!canWrite} />
             </Field>
-            <Field label="Incident Date">
+            <Field name="incident_date" label="Incident Date">
               <Input type="date" value={form.incident_date} onChange={(e) => set({ incident_date: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Incident Time">
+            <Field name="incident_date" label="Incident Time">
               <Input type="time" value={form.incident_time} onChange={(e) => set({ incident_time: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Incident Reported Date">
+            <Field name="incident_reported_dt" label="Incident Reported Date">
               <Input type="date" value={form.incident_reported_dt} onChange={(e) => set({ incident_reported_dt: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Incident Reported Time">
+            <Field name="incident_reported_dt" label="Incident Reported Time">
               <Input type="time" value={form.incident_reported_time} onChange={(e) => set({ incident_reported_time: e.target.value })} disabled={!canWrite} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Location">
-            <Field label="Well No.">
+            <Field name="well_no" label="Well No.">
               <Input value={form.well_no} onChange={(e) => set({ well_no: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Country">
+            <Field name="country" label="Country">
               <RemoteCombobox field={COUNTRY_FIELD} value={form.country} labelValue={form.country_label} onChange={(v, raw) => set({ country: v, country_label: raw?.country_name || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Operator">
+            <Field name="operator" label="Operator">
               <RemoteCombobox field={OPERATOR_FIELD} value={form.operator} labelValue={form.operator_label} onChange={(v, raw) => set({ operator: v, operator_label: raw?.operator_name || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Drilling Superintendent">
+            <Field name="drilling_superintendent" label="Drilling Superintendent">
               <Input value={form.drilling_superintendent} onChange={(e) => set({ drilling_superintendent: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Safety Officer">
+            <Field name="safety_officer" label="Safety Officer">
               <Input value={form.safety_officer} onChange={(e) => set({ safety_officer: e.target.value })} disabled={!canWrite} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Nature">
-            <Field label="Nature of Accident/Incident" required wide>
+            <Field name="incident_type" label="Nature of Accident/Incident" required wide>
               <RemoteCombobox field={INCIDENT_TYPE_FIELD} value={form.incident_type} labelValue={form.incident_type_label} onChange={(v, raw) => set({ incident_type: v, incident_type_label: raw?.incident_type || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Incident Severity: Actual" required>
+            <Field name="incident_severity" label="Incident Severity: Actual" required>
               <TilePicker options={SEVERITY_OPTIONS} value={form.incident_severity || null} onChange={(v) => set({ incident_severity: v })} disabled={!canWrite} />
             </Field>
-            <Field label="Potential" required>
+            <Field name="incident_severity_potential" label="Potential" required>
               <TilePicker options={SEVERITY_OPTIONS} value={form.incident_severity_potential || null} onChange={(v) => set({ incident_severity_potential: v })} disabled={!canWrite} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Injury">
-            <Field label="Person Injured">
+            <Field name="person_injured" label="Person Injured">
               <TilePicker
                 options={[{ value: 'Y', label: 'Yes' }, { value: 'N', label: 'No' }]}
                 value={form.person_injured}
@@ -433,7 +463,7 @@ export default function IncidentDetailsFormPage() {
               />
             </Field>
             {injured && (
-              <Field label="Belongs To">
+              <Field name="third_party" label="Belongs To">
                 <BelongsToSelect
                   value={form.third_party}
                   onChange={(v) => set({ third_party: v, contractor: CONTRACTOR_REQUIRED_VALUES.has(v) ? form.contractor : null })}
@@ -442,13 +472,13 @@ export default function IncidentDetailsFormPage() {
               </Field>
             )}
             {injured && contractorRequired && (
-              <Field label="TP Contractor Name" required>
+              <Field name="contractor" label="TP Contractor Name" required>
                 <RemoteCombobox field={CONTRACTOR_FIELD} value={form.contractor} labelValue={form.contractor_label} onChange={(v, raw) => set({ contractor: v, contractor_label: raw?.contractor_name || '' })} disabled={!canWrite} />
               </Field>
             )}
             {injured && (
               <>
-                <Field label="Employee">
+                <Field name="fs_emp" label="Employee">
                   <RemoteCombobox
                     field={EMPLOYEE_FIELD}
                     value={form.fs_emp}
@@ -465,25 +495,25 @@ export default function IncidentDetailsFormPage() {
                     disabled={!canWrite}
                   />
                 </Field>
-                <Field label="Name of Person">
+                <Field name="emp_name" label="Name of Person">
                   <Input value={form.emp_name} onChange={(e) => set({ emp_name: e.target.value })} disabled={!canWrite} />
                 </Field>
-                <Field label="Designation (Rank)">
+                <Field name="rank" label="Designation (Rank)">
                   <Input value={form.rank_name} disabled />
                 </Field>
-                <Field label="Total Rig/Field Exp (months)">
+                <Field name="total_rig_exp_months" label="Total Rig/Field Exp (months)">
                   <Input type="number" value={form.total_rig_exp_months} onChange={(e) => set({ total_rig_exp_months: e.target.value })} disabled={!canWrite} />
                 </Field>
-                <Field label="Part Of Body Injured 1">
+                <Field name="part_of_body_1" label="Part Of Body Injured 1">
                   <RemoteCombobox field={PART_OF_BODY_FIELD} value={form.part_of_body_1} labelValue={form.part_of_body_1_label} onChange={(v, raw) => set({ part_of_body_1: v, part_of_body_1_label: raw?.part_of_body_name || '' })} disabled={!canWrite} />
                 </Field>
-                <Field label="Part Of Body Injured 2">
+                <Field name="part_of_body_2" label="Part Of Body Injured 2">
                   <RemoteCombobox field={PART_OF_BODY_FIELD} value={form.part_of_body_2} labelValue={form.part_of_body_2_label} onChange={(v, raw) => set({ part_of_body_2: v, part_of_body_2_label: raw?.part_of_body_name || '' })} disabled={!canWrite} />
                 </Field>
-                <Field label="Part Of Body Injured 3">
+                <Field name="part_of_body_3" label="Part Of Body Injured 3">
                   <RemoteCombobox field={PART_OF_BODY_FIELD} value={form.part_of_body_3} labelValue={form.part_of_body_3_label} onChange={(v, raw) => set({ part_of_body_3: v, part_of_body_3_label: raw?.part_of_body_name || '' })} disabled={!canWrite} />
                 </Field>
-                <Field label="Part Of Body Injured 4">
+                <Field name="part_of_body_4" label="Part Of Body Injured 4">
                   <RemoteCombobox field={PART_OF_BODY_FIELD} value={form.part_of_body_4} labelValue={form.part_of_body_4_label} onChange={(v, raw) => set({ part_of_body_4: v, part_of_body_4_label: raw?.part_of_body_name || '' })} disabled={!canWrite} />
                 </Field>
               </>
@@ -491,61 +521,61 @@ export default function IncidentDetailsFormPage() {
           </SectionCard>
 
           <SectionCard title="Causes">
-            <Field label="Description (1000 chars)" required wide>
+            <Field name="incident_descr" label="Description (1000 chars)" required wide>
               <Textarea rows={3} value={form.incident_descr} onChange={(e) => set({ incident_descr: e.target.value })} maxLength={1000} disabled={!canWrite} />
             </Field>
-            <Field label="Immediate Cause" required>
+            <Field name="immediate_incident_cause" label="Immediate Cause" required>
               <RemoteCombobox field={INCIDENT_CAUSE_FIELD} value={form.immediate_incident_cause} labelValue={form.immediate_incident_cause_label} onChange={(v, raw) => set({ immediate_incident_cause: v, immediate_incident_cause_label: raw?.incident_cause_desc || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Immediate Cause 2">
+            <Field name="immediate_incident_cause_2" label="Immediate Cause 2">
               <RemoteCombobox field={INCIDENT_CAUSE_FIELD} value={form.immediate_incident_cause_2} labelValue={form.immediate_incident_cause_2_label} onChange={(v, raw) => set({ immediate_incident_cause_2: v, immediate_incident_cause_2_label: raw?.incident_cause_desc || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Immediate Cause Description (500 chars)" wide>
+            <Field name="immediate_cause_descr" label="Immediate Cause Description (500 chars)" wide>
               <Textarea rows={2} value={form.immediate_cause_descr} onChange={(e) => set({ immediate_cause_descr: e.target.value })} maxLength={500} disabled={!canWrite} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Actions">
-            <Field label="Rig Operation" required>
+            <Field name="rig_operation" label="Rig Operation" required>
               <RemoteCombobox field={RIG_OPERATION_FIELD} value={form.rig_operation} labelValue={form.rig_operation_label} onChange={(v, raw) => set({ rig_operation: v, rig_operation_label: raw?.rig_operation_name || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Work Location" required>
+            <Field name="work_location" label="Work Location" required>
               <RemoteCombobox field={WORK_LOCATION_FIELD} value={form.work_location} labelValue={form.work_location_label} onChange={(v, raw) => set({ work_location: v, work_location_label: raw?.work_location || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Contact / Exposure Type" required wide>
+            <Field name="contact_expo_type" label="Contact / Exposure Type" required wide>
               <RemoteCombobox field={CONTACT_EXPO_FIELD} value={form.contact_expo_type} labelValue={form.contact_expo_type_label} onChange={(v, raw) => set({ contact_expo_type: v, contact_expo_type_label: raw?.contact_expo_type_name || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Corrective Action (300 chars)" wide>
+            <Field name="corrective_action" label="Corrective Action (300 chars)" wide>
               <Textarea rows={2} value={form.corrective_action} onChange={(e) => set({ corrective_action: e.target.value })} maxLength={300} disabled={!canWrite} />
             </Field>
-            <Field label="Preventive Action (250 chars)" wide>
+            <Field name="preventive_action" label="Preventive Action (250 chars)" wide>
               <Textarea rows={2} value={form.preventive_action} onChange={(e) => set({ preventive_action: e.target.value })} maxLength={250} disabled={!canWrite} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Financials">
-            <Field label="Loss in Hrs: NPT">
+            <Field name="npt_hrs_loss" label="Loss in Hrs: NPT">
               <Input type="number" value={form.npt_hrs_loss} onChange={(e) => set({ npt_hrs_loss: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Manhours">
+            <Field name="manhours_loss" label="Manhours">
               <Input type="number" value={form.manhours_loss} onChange={(e) => set({ manhours_loss: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Currency">
+            <Field name="financial_loss_currency" label="Currency">
               <RemoteCombobox field={CURRENCY_FIELD} value={form.financial_loss_currency} labelValue={form.financial_loss_currency_label} onChange={(v, raw) => set({ financial_loss_currency: v, financial_loss_currency_label: raw?.currency_name || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Financial Loss Amount">
+            <Field name="financial_loss_amt" label="Financial Loss Amount">
               <Input type="number" value={form.financial_loss_amt} onChange={(e) => set({ financial_loss_amt: e.target.value })} disabled={!canWrite} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Reporting">
-            <Field label="Reported By">
+            <Field name="reported_by" label="Reported By">
               <Input value={form.reported_by} onChange={(e) => set({ reported_by: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field label="Rank">
+            <Field name="rptd_by_rank" label="Rank">
               <RemoteCombobox field={RANK_FIELD} value={form.rptd_by_rank} labelValue={form.rptd_by_rank_label} onChange={(v, raw) => set({ rptd_by_rank: v, rptd_by_rank_label: raw?.rank_name || '' })} disabled={!canWrite} />
             </Field>
-            <Field label="Comments (200 chars)" wide>
+            <Field name="comments" label="Comments (200 chars)" wide>
               <Textarea rows={2} value={form.comments} onChange={(e) => set({ comments: e.target.value })} maxLength={200} disabled={!canWrite} />
             </Field>
           </SectionCard>
@@ -591,6 +621,6 @@ export default function IncidentDetailsFormPage() {
       )}
 
       {leaveDialog}
-    </div>
+    </FieldErrorScope>
   )
 }

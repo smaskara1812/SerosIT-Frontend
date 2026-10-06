@@ -1067,6 +1067,13 @@ export const navTree = [
             icon: IconTrendingUp,
             menuKey: 'qhse.lagging_indicators',
           },
+          {
+            key: 'corrective_actions',
+            label: 'Corrective Actions Reporting',
+            path: '/qhse/corrective-actions',
+            icon: IconClipboard,
+            menuKey: 'qhse.corrective_actions',
+          },
         ],
       },
     ],

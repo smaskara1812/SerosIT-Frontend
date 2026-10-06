@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { formatApiError } from '@/lib/errors'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -362,7 +363,7 @@ export default function DrillingWorkShiftPage() {
       loadShifts(projectId, rigId)
       return true
     }
-    toast.error('Failed to save')
+    toast.error(formatApiError(await res.json().catch(() => null)))
     return false
   }
 

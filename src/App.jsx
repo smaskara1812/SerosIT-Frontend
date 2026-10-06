@@ -49,6 +49,8 @@ import MisHseReviewPage from '@/routes/qhse/MisHseReviewPage'
 import HseDrillRecordListPage from '@/routes/qhse/HseDrillRecordListPage'
 import HseDrillRecordFormPage from '@/routes/qhse/HseDrillRecordFormPage'
 import HseDrillRecordDetailsPage from '@/routes/qhse/HseDrillRecordDetailsPage'
+import CorrectiveActionListPage from '@/routes/qhse/CorrectiveActionListPage'
+import CorrectiveActionFormPage from '@/routes/qhse/CorrectiveActionFormPage'
 import HseWeeklyDrillListPage from '@/routes/qhse/HseWeeklyDrillListPage'
 import HseWeeklyDrillFormPage from '@/routes/qhse/HseWeeklyDrillFormPage'
 import HseDrillReportPage from '@/routes/qhse/HseDrillReportPage'
@@ -128,6 +130,9 @@ function App() {
           <Route path="/qhse/lagging-indicators" element={<HseLaggingIndicatorsListPage />} />
           <Route path="/qhse/lagging-indicators/new" element={<HseLaggingIndicatorsFormPage />} />
           <Route path="/qhse/lagging-indicators/:id/edit" element={<HseLaggingIndicatorsFormPage />} />
+          <Route path="/qhse/corrective-actions" element={<CorrectiveActionListPage />} />
+          <Route path="/qhse/corrective-actions/new" element={<CorrectiveActionFormPage />} />
+          <Route path="/qhse/corrective-actions/:id/edit" element={<CorrectiveActionFormPage />} />
           <Route path="/qhse/hse-weekly-drill" element={<HseWeeklyDrillListPage />} />
           <Route path="/qhse/hse-weekly-drill/new" element={<HseWeeklyDrillFormPage />} />
           <Route path="/qhse/hse-weekly-drill/:id/edit" element={<HseWeeklyDrillFormPage />} />

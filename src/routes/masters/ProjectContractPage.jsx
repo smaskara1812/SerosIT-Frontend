@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { formatApiError } from '@/lib/errors'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -19,6 +20,11 @@ import { RemoteCombobox, NullableDateField, isDateActive } from './MasterCrudPag
 import { IconSearch, IconChevronLeft, IconPlus, IconTrash } from '@/components/icons'
 import { ArrowDownAZ, ArrowUpZA, Download } from 'lucide-react'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+
+const CONTRACT_LABELS = {
+  location: 'Location', operator: 'Operator', prj_contract_no: 'Contract No.', prj_short_name: 'Short Name',
+  prj_start_dt: 'Start Date', prj_end_dt: 'End Date',
+}
 
 const MENU_KEY = 'masters.project_contract'
 const API = '/api/masters/project-contracts/'
@@ -309,7 +315,7 @@ export default function ProjectContractPage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || JSON.stringify(data))
+      if (!res.ok) throw new Error(formatApiError(data, CONTRACT_LABELS))
       toast.success(isEdit ? 'Contract saved' : 'Contract created')
       if (!isEdit) {
         setCreating(false)
@@ -320,7 +326,7 @@ export default function ProjectContractPage() {
       }
       loadContracts(page, query)
     } catch (e) {
-      toast.error(e.message || 'Failed to save')
+      toast.error(e.message || "Your changes weren't saved. Please try again.")
     } finally {
       setSaving(false)
     }

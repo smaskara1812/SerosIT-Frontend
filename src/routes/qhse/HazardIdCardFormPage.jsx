@@ -4,7 +4,8 @@ import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { joinNaiveDt, splitNaiveDt } from '@/lib/naiveDateTime'
 import AccessDenied from '@/components/AccessDenied'
@@ -13,6 +14,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+
+const FIELD_LABELS = {
+  rig: 'Rig', event_dt: 'Event Date and Time', reported_by_party: 'Reported By Party', reported_by_fs_emp: 'Reported By',
+  reported_by_name: 'Reported By', work_location: 'Location of Hazard', haz_type: 'Type of Hazard',
+  timeout_for_safety: 'Timeout For Safety', hazard_desc: 'Hazard Description', action_taken: 'Action Taken',
+  resp_dept: 'Responsible Dept', resp_rank: 'Responsible Position', close_out_dt: 'Close Out Date and Time', haz_id_card_status: 'Status',
+}
+
+// The date and time inputs are separate on screen but one field on the server.
+const FORM_TO_API = { event_date: 'event_dt', event_time: 'event_dt', close_out_date: 'close_out_dt', close_out_time: 'close_out_dt' }
 
 const MENU_KEY = 'qhse.hazard_id_card'
 
@@ -77,14 +88,14 @@ function SectionCard({ title, children }) {
   )
 }
 
-function Field({ label, required, children, wide }) {
+function Field({ label, name, required, children, wide }) {
   return (
     <div className={`flex flex-col gap-1.5 ${wide ? 'sm:col-span-2' : ''}`}>
       <Label>
         {label}
         {required && <span className="text-destructive"> *</span>}
       </Label>
-      {children}
+      <FieldFrame name={name}>{children}</FieldFrame>
     </div>
   )
 }
@@ -120,6 +131,8 @@ export default function HazardIdCardFormPage() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const bannerRef = useRef(null)
   const [notFound, setNotFound] = useState(false)
   const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify(emptyForm())))
 
@@ -212,6 +225,10 @@ export default function HazardIdCardFormPage() {
   }, [form.rig, form.resp_dept])
 
   function set(patch) {
+    setFieldErrors((prev) => {
+      const keys = Object.keys(patch).map((k) => FORM_TO_API[k] || k).filter((k) => prev[k])
+      return keys.length ? { ...prev, ...Object.fromEntries(keys.map((k) => [k, undefined])) } : prev
+    })
     setForm((f) => ({ ...f, ...patch }))
   }
 
@@ -238,13 +255,15 @@ export default function HazardIdCardFormPage() {
   async function handleSave() {
     setSaving(true)
     setError('')
+    setFieldErrors({})
     try {
       const url = isEdit ? `/api/qhse/hazard-id-card/${id}/` : '/api/qhse/hazard-id-card/'
       const res = await apiFetch(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(buildPayload()) })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data))
-        toast.error('Failed to save')
+        showFormError(formatApiError(data, FIELD_LABELS), { setError, bannerRef })
+        setFieldErrors(buildFieldErrors(data, FIELD_LABELS))
+        scrollToFirstFieldError()
         return
       }
       allowNextNavigation()
@@ -259,8 +278,7 @@ export default function HazardIdCardFormPage() {
         navigate(`/qhse/hazard-id-card/${data.haz_card_id}/edit`, { replace: true })
       }
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
-      toast.error('Failed to save')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -279,7 +297,7 @@ export default function HazardIdCardFormPage() {
   const writable = canWrite && !closedLocked
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 pb-16">
+    <FieldErrorScope errors={fieldErrors} className="mx-auto flex max-w-3xl flex-col gap-4 pb-16">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">{heading}</h1>
         {writable && !loading && (
@@ -289,7 +307,9 @@ export default function HazardIdCardFormPage() {
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {error && (
+        <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>
+      )}
       {closedLocked && (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
           This card is Closed and can no longer be edited.
@@ -306,7 +326,7 @@ export default function HazardIdCardFormPage() {
       ) : (
         <>
           <SectionCard title="Card">
-            <Field label="Rig" required>
+            <Field name="rig" label="Rig" required>
               <RemoteCombobox
                 field={RIG_FIELD}
                 value={form.rig}
@@ -324,16 +344,16 @@ export default function HazardIdCardFormPage() {
             <Field label="Project No.">
               <Input value={form.contract_label} readOnly disabled className="bg-muted" />
             </Field>
-            <Field label="Event Date" required>
+            <Field name="event_dt" label="Event Date" required>
               <Input type="date" value={form.event_date} onChange={(e) => set({ event_date: e.target.value })} disabled={!writable} />
             </Field>
-            <Field label="Event Time" required>
+            <Field name="event_dt" label="Event Time" required>
               <Input type="time" value={form.event_time} onChange={(e) => set({ event_time: e.target.value })} disabled={!writable} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Reported By">
-            <Field label="Reported By Party" required>
+            <Field name="reported_by_party" label="Reported By Party" required>
               <PlainSelect
                 value={form.reported_by_party || null}
                 onChange={(v) => set({ reported_by_party: v || '', reported_by_fs_emp: null, reported_by_fs_emp_label: '', reported_by_name: '' })}
@@ -342,7 +362,7 @@ export default function HazardIdCardFormPage() {
               />
             </Field>
             {isEosil ? (
-              <Field label="Reported By" required>
+              <Field name="reported_by_fs_emp" label="Reported By" required>
                 <RemoteCombobox
                   field={EMPLOYEE_FIELD}
                   value={form.reported_by_fs_emp}
@@ -352,20 +372,20 @@ export default function HazardIdCardFormPage() {
                 />
               </Field>
             ) : (
-              <Field label="Reported By" required>
+              <Field name="reported_by_name" label="Reported By" required>
                 <Input value={form.reported_by_name} maxLength={30} onChange={(e) => set({ reported_by_name: e.target.value })} disabled={!writable} />
               </Field>
             )}
           </SectionCard>
 
           <SectionCard title="Hazard">
-            <Field label="Location of Hazard" required>
+            <Field name="work_location" label="Location of Hazard" required>
               <RemoteCombobox field={WORK_LOCATION_FIELD} value={form.work_location} labelValue={form.work_location_label} onChange={(v, raw) => set({ work_location: v, work_location_label: raw?.work_location || '' })} disabled={!writable} />
             </Field>
-            <Field label="Type of Hazard" required>
+            <Field name="haz_type" label="Type of Hazard" required>
               <RemoteCombobox field={HAZARD_TYPE_FIELD} value={form.haz_type} labelValue={form.haz_type_label} onChange={(v, raw) => set({ haz_type: v, haz_type_label: raw?.haz_type_name || '' })} disabled={!writable} />
             </Field>
-            <Field label="Timeout For Safety">
+            <Field name="timeout_for_safety" label="Timeout For Safety">
               <TilePicker
                 options={[{ value: 'Y', label: 'Yes' }, { value: 'N', label: 'No' }]}
                 value={form.timeout_for_safety}
@@ -373,16 +393,16 @@ export default function HazardIdCardFormPage() {
                 disabled={!writable}
               />
             </Field>
-            <Field label="Hazard Description (200 chars)" required wide>
+            <Field name="hazard_desc" label="Hazard Description (200 chars)" required wide>
               <Textarea rows={3} maxLength={200} value={form.hazard_desc} onChange={(e) => set({ hazard_desc: e.target.value })} disabled={!writable} />
             </Field>
-            <Field label="Action Taken (200 chars)" wide>
+            <Field name="action_taken" label="Action Taken (200 chars)" wide>
               <Textarea rows={3} maxLength={200} value={form.action_taken} onChange={(e) => set({ action_taken: e.target.value })} disabled={!writable} />
             </Field>
           </SectionCard>
 
           <SectionCard title="Responsibility & Status">
-            <Field label="Responsible Dept" required>
+            <Field name="resp_dept" label="Responsible Dept" required>
               <PlainSelect
                 value={form.resp_dept}
                 onChange={(v) => {
@@ -395,7 +415,7 @@ export default function HazardIdCardFormPage() {
                 disabled={!writable || !form.rig}
               />
             </Field>
-            <Field label="Responsible Position" required>
+            <Field name="resp_rank" label="Responsible Position" required>
               <PlainSelect
                 value={form.resp_rank}
                 onChange={(v) => {
@@ -407,13 +427,13 @@ export default function HazardIdCardFormPage() {
                 disabled={!writable || !form.resp_dept}
               />
             </Field>
-            <Field label="Close Out Date">
+            <Field name="close_out_dt" label="Close Out Date">
               <Input type="date" value={form.close_out_date} onChange={(e) => set({ close_out_date: e.target.value })} disabled={!writable} />
             </Field>
-            <Field label="Close Out Time">
+            <Field name="close_out_dt" label="Close Out Time">
               <Input type="time" value={form.close_out_time} onChange={(e) => set({ close_out_time: e.target.value })} disabled={!writable} />
             </Field>
-            <Field label="Status" required>
+            <Field name="haz_id_card_status" label="Status" required>
               <TilePicker options={STATUS_OPTIONS} value={form.haz_id_card_status} onChange={(v) => set({ haz_id_card_status: v })} disabled={!writable} />
             </Field>
           </SectionCard>
@@ -428,6 +448,6 @@ export default function HazardIdCardFormPage() {
         </>
       )}
       {leaveDialog}
-    </div>
+    </FieldErrorScope>
   )
 }

@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldFrame } from '@/components/FieldFrame'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
 import { MonthYearSelect } from '@/components/PeriodSelects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+
+const FIELD_LABELS = { cost_centre: 'Cost Centre', rig: 'Rig', report_no: 'Report No.', report_month: 'Period' }
 
 const MENU_KEY = 'qhse.mis_hse_return'
 
@@ -84,6 +87,9 @@ export default function MisHseReturnPage() {
   const [form, setForm] = useState(emptyHeaderForm)
   const [hdrId, setHdrId] = useState(null)
   const [error, setError] = useState('')
+  const bannerRef = useRef(null)
+  const [fieldErrors, setFieldErrors] = useState({})
+  const clearErr = (k) => setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: undefined } : prev))
   const [adding, setAdding] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -203,20 +209,20 @@ export default function MisHseReturnPage() {
 
   async function handleAdd() {
     setError('')
-    if (!form.cost_centre) {
-      setError('Cost Centre must be selected.')
-      return
+    setFieldErrors({})
+    const stop = (key, msg) => {
+      setFieldErrors({ [key]: 'This is required.' })
+      showFormError(msg, { setError, bannerRef })
+      scrollToFirstFieldError()
     }
-    if (!form.report_no.trim()) {
-      setError('Report No. must be entered.')
-      return
-    }
+    if (!form.cost_centre) return stop('cost_centre', 'Please choose a Cost Centre.')
+    if (!form.report_no.trim()) return stop('report_no', 'Please enter the Report No.')
     // A native month picker can report an empty or partial value if its
     // month/year segments weren't both fully typed when Add was clicked —
     // catch that here with a clear message instead of sending a half-built
     // value to the server, where it'd fail parsing with a vaguer error.
     if (!/^\d{4}-\d{2}$/.test(form.report_month || '')) {
-      setError('Report Period must be a complete month and year — finish typing or re-pick it.')
+      stop('report_month', 'Please choose both the Month and the Year for the Period.')
       return
     }
     setAdding(true)
@@ -231,14 +237,15 @@ export default function MisHseReturnPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data))
-        toast.error('Failed to save')
+        showFormError(formatApiError(data, FIELD_LABELS), { setError, bannerRef })
+        setFieldErrors(buildFieldErrors(data, FIELD_LABELS))
+        scrollToFirstFieldError()
         return
       }
       toast.success('Record Saved')
       loadHeader(data)
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setAdding(false)
     }
@@ -295,7 +302,7 @@ export default function MisHseReturnPage() {
         </div>
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {error && <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>}
 
       {!loaded && (
         <>
@@ -384,19 +391,22 @@ export default function MisHseReturnPage() {
                 <Label>
                   Cost Centre<span className="text-destructive"> *</span>
                 </Label>
-                <RemoteCombobox
-                  field={COST_CENTRE_FIELD}
-                  value={form.cost_centre}
-                  labelValue={form.cost_centre_name}
-                  onChange={(v, raw) =>
-                    set({
-                      cost_centre: v,
-                      cost_centre_name: raw?.cost_centre_name || '',
-                      rig: raw?.rig || null,
-                      rig_name: raw?.rig_name || '',
-                    })
-                  }
-                />
+                <FieldFrame error={fieldErrors.cost_centre}>
+                  <RemoteCombobox
+                    field={COST_CENTRE_FIELD}
+                    value={form.cost_centre}
+                    labelValue={form.cost_centre_name}
+                    onChange={(v, raw) => {
+                      clearErr('cost_centre')
+                      set({
+                        cost_centre: v,
+                        cost_centre_name: raw?.cost_centre_name || '',
+                        rig: raw?.rig || null,
+                        rig_name: raw?.rig_name || '',
+                      })
+                    }}
+                  />
+                </FieldFrame>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Rig</Label>
@@ -406,13 +416,30 @@ export default function MisHseReturnPage() {
                 <Label>
                   Report No<span className="text-destructive"> *</span>
                 </Label>
-                <Input value={form.report_no} maxLength={20} onChange={(e) => set({ report_no: e.target.value })} />
+                <FieldFrame error={fieldErrors.report_no}>
+                  <Input
+                    value={form.report_no}
+                    maxLength={20}
+                    onChange={(e) => {
+                      clearErr('report_no')
+                      set({ report_no: e.target.value })
+                    }}
+                  />
+                </FieldFrame>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>
                   Period<span className="text-destructive"> *</span>
                 </Label>
-                <MonthYearSelect value={form.report_month} onChange={(v) => set({ report_month: v })} />
+                <FieldFrame error={fieldErrors.report_month}>
+                  <MonthYearSelect
+                    value={form.report_month}
+                    onChange={(v) => {
+                      clearErr('report_month')
+                      set({ report_month: v })
+                    }}
+                  />
+                </FieldFrame>
               </div>
             </div>
             {canAdd && (

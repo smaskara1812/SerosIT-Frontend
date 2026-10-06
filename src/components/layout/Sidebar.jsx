@@ -132,7 +132,7 @@ export default function Sidebar() {
               <Icon
                 className={`h-[19px] w-[19px] shrink-0 transition-colors ${isActive ? 'text-blue-300' : ''}`}
               />
-              {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && <span className="min-w-0 break-words leading-snug">{label}</span>}
               {collapsed && (
                 <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-lg bg-[#0f1f3d] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100">
                   {label}

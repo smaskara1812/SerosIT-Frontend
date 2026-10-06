@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { formatApiError, showFormError } from '@/lib/errors'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -114,6 +115,7 @@ export default function ActivityMonitorPage() {
   const [editForm, setEditForm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const bannerRef = useRef(null)
 
   usePageSubtitle(totalCount ? `${totalCount.toLocaleString()} records` : null)
 
@@ -240,8 +242,7 @@ export default function ActivityMonitorPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || 'Failed to save')
-        toast.error('Failed to save')
+        showFormError(formatApiError(data), { setError, bannerRef })
         return
       }
       toast.success(`${data.activity_name} scheduled`)
@@ -252,7 +253,7 @@ export default function ActivityMonitorPage() {
       // inside a "Completed"-filtered list).
       if (statusFilter !== 'completed') loadPage(1, query, false)
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -282,8 +283,7 @@ export default function ActivityMonitorPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || 'Failed to save')
-        toast.error('Failed to save')
+        showFormError(formatApiError(data), { setError, bannerRef })
         return
       }
       setDetail(data)
@@ -304,7 +304,7 @@ export default function ActivityMonitorPage() {
         next_planning_remark: '',
       })
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -487,7 +487,7 @@ export default function ActivityMonitorPage() {
               </div>
               <div className="flex-1 overflow-y-auto p-4">
                 {error && (
-                  <p className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+                  <p ref={bannerRef} className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>
                 )}
                 <div className="grid max-w-xl grid-cols-2 gap-4">
                   <div className="col-span-2 flex flex-col gap-1.5">
@@ -574,7 +574,7 @@ export default function ActivityMonitorPage() {
                 {!loadingDetail && detail && editForm && (
                   <>
                     {error && (
-                      <p className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+                      <p ref={bannerRef} className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>
                     )}
                     {detail.is_completed && (
                       <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">

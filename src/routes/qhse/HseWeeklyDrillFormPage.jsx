@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
 import { YearSelect } from '@/components/PeriodSelects'
@@ -16,6 +17,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { IconTrash } from '@/components/icons'
 import { Pencil } from 'lucide-react'
 
+const FIELD_LABELS = { rig: 'Rig', year: 'Year', drill_week: 'Week' }
+
 const MENU_KEY = 'qhse.hse_weekly_drill'
 const RIG_FIELD = { type: 'select-remote', remote: '/api/masters/rigs/', optionLabel: 'rig_name', optionValue: 'rig_id', labelField: 'rig_name' }
 
@@ -25,14 +28,14 @@ function fmtDate(iso) {
   return `${d}/${m}/${y}`
 }
 
-function Field({ label, required, children, hint, className = '' }) {
+function Field({ label, name, required, children, hint, className = '' }) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <Label className="text-sm font-medium">
         {label}
         {required && <span className="text-destructive"> *</span>}
       </Label>
-      {children}
+      <FieldFrame name={name}>{children}</FieldFrame>
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
@@ -306,6 +309,9 @@ export default function HseWeeklyDrillFormPage() {
   const [notFound, setNotFound] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const clearErr = (k) => setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: undefined } : prev))
+  const bannerRef = useRef(null)
 
   useEffect(() => {
     if (!isEdit) return
@@ -336,9 +342,15 @@ export default function HseWeeklyDrillFormPage() {
 
   async function handleAdd() {
     setError('')
-    if (!form.rig) return setError('Rig must be selected.')
-    if (!/^\d{4}$/.test(form.year)) return setError('Drill Year must be a 4-digit year.')
-    if (!form.week) return setError('Week must be entered.')
+    setFieldErrors({})
+    const stop = (key, msg) => {
+      setFieldErrors({ [key]: 'This is required.' })
+      showFormError(msg, { setError, bannerRef })
+      scrollToFirstFieldError()
+    }
+    if (!form.rig) return stop('rig', 'Please choose a Rig.')
+    if (!/^\d{4}$/.test(form.year)) return stop('year', 'Please choose a Year.')
+    if (!form.week) return stop('drill_week', 'Please enter the Week number.')
     setSaving(true)
     try {
       const res = await apiFetch('/api/qhse/hse-weekly-drill/', {
@@ -347,14 +359,15 @@ export default function HseWeeklyDrillFormPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data))
-        toast.error('Failed to save')
+        showFormError(formatApiError(data, FIELD_LABELS), { setError, bannerRef })
+        setFieldErrors(buildFieldErrors(data, FIELD_LABELS))
+        scrollToFirstFieldError()
         return
       }
       toast.success('Weekly drill record added — now add the drills conducted')
       navigate(`/qhse/hse-weekly-drill/${data.hse_weekly_drill_hdr_id}/edit`, { replace: true })
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -365,7 +378,7 @@ export default function HseWeeklyDrillFormPage() {
   if (!isEdit && !can(user, MENU_KEY, 'add')) return <AccessDenied />
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-16">
+    <FieldErrorScope errors={fieldErrors} className="mx-auto flex max-w-5xl flex-col gap-6 pb-16">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">
           {isEdit ? (form.rig_name ? `${form.rig_name} — ${form.year} Week ${form.week}` : 'HSE Weekly Drill') : 'New HSE Weekly Drill'}
@@ -377,7 +390,7 @@ export default function HseWeeklyDrillFormPage() {
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {error && <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>}
 
       {loading ? (
         <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
@@ -385,7 +398,7 @@ export default function HseWeeklyDrillFormPage() {
         <>
           <div className="rounded-2xl border border-border bg-card p-7">
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-3">
-              <Field label="Rig" required>
+              <Field name="rig" label="Rig" required>
                 {isEdit ? (
                   <Input value={form.rig_name} disabled className="bg-muted" />
                 ) : (
@@ -393,14 +406,20 @@ export default function HseWeeklyDrillFormPage() {
                     field={RIG_FIELD}
                     value={form.rig}
                     labelValue={form.rig_name}
-                    onChange={(v, raw) => setForm((f) => ({ ...f, rig: v, rig_name: raw?.rig_name || '', week: '' }))}
+                    onChange={(v, raw) => {
+                      clearErr('rig')
+                      setForm((f) => ({ ...f, rig: v, rig_name: raw?.rig_name || '', week: '' }))
+                    }}
                   />
                 )}
               </Field>
-              <Field label="Year" required>
-                <YearSelect value={form.year} disabled={isEdit} onChange={(v) => setForm((f) => ({ ...f, year: v, week: '' }))} />
+              <Field name="year" label="Year" required>
+                <YearSelect value={form.year} disabled={isEdit} onChange={(v) => {
+                  clearErr('year')
+                  setForm((f) => ({ ...f, year: v, week: '' }))
+                }} />
               </Field>
-              <Field label="Week" required hint={isEdit ? undefined : 'Fills in after Rig and Year — you can change it.'}>
+              <Field name="drill_week" label="Week" required hint={isEdit ? undefined : 'Fills in after Rig and Year — you can change it.'}>
                 <Input
                   type="number"
                   min={1}
@@ -408,7 +427,10 @@ export default function HseWeeklyDrillFormPage() {
                   value={form.week}
                   disabled={isEdit}
                   className={isEdit ? 'bg-muted' : ''}
-                  onChange={(e) => setForm((f) => ({ ...f, week: e.target.value }))}
+                  onChange={(e) => {
+                    clearErr('drill_week')
+                    setForm((f) => ({ ...f, week: e.target.value }))
+                  }}
                 />
               </Field>
             </div>
@@ -424,6 +446,6 @@ export default function HseWeeklyDrillFormPage() {
           )}
         </>
       )}
-    </div>
+    </FieldErrorScope>
   )
 }

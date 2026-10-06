@@ -66,7 +66,7 @@ function SectionGroup({ section, items }) {
               to={path}
               className={({ isActive }) =>
                 [
-                  'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] transition-colors',
+                  'flex items-start gap-2.5 rounded-xl px-3 py-2 text-[13.5px] transition-colors',
                   isActive ? 'font-semibold shadow-sm' : 'font-medium hover:bg-[var(--ss-hover-bg)]',
                 ]
                   .filter(Boolean)
@@ -77,8 +77,8 @@ function SectionGroup({ section, items }) {
                 color: isActive ? 'var(--ss-text-act)' : 'var(--ss-text)',
               })}
             >
-              {Icon && <Icon className="h-[13.5px] w-[13.5px] shrink-0" />}
-              <span className="truncate">{label}</span>
+              {Icon && <Icon className="mt-[3px] h-[13.5px] w-[13.5px] shrink-0" />}
+              <span className="min-w-0 break-words leading-snug">{label}</span>
             </NavLink>
           ))}
         </nav>

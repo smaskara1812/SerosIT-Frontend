@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { fieldMessage, formatApiError, showFormError } from '@/lib/errors'
 import { joinNaiveDt, splitNaiveDt } from '@/lib/naiveDateTime'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import AccessDenied from '@/components/AccessDenied'
@@ -12,6 +12,20 @@ import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+
+const FIELD_LABELS = {
+  rig: 'Rig', drill_dt: 'Drill Date and Time', drill_location: 'Drill Location',
+  hse_drill_1: 'Type of Drill/Training - 1', hse_drill_2: 'Type of Drill/Training - 2', head_count: 'Head Count',
+  control_room_on_shore: 'Control Room on shore', initiated_by_fs_emp_1: 'Initiated By - 1', initiated_by_fs_emp_2: 'Initiated By - 2',
+  initial_response_time: 'Initial Response Time', no_of_participants: 'No. of Participants',
+  fire_team_1_size: 'Fire Team #1 Size', fire_team_1_duration: 'Fire Team #1 Duration',
+  fire_team_2_size: 'Fire Team #2 Size', fire_team_2_duration: 'Fire Team #2 Duration',
+  stretcher_team_size: 'Stretcher Team Size', maintenance_team_size: 'Maintenance Team Size',
+  snr_team_size: 'S&R Team Size', snr_team_duration: 'S&R Team Duration',
+  drill_muster: 'Drill Muster - Duration', abandon_muster_offshore: 'Abandon Muster (Offshore) - Duration',
+  total_time_of_drill: 'Total Time of Drill', revision_value: 'Format Revision No.',
+  approved_by_oim_fs_emp: 'PIC / OIM', approved_by_companyman: 'Company Man',
+}
 
 const MENU_KEY = 'qhse.hse_drill_record'
 
@@ -116,7 +130,7 @@ function buildFieldErrors(data) {
     const msg = Array.isArray(val) ? val[0] : val
     if (typeof msg !== 'string') continue
     for (const target of API_FIELD_TARGETS[key] || [key]) {
-      out[target] = msg
+      out[target] = fieldMessage(msg, FIELD_LABELS[key] || key)
     }
   }
   return out
@@ -160,6 +174,7 @@ export default function HseDrillRecordFormPage() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const bannerRef = useRef(null)
   const [notFound, setNotFound] = useState(false)
   const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify(emptyForm())))
   const [drillOptions, setDrillOptions] = useState([])
@@ -250,9 +265,8 @@ export default function HseDrillRecordFormPage() {
       const res = await apiFetch(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(buildPayload()) })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data))
         setFieldErrors(buildFieldErrors(data))
-        toast.error('Failed to save')
+        showFormError(formatApiError(data, FIELD_LABELS), { setError, bannerRef })
         return
       }
       allowNextNavigation()
@@ -266,8 +280,7 @@ export default function HseDrillRecordFormPage() {
         navigate(`/qhse/hse-drill-record/${data.drill_record_hdr_id}/edit`, { replace: true })
       }
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
-      toast.error('Failed to save')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -302,7 +315,7 @@ export default function HseDrillRecordFormPage() {
         </div>
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {error && <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>}
       {!canWrite && !loading && (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
           You have view-only access to HSE Drills / Exercises.

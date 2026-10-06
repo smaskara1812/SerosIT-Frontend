@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import AccessDenied from '@/components/AccessDenied'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const API = '/api/masters/it-accessories/'
@@ -26,6 +27,8 @@ export default function ItAccessoryFormPage() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const bannerRef = useRef(null)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [notFound, setNotFound] = useState(false)
   const [snapshot, setSnapshot] = useState(() => (isEdit ? null : JSON.stringify({ name: '', active: 'Y' })))
 
@@ -56,6 +59,7 @@ export default function ItAccessoryFormPage() {
   async function handleSave() {
     setSaving(true)
     setError('')
+    setFieldErrors({})
     try {
       const payload = { it_accessory_name: name.trim(), it_accessory_active: active }
       const url = isEdit ? `${API}${id}/` : API
@@ -65,8 +69,10 @@ export default function ItAccessoryFormPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(formatApiError(data, { fields: [{ name: 'it_accessory_name', label: 'Name' }] }))
-        toast.error('Failed to save')
+        const labels = { fields: [{ name: 'it_accessory_name', label: 'Name' }] }
+        showFormError(formatApiError(data, labels), { setError, bannerRef })
+        setFieldErrors(buildFieldErrors(data, labels))
+        scrollToFirstFieldError()
         return
       }
       toast.success(isEdit ? 'Changes saved' : 'Accessory created')
@@ -78,8 +84,7 @@ export default function ItAccessoryFormPage() {
         navigate('/it-asset/it-accessories')
       }
     } catch {
-      setError('Could not reach the server. Check your connection and try again.')
-      toast.error('Failed to save')
+      showFormError("Couldn't reach the server. Check your connection and try again.", { setError, bannerRef })
     } finally {
       setSaving(false)
     }
@@ -104,7 +109,7 @@ export default function ItAccessoryFormPage() {
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {error && <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>}
       {!canWrite && (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
           You have view-only access to this master.
@@ -123,7 +128,16 @@ export default function ItAccessoryFormPage() {
               <Label>
                 Name<span className="text-destructive"> *</span>
               </Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canWrite} />
+              <FieldFrame error={fieldErrors.it_accessory_name}>
+                <Input
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value)
+                    setFieldErrors((prev) => (prev.it_accessory_name ? { ...prev, it_accessory_name: undefined } : prev))
+                  }}
+                  disabled={!canWrite}
+                />
+              </FieldFrame>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Active</Label>
