@@ -4,6 +4,8 @@ import Home from '@/routes/Home'
 import ProtectedRoute from '@/routes/ProtectedRoute'
 import AdminRoute from '@/routes/AdminRoute'
 import MastersRoute from '@/routes/MastersRoute'
+import FsListPage from '@/routes/masters/fs/FsListPage'
+import FsFormPage from '@/routes/masters/fs/FsFormPage'
 import AppShell from '@/components/layout/AppShell'
 import UserRights from '@/routes/admin/UserRights'
 import UserManagement from '@/routes/admin/UserManagement'
@@ -49,6 +51,14 @@ import MisHseReviewPage from '@/routes/qhse/MisHseReviewPage'
 import HseDrillRecordListPage from '@/routes/qhse/HseDrillRecordListPage'
 import HseDrillRecordFormPage from '@/routes/qhse/HseDrillRecordFormPage'
 import HseDrillRecordDetailsPage from '@/routes/qhse/HseDrillRecordDetailsPage'
+import CertToRankMappingListPage from '@/routes/qhse/CertToRankMappingListPage'
+import CertToRankMappingFormPage from '@/routes/qhse/CertToRankMappingFormPage'
+import TrainingLogListPage from '@/routes/qhse/TrainingLogListPage'
+import TrainingLogFormPage from '@/routes/qhse/TrainingLogFormPage'
+import TrainingOrgListPage from '@/routes/qhse/TrainingOrgListPage'
+import TrainingOrgFormPage from '@/routes/qhse/TrainingOrgFormPage'
+import TrainingGroupListPage from '@/routes/qhse/TrainingGroupListPage'
+import TrainingGroupFormPage from '@/routes/qhse/TrainingGroupFormPage'
 import CorrectiveActionListPage from '@/routes/qhse/CorrectiveActionListPage'
 import CorrectiveActionFormPage from '@/routes/qhse/CorrectiveActionFormPage'
 import HseWeeklyDrillListPage from '@/routes/qhse/HseWeeklyDrillListPage'
@@ -93,6 +103,12 @@ function App() {
               path="/masters/fs-catg-to-rig-type-mapping"
               element={<FsCatgToRigTypeMappingPage />}
             />
+            <Route path="/masters/fs-employees" element={<FsListPage kind="employee" />} />
+            <Route path="/masters/fs-employees/new" element={<FsFormPage key="employee-new" kind="employee" />} />
+            <Route path="/masters/fs-employees/:id/edit" element={<FsFormPage key="employee-edit" kind="employee" />} />
+            <Route path="/masters/fs-emp-cur-status" element={<FsListPage kind="status" />} />
+            <Route path="/masters/fs-emp-cur-status/new" element={<FsFormPage key="status-new" kind="status" />} />
+            <Route path="/masters/fs-emp-cur-status/:id/edit" element={<FsFormPage key="status-edit" kind="status" />} />
             <Route path="/masters/:slug" element={<MasterCrudPage />} />
           </Route>
           <Route path="/it-asset/it-assets" element={<ItAssetsPage />} />
@@ -130,6 +146,18 @@ function App() {
           <Route path="/qhse/lagging-indicators" element={<HseLaggingIndicatorsListPage />} />
           <Route path="/qhse/lagging-indicators/new" element={<HseLaggingIndicatorsFormPage />} />
           <Route path="/qhse/lagging-indicators/:id/edit" element={<HseLaggingIndicatorsFormPage />} />
+          <Route path="/qhse/cert-to-rank-mapping" element={<CertToRankMappingListPage />} />
+          <Route path="/qhse/cert-to-rank-mapping/new" element={<CertToRankMappingFormPage />} />
+          <Route path="/qhse/cert-to-rank-mapping/:certId/edit" element={<CertToRankMappingFormPage />} />
+          <Route path="/qhse/training-log" element={<TrainingLogListPage />} />
+          <Route path="/qhse/training-log/new" element={<TrainingLogFormPage />} />
+          <Route path="/qhse/training-log/:id/edit" element={<TrainingLogFormPage />} />
+          <Route path="/qhse/training-org" element={<TrainingOrgListPage />} />
+          <Route path="/qhse/training-org/new" element={<TrainingOrgFormPage />} />
+          <Route path="/qhse/training-org/:id/edit" element={<TrainingOrgFormPage />} />
+          <Route path="/qhse/training-group" element={<TrainingGroupListPage />} />
+          <Route path="/qhse/training-group/new" element={<TrainingGroupFormPage />} />
+          <Route path="/qhse/training-group/:id/edit" element={<TrainingGroupFormPage />} />
           <Route path="/qhse/corrective-actions" element={<CorrectiveActionListPage />} />
           <Route path="/qhse/corrective-actions/new" element={<CorrectiveActionFormPage />} />
           <Route path="/qhse/corrective-actions/:id/edit" element={<CorrectiveActionFormPage />} />

@@ -33,6 +33,13 @@ const cellSelect =
   'h-8 rounded-md border border-input bg-transparent px-1.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-60'
 const invalidCls = 'border-destructive ring-2 ring-destructive/40'
 
+const GRID_NOTE =
+  'A 0 means nothing recorded. Duration Type (Hrs or Wks) is needed only once Total Duration is above zero. Active is carried over from the legacy form — every row starts as Yes.'
+const HEADER_HINTS = {
+  'Duration Type': 'Hrs or Wks — only needed once Total Duration is above zero',
+  Active: 'Carried over from the legacy form; every row starts as Yes',
+}
+
 function rowLabel(r) {
   return r.indicator_subtype ? `${r.indicator_type} / ${r.indicator_subtype}` : r.indicator_type
 }
@@ -90,6 +97,7 @@ export default function HseLeadingIndicatorsFormPage() {
   const [error, setError] = useState('')
   const [rowErrors, setRowErrors] = useState({})
   const bannerRef = useRef(null)
+  const [rowQuery, setRowQuery] = useState('')
 
   function loadDetails() {
     return apiFetch(`${kind.apiBase}${id}/details/`)
@@ -134,6 +142,13 @@ export default function HseLeadingIndicatorsFormPage() {
     [rows, orig]
   )
   const hasChanges = isEdit && changedRows.length > 0
+  // Rows with an error stay listed whatever is typed in the finder, so a
+  // mistake can never be hidden by it.
+  const shownRows = useMemo(() => {
+    const q = rowQuery.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((r) => rowErrors[r.id] || `${r.workgroup} ${rowLabel(r)}`.toLowerCase().includes(q))
+  }, [rows, rowQuery, rowErrors])
 
   function setRow(rowId, patch) {
     setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, ...patch } : r)))
@@ -313,37 +328,56 @@ export default function HseLeadingIndicatorsFormPage() {
 
           {isEdit && (
             <div className="rounded-2xl border border-border bg-card p-4">
-              <h2 className="mb-3 px-2 text-xs font-bold tracking-widest text-muted-foreground uppercase">{kind.detailTitle}</h2>
-              <div className="overflow-x-auto">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-2">
+                <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{kind.detailTitle}</h2>
+                <div className="flex items-center gap-2">
+                  {rowQuery && (
+                    <span className="text-xs text-muted-foreground">
+                      Showing {shownRows.length} of {rows.length}
+                    </span>
+                  )}
+                  <Input value={rowQuery} onChange={(e) => setRowQuery(e.target.value)} placeholder="Find a row…" className="h-8 w-56" />
+                </div>
+              </div>
+              <p className="mb-3 px-2 text-xs text-muted-foreground">{GRID_NOTE}</p>
+              <div className="max-h-[70vh] overflow-auto">
                 <table className="w-full border-collapse text-sm">
-                  <thead className="bg-muted/50">
+                  <thead className="sticky top-0 z-10 bg-muted shadow-[0_1px_0_var(--border)]">
                     <tr>
                       {['Work Group', 'Indicator Type', 'Indicator Subtype', ...columns.map((c) => c.label)].map((h) => (
-                        <th key={h} className="px-3 py-2 text-left text-[11px] font-bold tracking-wide text-muted-foreground uppercase">{h}</th>
+                        <th key={h} title={HEADER_HINTS[h]} className="px-3 py-2 text-left text-[11px] font-bold tracking-wide text-muted-foreground uppercase">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((r, idx) => {
+                    {shownRows.map((r, idx) => {
                       const dirty = JSON.stringify(columns.map((c) => r[c.field])) !== orig[r.id]
                       const errs = rowErrors[r.id] || {}
                       const cell = (c) => {
                         if (c.type === 'count') {
                           return (
                             <Input
-                              value={r[c.field] === 0 ? '' : r[c.field]}
+                              value={r[c.field]}
                               inputMode="numeric"
                               maxLength={c.max_digits}
                               disabled={!canEdit}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) => setRow(r.id, { [c.field]: e.target.value.replace(/\D/g, '') })}
-                              className={`h-8 text-right ${c.max_digits > 6 ? 'w-32' : 'w-20'} ${errs[c.field] ? invalidCls : ''}`}
+                              onBlur={() => r[c.field] === '' && setRow(r.id, { [c.field]: 0 })}
+                              className={`h-8 text-right ${c.max_digits > 6 ? 'w-32' : 'w-20'} ${Number(r[c.field]) === 0 ? 'text-muted-foreground' : ''} ${errs[c.field] ? invalidCls : ''}`}
                             />
                           )
                         }
                         if (c.type === 'duration_type') {
                           return (
-                            <select value={r.duration_type} disabled={!canEdit} onChange={(e) => setRow(r.id, { duration_type: e.target.value })} className={`${cellSelect} ${errs.duration_type ? invalidCls : ''}`}>
-                              <option value=""></option>
+                            <select
+                              value={r.duration_type}
+                              disabled={!canEdit || Number(r.total_duration || 0) === 0}
+                              title={Number(r.total_duration || 0) === 0 ? 'Enter a Total Duration first' : undefined}
+                              onChange={(e) => setRow(r.id, { duration_type: e.target.value })}
+                              className={`${cellSelect} ${errs.duration_type ? invalidCls : ''}`}
+                            >
+                              <option value="">{Number(r.total_duration || 0) === 0 ? '—' : 'Select…'}</option>
                               <option value="H">Hrs</option>
                               <option value="W">Wks</option>
                             </select>
@@ -351,8 +385,8 @@ export default function HseLeadingIndicatorsFormPage() {
                         }
                         return (
                           <select value={r.active} disabled={!canEdit} onChange={(e) => setRow(r.id, { active: e.target.value })} className={`${cellSelect} ${errs.active ? invalidCls : ''}`}>
-                            <option value="Y">Y</option>
-                            <option value="N">N</option>
+                            <option value="Y">Yes</option>
+                            <option value="N">No</option>
                           </select>
                         )
                       }
@@ -376,6 +410,11 @@ export default function HseLeadingIndicatorsFormPage() {
                         </Fragment>
                       )
                     })}
+                    {shownRows.length === 0 && (
+                      <tr>
+                        <td colSpan={3 + columns.length} className="p-6 text-center text-sm text-muted-foreground">No row matches &ldquo;{rowQuery}&rdquo;.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

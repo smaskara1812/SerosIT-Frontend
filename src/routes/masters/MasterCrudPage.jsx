@@ -252,9 +252,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
         placeholder={
           blocked
             ? field.filterPlaceholder || 'Select above first…'
-            : mode === 'search'
-              ? 'Type to search…'
-              : 'Search…'
+            : field.placeholder || (mode === 'search' ? 'Type to search…' : 'Search…')
         }
         disabled={disabled || blocked}
         showClear
@@ -677,6 +675,7 @@ export default function MasterCrudPage() {
   // sent as plain ?<field>=<value> since these are always small fixed
   // choice sets, not FK ids.
   const [extraFilters, setExtraFilters] = useState(EMPTY_EXTRA_FILTERS)
+  const [filterLabels, setFilterLabels] = useState({})
   const filterableFields = useMemo(() => schema.fields.filter((f) => f.filterable), [schema])
   // Deep-link filter carried in via URL query params (e.g. Alert Details'
   // "View recipients" button landing here with ?alert=<id>&alertName=<name>)
@@ -1040,7 +1039,7 @@ export default function MasterCrudPage() {
           <div className="relative">
             <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search…"
+              placeholder={schema.searchPlaceholder || 'Search…'}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="h-9 pl-8"
@@ -1072,7 +1071,35 @@ export default function MasterCrudPage() {
               </select>
             )}
           </div>
-          {filterableFields.map((f) => (
+          {filterableFields.map((f) =>
+            f.remote ? (
+              // A lookup (e.g. Category, Rank) filters through the same
+              // searchable picker the form uses; the label is kept here so a
+              // server-searched pick still shows its name.
+              <div key={f.name} className="flex items-center gap-1">
+                <div className="min-w-0 flex-1">
+                  <RemoteCombobox
+                    field={{ ...f, labelField: undefined, placeholder: `Filter by ${f.label}…` }}
+                    value={extraFilters[f.name] || null}
+                    labelValue={filterLabels[f.name] || ''}
+                    onChange={(v, raw) => {
+                      setFilterLabels((prev) => ({ ...prev, [f.name]: raw?.[f.optionLabel] || '' }))
+                      setExtraFilters((prev) => ({ ...prev, [f.name]: v || '' }))
+                    }}
+                  />
+                </div>
+                {extraFilters[f.name] && (
+                  <button
+                    type="button"
+                    title={`Clear ${f.label} filter`}
+                    onClick={() => setExtraFilters((prev) => ({ ...prev, [f.name]: '' }))}
+                    className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ) : (
             <select
               key={f.name}
               value={extraFilters[f.name] || ''}
@@ -1086,7 +1113,8 @@ export default function MasterCrudPage() {
                 </option>
               ))}
             </select>
-          ))}
+            )
+          )}
         </div>
         <div
           ref={listRef}

@@ -81,6 +81,42 @@ export const ACTION_SHORTCUTS = [
     icon: IconPlus,
     groupLabel: 'Quick Actions',
   },
+  {
+    key: 'action-new-training-group',
+    label: 'New Training Group',
+    path: '/qhse/training-group/new',
+    menuKey: 'qhse.training_group',
+    permAction: 'add',
+    icon: IconPlus,
+    groupLabel: 'Quick Actions',
+  },
+  {
+    key: 'action-new-training-org',
+    label: 'New Training Org',
+    path: '/qhse/training-org/new',
+    menuKey: 'qhse.training_org',
+    permAction: 'add',
+    icon: IconPlus,
+    groupLabel: 'Quick Actions',
+  },
+  {
+    key: 'action-map-cert-to-rank',
+    label: 'Map a Training Certificate to Ranks',
+    path: '/qhse/cert-to-rank-mapping/new',
+    menuKey: 'qhse.cert_to_rank_mapping',
+    permAction: 'add',
+    icon: IconPlus,
+    groupLabel: 'Quick Actions',
+  },
+  {
+    key: 'action-new-training-log',
+    label: 'New Training Log',
+    path: '/qhse/training-log/new',
+    menuKey: 'qhse.training_log',
+    permAction: 'add',
+    icon: IconPlus,
+    groupLabel: 'Quick Actions',
+  },
   // New Drilling Daily Report is deliberately NOT listed here — it's
   // already an always-on default in Home.jsx's own SHORTCUTS, and pinning
   // it again here would just duplicate that tile.
