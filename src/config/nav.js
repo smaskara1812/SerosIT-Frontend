@@ -1123,6 +1123,13 @@ export const navTree = [
             icon: IconClipboard,
             menuKey: 'qhse.training_log',
           },
+          {
+            key: 'training_report',
+            label: 'Training Report',
+            path: '/qhse/training-report',
+            icon: IconTrendingUp,
+            menuKey: 'qhse.training_report',
+          },
         ],
       },
     ],

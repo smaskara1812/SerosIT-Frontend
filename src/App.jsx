@@ -53,6 +53,7 @@ import HseDrillRecordFormPage from '@/routes/qhse/HseDrillRecordFormPage'
 import HseDrillRecordDetailsPage from '@/routes/qhse/HseDrillRecordDetailsPage'
 import CertToRankMappingListPage from '@/routes/qhse/CertToRankMappingListPage'
 import CertToRankMappingFormPage from '@/routes/qhse/CertToRankMappingFormPage'
+import TrainingReportPage from '@/routes/qhse/TrainingReportPage'
 import TrainingLogListPage from '@/routes/qhse/TrainingLogListPage'
 import TrainingLogFormPage from '@/routes/qhse/TrainingLogFormPage'
 import TrainingOrgListPage from '@/routes/qhse/TrainingOrgListPage'
@@ -149,6 +150,7 @@ function App() {
           <Route path="/qhse/cert-to-rank-mapping" element={<CertToRankMappingListPage />} />
           <Route path="/qhse/cert-to-rank-mapping/new" element={<CertToRankMappingFormPage />} />
           <Route path="/qhse/cert-to-rank-mapping/:certId/edit" element={<CertToRankMappingFormPage />} />
+          <Route path="/qhse/training-report" element={<TrainingReportPage />} />
           <Route path="/qhse/training-log" element={<TrainingLogListPage />} />
           <Route path="/qhse/training-log/new" element={<TrainingLogFormPage />} />
           <Route path="/qhse/training-log/:id/edit" element={<TrainingLogFormPage />} />
