@@ -14,6 +14,31 @@ function apiUrl(path) {
   return `${API_BASE}${path}`
 }
 
+// Dropdown lookups (a form's Country / Company / Rank pickers). Several
+// pickers on one form, and every form visit, used to fetch the same list
+// again. A GET here is answered from memory, and identical requests made
+// together share one call. Any successful save/delete through apiFetch
+// empties the cache, so a change shows up in the next dropdown straight
+// away; the short lifetime only covers changes made by other users.
+const LOOKUP_TTL_MS = 5 * 60 * 1000
+const lookupCache = new Map()
+
+export function cachedGet(path) {
+  const hit = lookupCache.get(path)
+  if (hit && Date.now() - hit.at < LOOKUP_TTL_MS) return hit.promise
+  const entry = { at: Date.now() }
+  entry.promise = apiFetch(path).then(async (res) => {
+    const data = await res.json()
+    if (!res.ok && lookupCache.get(path) === entry) lookupCache.delete(path)
+    return data
+  })
+  entry.promise.catch(() => {
+    if (lookupCache.get(path) === entry) lookupCache.delete(path)
+  })
+  lookupCache.set(path, entry)
+  return entry.promise
+}
+
 export const tokenStore = {
   getAccess: () => localStorage.getItem(ACCESS_KEY),
   getRefresh: () => localStorage.getItem(REFRESH_KEY),
@@ -22,12 +47,28 @@ export const tokenStore = {
     if (refresh) localStorage.setItem(REFRESH_KEY, refresh)
   },
   clear: () => {
+    lookupCache.clear()
     localStorage.removeItem(ACCESS_KEY)
     localStorage.removeItem(REFRESH_KEY)
   },
 }
 
-async function refreshAccessToken() {
+// Several calls can hit an expired token together (a page fires many at
+// once). The refresh token is single-use, so they must share one refresh:
+// a second use of the same token is rejected, and on SQL Server the
+// duplicate blacklist insert ends in a 500.
+let refreshInFlight = null
+
+function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = doRefresh().finally(() => {
+      refreshInFlight = null
+    })
+  }
+  return refreshInFlight
+}
+
+async function doRefresh() {
   const refresh = tokenStore.getRefresh()
   if (!refresh) return false
 
@@ -71,6 +112,8 @@ export async function apiFetch(path, options = {}) {
     const refreshed = await refreshAccessToken()
     res = refreshed ? await doFetch() : res
   }
+
+  if (res.ok && options.method && options.method.toUpperCase() !== 'GET') lookupCache.clear()
 
   return res
 }

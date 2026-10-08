@@ -46,7 +46,6 @@ export default function NptAnalysisDashboardPage() {
       .then((d) => {
         setError('')
         setData(d)
-        setYear((prev) => prev ?? d.year)
         setDrilledMonth(null)
       })
       .catch(() => setError('Failed to load dashboard data.'))

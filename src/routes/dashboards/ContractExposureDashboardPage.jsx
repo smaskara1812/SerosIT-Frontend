@@ -46,7 +46,6 @@ export default function ContractExposureDashboardPage() {
       .then((d) => {
         setError('')
         setData(d)
-        setYear((prev) => prev ?? d.year)
       })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false))

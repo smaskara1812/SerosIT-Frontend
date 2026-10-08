@@ -20,11 +20,14 @@ import { useSearchParams } from 'react-router-dom'
 // Kept in their own file, not DashboardUI.jsx: Vite's Fast Refresh only
 // works on a file that exports nothing but components.
 
-// A single numeric param (e.g. ?year=2024). Mirrors useState(null)'s shape.
+// A single numeric param (e.g. ?year=2024). Without one in the URL the year
+// is the current year, which is also the server's own default — so the
+// first request already asks for it and the page doesn't refetch once the
+// answer comes back.
 export function useUrlYear(paramKey = 'year') {
   const [searchParams, setSearchParams] = useSearchParams()
   const raw = searchParams.get(paramKey)
-  const year = raw && /^\d+$/.test(raw) ? Number(raw) : null
+  const year = raw && /^\d+$/.test(raw) ? Number(raw) : new Date().getFullYear()
 
   const setYear = useCallback(
     (updater) => {

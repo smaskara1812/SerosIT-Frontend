@@ -64,7 +64,6 @@ export default function DrillingPerformanceDashboardPage() {
       .then((d) => {
         setError('')
         setData(d)
-        setYear((prev) => prev ?? d.year)
         setDrilledSection(null)
         setDrilledMetresRigId(null)
         setDrilledDieselRigId(null)

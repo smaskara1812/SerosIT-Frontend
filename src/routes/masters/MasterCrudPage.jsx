@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, cachedGet } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
@@ -119,8 +119,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   useEffect(() => {
     if (forceSearch) return
     let cancelled = false
-    apiFetch(`${field.remote}${sep}page_size=${INSTANT_LIST_THRESHOLD}${fieldsParam}`)
-      .then((r) => r.json())
+    cachedGet(`${field.remote}${sep}page_size=${INSTANT_LIST_THRESHOLD}${fieldsParam}`)
       .then((data) => {
         if (cancelled) return
         if (Array.isArray(data)) {
@@ -157,8 +156,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
     if (mode !== 'search') return
     const timer = setTimeout(() => {
       const thisRequest = ++requestIdRef.current
-      apiFetch(`${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20&page=1${remoteFilterParam}`)
-        .then((r) => r.json())
+      cachedGet(`${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20&page=1${remoteFilterParam}`)
         .then((data) => {
           if (thisRequest !== requestIdRef.current) return
           pageRef.current = 1
@@ -699,6 +697,7 @@ export default function MasterCrudPage() {
   const listRef = useRef(null)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
+  const lastUrlRef = useRef(null)
   // Strict Mode (dev only) deliberately re-invokes every effect a second
   // time shortly after mount, to surface effects that aren't safe to run
   // twice. The slug effect below unconditionally resets activeFilter (and
@@ -767,13 +766,19 @@ export default function MasterCrudPage() {
   // Lists are server-paginated (50/page) and server-searched — large
   // masters (imported legacy data already puts some in the hundreds) never
   // ship the whole table to the browser up front.
-  function loadPage(pageNum, searchQuery, { append, overrides } = {}) {
-    const thisRequest = ++requestIdRef.current
+  // `dedupe` is for the query / sort / filter effects: they also fire on
+  // first open and right after the slug effect has already fetched, so
+  // they skip a request whose address is the one last sent.
+  function loadPage(pageNum, searchQuery, { append, overrides, dedupe } = {}) {
     const params = buildFilterParams(searchQuery, overrides)
     params.set('page', String(pageNum))
+    const url = `${schema.apiBase}?${params}`
+    if (dedupe && url === lastUrlRef.current) return
+    if (!append) lastUrlRef.current = url
+    const thisRequest = ++requestIdRef.current
     if (append) setLoadingMore(true)
     else setLoading(true)
-    return apiFetch(`${schema.apiBase}?${params}`)
+    return apiFetch(url)
       .then((r) => r.json())
       .then((data) => {
         if (thisRequest !== requestIdRef.current) return // stale response, a newer search/page superseded it
@@ -827,21 +832,20 @@ export default function MasterCrudPage() {
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
       if (listRef.current) listRef.current.scrollTop = 0
-      loadPage(1, query)
+      loadPage(1, query, { dedupe: true })
     }, 300)
     return () => clearTimeout(searchTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
   // Sort/filter changes reload immediately (no debounce needed — these are
-  // discrete clicks, not keystrokes). Fires once redundantly alongside the
-  // slug effect above whenever the destination page's defaults happen to
-  // differ from wherever you just were — an acceptable extra fetch, not a
-  // correctness issue (see resetForSlugRef's comment for why this doesn't
-  // try to skip that case anymore).
+  // discrete clicks, not keystrokes). Also runs on first open and after the
+  // slug effect's reset; `dedupe` drops those, since the address is the one
+  // the slug effect just fetched (compared by address, not a flag, so it
+  // can't get stuck — see resetForSlugRef's comment).
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0
-    loadPage(1, query)
+    loadPage(1, query, { dedupe: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordering, activeFilter, extraFilters, linkFilterValue])
 
