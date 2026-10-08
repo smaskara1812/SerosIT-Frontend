@@ -225,7 +225,7 @@ export default function MisHseReviewPage() {
     try {
       const res = await apiFetch(`/api/qhse/mis-hse-review/print/?${buildParams().toString()}`)
       if (!res.ok) {
-        toast.error('Failed to generate report')
+        toast.error((await res.json().catch(() => null))?.detail || 'Failed to generate report')
         if (tab) tab.close()
         return
       }

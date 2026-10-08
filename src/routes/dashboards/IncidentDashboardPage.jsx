@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, FileSpreadsheet, Grid3x3, Layers, Printer } from 'lucide-react'
+import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
@@ -287,6 +288,7 @@ export default function IncidentDashboardPage() {
     const tab = window.open('', '_blank')
     const res = await apiFetch(`/api/dashboards/incident-dashboard/drilldown/print/?${drilldown.params}`)
     if (!res.ok) {
+      toast.error((await res.json().catch(() => null))?.detail || 'Failed to generate report')
       if (tab) tab.close()
       return
     }

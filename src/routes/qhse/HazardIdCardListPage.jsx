@@ -262,7 +262,7 @@ export default function HazardIdCardListPage() {
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v))
     const res = await apiFetch(`/api/qhse/hazard-id-card/report/?${params}`)
     if (!res.ok) {
-      toast.error('Failed to generate report')
+      toast.error((await res.json().catch(() => null))?.detail || 'Failed to generate report')
       if (tab) tab.close()
       return
     }

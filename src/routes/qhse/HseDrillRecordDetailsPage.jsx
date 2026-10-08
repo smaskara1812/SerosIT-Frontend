@@ -61,7 +61,7 @@ export default function HseDrillRecordDetailsPage() {
     const tab = window.open('', '_blank')
     const res = await apiFetch(`/api/qhse/hse-drill-record/${id}/print/`)
     if (!res.ok) {
-      toast.error('Failed to generate report')
+      toast.error((await res.json().catch(() => null))?.detail || 'Failed to generate report')
       if (tab) tab.close()
       return
     }

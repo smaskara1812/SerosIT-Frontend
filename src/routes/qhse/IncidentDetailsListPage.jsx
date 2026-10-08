@@ -213,7 +213,7 @@ export default function IncidentDetailsListPage() {
     const tab = window.open('', '_blank')
     const res = await apiFetch(`/api/qhse/incidents/${r.incident_id}/flash-report/`)
     if (!res.ok) {
-      toast.error('Failed to generate report')
+      toast.error((await res.json().catch(() => null))?.detail || 'Failed to generate report')
       if (tab) tab.close()
       return
     }
