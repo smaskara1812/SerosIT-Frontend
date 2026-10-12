@@ -13,6 +13,11 @@ import { formatDay } from '@/lib/text'
 
 const MENU_KEY = 'drilling.drilling_report'
 const API = '/api/drilling/drilling-report/'
+// The list only reads these; a full report (time log and the rest) is loaded when one is opened.
+const LIST_FIELDS = [
+  'drilling_dtl_id', 'rig_name', 'drilling_dtl_dt', 'location', 'contract_no', 'operating_hrs', 'standby_hrs',
+  'drilling_meterage', 'cr_status', 'l1_approval_status',
+].join(',')
 
 const RIG_FIELD = { type: 'select-remote', remote: '/api/drilling/my-rigs/', optionLabel: 'rig_name', optionValue: 'rig_id', labelField: 'rig_name' }
 
@@ -98,6 +103,7 @@ export default function DrillingReportListPage() {
     const thisRequest = ++requestIdRef.current
     const params = buildFilterParams(searchQuery)
     params.set('page', String(pageNum))
+    params.set('fields', LIST_FIELDS)
     if (append) setLoadingMore(true)
     else setLoading(true)
     apiFetch(`${API}?${params}`)

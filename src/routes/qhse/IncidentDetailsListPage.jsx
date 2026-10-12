@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
@@ -18,6 +18,13 @@ import {
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
 import { Pencil, Printer } from 'lucide-react'
+
+// The list only reads these; the full record (74 fields, long text) is loaded when one is opened.
+const LIST_FIELDS = [
+  'incident_id', 'incident_no', 'rig_incident_no', 'incident_date', 'rig_name', 'incident_descr',
+  'incident_severity', 'person_injured', 'well_no', 'reported_by', 'work_location_name', 'operator_name',
+  'country_name', 'incident_type_name', 'drilling_superintendent', 'safety_officer', 'emp_name', 'comments',
+].join(',')
 
 const MENU_KEY = 'qhse.incident_details'
 
@@ -132,8 +139,7 @@ export default function IncidentDetailsListPage() {
     apiFetch('/api/qhse/incidents/meta/')
       .then((r) => r.json())
       .then(setMeta)
-    apiFetch('/api/masters/rigs/?page_size=200&fields=rig_id,rig_name')
-      .then((r) => r.json())
+    cachedGet('/api/masters/rigs/?page_size=200&fields=rig_id,rig_name')
       .then((data) => setRigs(Array.isArray(data) ? data : data.results || []))
   }, [])
 
@@ -146,6 +152,7 @@ export default function IncidentDetailsListPage() {
     if (ordering) params.set('ordering', ordering)
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v))
     params.set('page', String(pageNum))
+    params.set('fields', LIST_FIELDS)
     apiFetch(`/api/qhse/incidents/?${params}`)
       .then((r) => r.json())
       .then((data) => {

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { apiFetch, asList } from '@/lib/api'
+import { apiFetch, asList, cachedGet } from '@/lib/api'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
@@ -133,7 +133,7 @@ export default function ItAssetHoldersPage() {
       ).then((r) => r.json()),
       // Only id+name are read below (typeOptions/subtypeOptions/companyOptions)
       // — see ItAssetsPage.jsx for the profiling that motivated this.
-      apiFetch('/api/masters/companies/?page_size=1000&fields=company_id,company_name').then((r) => r.json()),
+      cachedGet('/api/masters/companies/?page_size=1000&fields=company_id,company_name'),
     ]).then(([types, subtypes, companies]) => {
       setMeta({
         types: asList(types),

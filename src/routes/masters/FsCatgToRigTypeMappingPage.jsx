@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { Label } from '@/components/ui/label'
@@ -56,8 +56,7 @@ export default function FsCatgToRigTypeMappingPage() {
   const [pending, setPending] = useState({})
 
   useEffect(() => {
-    apiFetch('/api/masters/rig-types/?page_size=200&fields=rig_type_id,rig_type_name')
-      .then((r) => r.json())
+    cachedGet('/api/masters/rig-types/?page_size=200&fields=rig_type_id,rig_type_name')
       .then((data) => setRigTypes(Array.isArray(data) ? data : data.results || []))
   }, [])
 

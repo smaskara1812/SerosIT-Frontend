@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
@@ -46,8 +46,7 @@ export default function HseDrillReportPage() {
   const [printing, setPrinting] = useState(false)
 
   useEffect(() => {
-    apiFetch('/api/masters/rigs/?page_size=200&fields=rig_id,rig_name')
-      .then((r) => r.json())
+    cachedGet('/api/masters/rigs/?page_size=200&fields=rig_id,rig_name')
       .then((data) => setRigs((Array.isArray(data) ? data : data.results || []).sort((a, b) => a.rig_name.localeCompare(b.rig_name))))
   }, [])
 

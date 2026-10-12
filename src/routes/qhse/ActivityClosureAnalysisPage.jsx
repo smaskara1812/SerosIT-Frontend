@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
@@ -57,8 +57,7 @@ export default function ActivityClosureAnalysisPage() {
   usePageSubtitle(result ? `${result.totals.total.toLocaleString()} closed activities` : null)
 
   useEffect(() => {
-    apiFetch('/api/masters/financial-years/?page_size=50')
-      .then((r) => r.json())
+    cachedGet('/api/masters/financial-years/?page_size=50')
       .then((data) => setFinancialYears(Array.isArray(data) ? data : data.results || []))
   }, [])
 

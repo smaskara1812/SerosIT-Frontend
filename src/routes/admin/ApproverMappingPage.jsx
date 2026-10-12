@@ -132,6 +132,8 @@ export default function ApproverMappingPage() {
   const [filters, setFilters] = useState(emptyFilters())
   const [showFilters, setShowFilters] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const detailRequestRef = useRef(0)
   const [creating, setCreating] = useState(false)
 
   const [form, setForm] = useState(emptyForm())
@@ -144,7 +146,7 @@ export default function ApproverMappingPage() {
   const listRef = useRef(null)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
-  const skipNextLoadRef = useRef(true)
+  const lastUrlRef = useRef(null)
 
   const activeFilterCount = [filters.approval_code, filters.rig, filters.active].filter(Boolean).length
 
@@ -158,13 +160,19 @@ export default function ApproverMappingPage() {
     return params
   }
 
-  function loadPage(pageNum, searchQuery, { append } = {}) {
-    const thisRequest = ++requestIdRef.current
+  // `dedupe` is for the effects below: first open and a changed filter would
+  // otherwise each send the same request, so one whose address is the one last
+  // sent is skipped.
+  function loadPage(pageNum, searchQuery, { append, dedupe } = {}) {
     const params = buildFilterParams(searchQuery)
     params.set('page', String(pageNum))
+    const url = `${API}?${params}`
+    if (dedupe && url === lastUrlRef.current) return
+    if (!append) lastUrlRef.current = url
+    const thisRequest = ++requestIdRef.current
     if (append) setLoadingMore(true)
     else setLoading(true)
-    apiFetch(`${API}?${params}`)
+    apiFetch(url)
       .then((r) => r.json())
       .then((data) => {
         if (thisRequest !== requestIdRef.current) return
@@ -192,44 +200,51 @@ export default function ApproverMappingPage() {
   }
 
   useEffect(() => {
-    loadPage(1, '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    // Only the filters effect below (declared after this one) clears the
-    // flag — same convention as Drilling Information, so the mount effect
-    // above doesn't trigger a redundant reload from either this effect or
-    // the filters one firing on their own initial mount.
-    if (skipNextLoadRef.current) return
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
       if (listRef.current) listRef.current.scrollTop = 0
-      loadPage(1, query)
+      loadPage(1, query, { dedupe: true })
     }, 300)
     return () => clearTimeout(searchTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
-  // Filter/sort changes reload immediately — discrete picks, not keystrokes,
-  // same convention as Drilling Information's own filters effect.
+  // Filter/sort changes reload immediately — discrete picks, not keystrokes.
+  // Also the first load on open.
   useEffect(() => {
-    if (skipNextLoadRef.current) {
-      skipNextLoadRef.current = false
-      return
-    }
     if (listRef.current) listRef.current.scrollTop = 0
-    loadPage(1, query)
+    loadPage(1, query, { dedupe: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
 
   function startCreate() {
+    detailRequestRef.current++ // drop a mapping still loading
+    setLoadingDetail(false)
     setCreating(true)
     setSelectedId(null)
     setForm(emptyForm())
     setSnapshot(null)
     setAddingRow(false)
     setNewRow(emptyNewRow())
+  }
+
+  // List rows have no scope grid (it is most of the payload), so opening one loads
+  // the full mapping first. selectRow runs again with the full record.
+  function openRow(row) {
+    setCreating(false)
+    setSelectedId(row.approver_mapping_id)
+    setLoadingDetail(true)
+    setSnapshot(null)
+    const thisRequest = ++detailRequestRef.current
+    return apiFetch(`${API}${row.approver_mapping_id}/`)
+      .then((r) => r.json())
+      .then((full) => {
+        if (thisRequest !== detailRequestRef.current) return // another row was picked meanwhile
+        selectRow(full)
+      })
+      .finally(() => {
+        if (thisRequest === detailRequestRef.current) setLoadingDetail(false)
+      })
   }
 
   function selectRow(row) {
@@ -457,7 +472,7 @@ export default function ApproverMappingPage() {
               <button
                 key={r.approver_mapping_id}
                 type="button"
-                onClick={() => confirmLeave(() => selectRow(r))}
+                onClick={() => confirmLeave(() => openRow(r))}
                 className={`flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent ${
                   selectedId === r.approver_mapping_id ? 'bg-accent' : ''
                 }`}
@@ -483,7 +498,8 @@ export default function ApproverMappingPage() {
 
         <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card p-5">
           {!showForm && <p className="text-sm text-muted-foreground">Select a record, or create a new one.</p>}
-          {showForm && (
+          {showForm && loadingDetail && <p className="text-sm text-muted-foreground">Loading…</p>}
+          {showForm && !loadingDetail && (
             <div className="mx-auto flex max-w-3xl flex-col gap-4">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">

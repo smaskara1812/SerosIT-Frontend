@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
@@ -92,8 +92,7 @@ export default function DrillingDailyDataPage() {
   }, [result])
 
   useEffect(() => {
-    apiFetch('/api/masters/rigs/?active=Y&page_size=200&fields=rig_id,rig_name')
-      .then((r) => r.json())
+    cachedGet('/api/masters/rigs/?active=Y&page_size=200&fields=rig_id,rig_name')
       .then((data) => setRigs(data.results || data || []))
   }, [])
 

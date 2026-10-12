@@ -188,6 +188,8 @@ export default function ProjectContractPage() {
   const [ordering, setOrdering] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const searchTimerRef = useRef(null)
+  const lastUrlRef = useRef(null)
+  const requestIdRef = useRef(0)
 
   const [selectedId, setSelectedId] = useState(null)
   const [creating, setCreating] = useState(false)
@@ -206,19 +208,29 @@ export default function ProjectContractPage() {
     return params
   }
 
-  function loadContracts(pageNum, q) {
-    setLoading(true)
+  // `dedupe` is for the effects below: first open and a changed filter would
+  // otherwise each send the same request, so one whose address is the one last
+  // sent is skipped.
+  function loadContracts(pageNum, q, { dedupe } = {}) {
     const params = buildFilterParams(q)
     params.set('page', String(pageNum))
-    apiFetch(`${API}?${params}`)
+    const url = `${API}?${params}`
+    if (dedupe && url === lastUrlRef.current) return
+    lastUrlRef.current = url
+    const thisRequest = ++requestIdRef.current
+    setLoading(true)
+    apiFetch(url)
       .then((r) => r.json())
       .then((data) => {
+        if (thisRequest !== requestIdRef.current) return // a newer search/sort superseded this one
         setRows(data.results || [])
         setTotalCount(data.count ?? 0)
         setPages(Math.max(1, Math.ceil((data.count ?? 0) / 50)))
         setPage(pageNum)
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (thisRequest === requestIdRef.current) setLoading(false)
+      })
   }
 
   async function exportCsv() {
@@ -240,19 +252,16 @@ export default function ProjectContractPage() {
   }
 
   useEffect(() => {
-    loadContracts(1, '')
-  }, [])
-
-  useEffect(() => {
     clearTimeout(searchTimerRef.current)
-    searchTimerRef.current = setTimeout(() => loadContracts(1, query), 300)
+    searchTimerRef.current = setTimeout(() => loadContracts(1, query, { dedupe: true }), 300)
     return () => clearTimeout(searchTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
-  // Sort/filter changes reload immediately — no debounce needed.
+  // Sort/filter changes reload immediately — no debounce needed. Also the
+  // first load on open.
   useEffect(() => {
-    loadContracts(1, query)
+    loadContracts(1, query, { dedupe: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordering, statusFilter])
 

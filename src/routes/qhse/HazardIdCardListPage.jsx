@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
@@ -178,8 +178,7 @@ export default function HazardIdCardListPage() {
     apiFetch('/api/qhse/hazard-id-card/meta/')
       .then((r) => r.json())
       .then(setMeta)
-    apiFetch('/api/masters/rigs/?page_size=200&fields=rig_id,rig_name')
-      .then((r) => r.json())
+    cachedGet('/api/masters/rigs/?page_size=200&fields=rig_id,rig_name')
       .then((data) => setRigs(Array.isArray(data) ? data : data.results || []))
   }, [])
 
