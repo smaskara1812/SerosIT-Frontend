@@ -4,7 +4,8 @@ import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError, showFormError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import AccessDenied from '@/components/AccessDenied'
 import { MonthYearSelect } from '@/components/PeriodSelects'
@@ -16,17 +17,35 @@ import { Label } from '@/components/ui/label'
 const RIG_FIELD = { type: 'select-remote', remote: '/api/masters/rigs/', optionLabel: 'rig_name', optionValue: 'rig_id', labelField: 'rig_name' }
 const COMPANY_FIELD = { type: 'search-remote', remote: '/api/masters/companies/', optionLabel: 'company_name', optionValue: 'company_id', labelField: 'company_name' }
 
-function Field({ label, required, children, hint }) {
+function Field({ label, required, children, hint, error }) {
   return (
     <div className="flex flex-col gap-2">
       <Label className="text-sm font-medium">
         {label}
         {required && <span className="text-destructive"> *</span>}
       </Label>
-      {children}
+      <FieldFrame error={error}>{children}</FieldFrame>
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
+}
+
+const HEADER_LABELS = { rig: 'Rig', period_month: 'Period', company: 'Company', report_no: 'Report No.' }
+
+// Checked in the browser first, so a mistake shows at once with no trip to the server
+// (the server checks the same rules again). A month after the current one is refused;
+// the current month is allowed.
+function checkHeader(form) {
+  const errs = {}
+  if (!form.rig) errs.rig = 'This field is required.'
+  if (!form.period) errs.period_month = 'This field is required.'
+  else {
+    const now = new Date()
+    if (form.period > `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`) errs.period_month = "Period can't be in the future."
+  }
+  if (!form.company) errs.company = 'This field is required.'
+  if (!form.report_no.trim()) errs.report_no = 'This field is required.'
+  return errs
 }
 
 const cellSelect =
@@ -114,6 +133,7 @@ export default function HseLaggingIndicatorsFormPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [rowErrors, setRowErrors] = useState({})
+  const [fieldErrors, setFieldErrors] = useState({})
   const bannerRef = useRef(null)
   const [rowQuery, setRowQuery] = useState('')
 
@@ -179,13 +199,18 @@ export default function HseLaggingIndicatorsFormPage() {
   }
 
   const showError = (message) => showFormError(message, { setError, bannerRef })
+  const clearErr = (key) => setFieldErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev))
 
   async function handleAdd() {
     setError('')
-    if (!form.rig) return showError('Please choose a Rig.')
-    if (!form.period) return showError('Please choose the Period (month and year).')
-    if (!form.company) return showError('Please choose a Company.')
-    if (!form.report_no.trim()) return showError('Please enter the Report No.')
+    setFieldErrors({})
+    const found = checkHeader(form)
+    if (Object.keys(found).length) {
+      showError(formatApiError(found, HEADER_LABELS))
+      setFieldErrors(buildFieldErrors(found, HEADER_LABELS))
+      scrollToFirstFieldError()
+      return
+    }
     setSaving(true)
     try {
       const res = await apiFetch(kind.apiBase, {
@@ -194,7 +219,9 @@ export default function HseLaggingIndicatorsFormPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        showError(formatApiError(data))
+        showError(formatApiError(data, HEADER_LABELS))
+        setFieldErrors(buildFieldErrors(data, HEADER_LABELS))
+        scrollToFirstFieldError()
         return
       }
       toast.success('Report added — now enter the figures')
@@ -303,7 +330,7 @@ export default function HseLaggingIndicatorsFormPage() {
         <>
           <div className="rounded-2xl border border-border bg-card p-7">
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Rig" required>
+              <Field label="Rig" required error={fieldErrors.rig}>
                 {isEdit ? (
                   <Input value={hdr?.rig_name || ''} disabled className="bg-muted" />
                 ) : (
@@ -311,18 +338,24 @@ export default function HseLaggingIndicatorsFormPage() {
                     field={RIG_FIELD}
                     value={form.rig}
                     labelValue={form.rig_name}
-                    onChange={(v, raw) => setForm((f) => ({ ...f, rig: v, rig_name: raw?.rig_name || '' }))}
+                    onChange={(v, raw) => {
+                      clearErr('rig')
+                      setForm((f) => ({ ...f, rig: v, rig_name: raw?.rig_name || '' }))
+                    }}
                   />
                 )}
               </Field>
-              <Field label="Period" required>
+              <Field label="Period" required error={fieldErrors.period_month}>
                 {isEdit ? (
                   <MonthYearSelect value={hdr?.period_month || ''} disabled onChange={() => {}} />
                 ) : (
-                  <MonthYearSelect value={form.period} maxYear={new Date().getFullYear()} onChange={(v) => setForm((f) => ({ ...f, period: v }))} />
+                  <MonthYearSelect value={form.period} maxYear={new Date().getFullYear()} onChange={(v) => {
+                    clearErr('period_month')
+                    setForm((f) => ({ ...f, period: v }))
+                  }} />
                 )}
               </Field>
-              <Field label="Company" required hint={isEdit ? undefined : 'Fills in from the Rig and Period — you can change it.'}>
+              <Field label="Company" required error={fieldErrors.company} hint={isEdit ? undefined : 'Fills in from the Rig and Period — you can change it.'}>
                 {isEdit ? (
                   <Input value={hdr?.company_name || ''} disabled className="bg-muted" />
                 ) : (
@@ -330,15 +363,21 @@ export default function HseLaggingIndicatorsFormPage() {
                     field={COMPANY_FIELD}
                     value={form.company}
                     labelValue={form.company_name}
-                    onChange={(v, raw) => setForm((f) => ({ ...f, company: v, company_name: raw?.company_name || '' }))}
+                    onChange={(v, raw) => {
+                      clearErr('company')
+                      setForm((f) => ({ ...f, company: v, company_name: raw?.company_name || '' }))
+                    }}
                   />
                 )}
               </Field>
-              <Field label="Report No." required>
+              <Field label="Report No." required error={fieldErrors.report_no}>
                 {isEdit ? (
                   <Input value={hdr?.report_no || ''} disabled className="bg-muted" />
                 ) : (
-                  <Input value={form.report_no} maxLength={12} onChange={(e) => setForm((f) => ({ ...f, report_no: e.target.value }))} />
+                  <Input value={form.report_no} maxLength={12} onChange={(e) => {
+                      clearErr('report_no')
+                      setForm((f) => ({ ...f, report_no: e.target.value }))
+                    }} />
                 )}
               </Field>
             </div>

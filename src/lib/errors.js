@@ -116,7 +116,7 @@ export function formatApiError(data, labels) {
   }
   if (missing.length) {
     const list = missing.length > 1 ? `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}` : missing[0]
-    lines.unshift(`Please fill in ${list}.`)
+    lines.unshift(`Please fill in ${list.replace(/\.$/, '')}.`) // no "No.." when the last label ends in a full stop
   }
   return lines.length ? lines.join('\n') : "Your changes weren't saved. Please check the form and try again."
 }

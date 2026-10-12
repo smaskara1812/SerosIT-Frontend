@@ -60,6 +60,33 @@ function Field({ label, name, required, children, wide }) {
   )
 }
 
+const REQUIRED = 'This field is required.'
+
+// Checks the legacy rules in the browser first, so a mistake shows at once with no trip to
+// the server (the server checks the same rules again and is the one that counts; it also
+// checks that the ICR No. is not already used). `original` is the saved record when editing:
+// "Date not in the future" is only checked when the Date is new or changed.
+function checkForm(form, original, isEdit, today) {
+  const errs = {}
+  if (!form.qhse_category) errs.qhse_category = REQUIRED
+  if (!form.icr_no.trim()) errs.icr_no = REQUIRED
+  if (!form.other_qhse_action_dt) errs.other_qhse_action_dt = REQUIRED
+  else if (form.other_qhse_action_dt > today && (!original || form.other_qhse_action_dt !== original.other_qhse_action_dt)) {
+    errs.other_qhse_action_dt = "Date can't be in the future."
+  }
+  if (!form.rig) errs.rig = REQUIRED
+  if (!form.action_recommended.trim()) errs.action_recommended = REQUIRED
+  if (!form.action_party.trim()) errs.action_party = REQUIRED
+  if (!form.target_date) errs.target_date = REQUIRED
+  else if (form.other_qhse_action_dt && form.target_date < form.other_qhse_action_dt) errs.target_date = "Target Date can't be before the Date."
+  if (isEdit) {
+    if (form.completion_dt && form.other_qhse_action_dt && form.completion_dt < form.other_qhse_action_dt) {
+      errs.completion_dt = "Actual Closure Date can't be before the Date."
+    } else if (!form.completion_dt && form.action_status === 'CL') errs.completion_dt = 'Enter the Actual Closure Date to close this record.'
+  }
+  return errs
+}
+
 export default function CorrectiveActionFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -135,9 +162,16 @@ export default function CorrectiveActionFormPage() {
   }
 
   async function handleSave() {
-    setSaving(true)
     setError('')
     setFieldErrors({})
+    const found = checkForm(form, isEdit && snapshot ? JSON.parse(snapshot) : null, isEdit, today)
+    if (Object.keys(found).length) {
+      showFormError(formatApiError(found, FIELD_LABELS), { setError, bannerRef })
+      setFieldErrors(buildFieldErrors(found, FIELD_LABELS))
+      scrollToFirstFieldError()
+      return
+    }
+    setSaving(true)
     try {
       const res = await apiFetch(isEdit ? `${API}${id}/` : API, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(buildPayload()) })
       const data = await res.json()

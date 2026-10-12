@@ -42,6 +42,16 @@ function Field({ label, required, children, error }) {
 
 const rowKey = (r) => `${r.mandatory_training}|${r.training_group_dtl_active}`
 
+const REQUIRED = 'This field is required.'
+
+// Browser check, mirroring core/training_group.py (the duplicate-name rule needs the database).
+function checkGroup(name) {
+  return name.trim() ? {} : { training_group_hdr_name: REQUIRED }
+}
+
+// A new organisation needs name, address and location; the email must look like one when given.
+// `creating` is false when editing (name and location are locked then).
+
 export default function TrainingGroupFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -141,6 +151,13 @@ export default function TrainingGroupFormPage() {
   async function handleCreate() {
     setError('')
     setFieldErrors({})
+    const found = checkGroup(name)
+    if (Object.keys(found).length) {
+      showFormError(formatApiError(found, FIELD_LABELS), { setError, bannerRef })
+      setFieldErrors(buildFieldErrors(found, FIELD_LABELS))
+      scrollToFirstFieldError()
+      return
+    }
     setSaving(true)
     try {
       const res = await apiFetch(API, { method: 'POST', body: JSON.stringify({ training_group_hdr_name: name }) })

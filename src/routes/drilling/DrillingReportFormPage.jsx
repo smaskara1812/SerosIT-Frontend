@@ -18,7 +18,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
+import { localDateStr } from '@/lib/naiveDateTime'
 import { formatDay } from '@/lib/text'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { IconTrash, IconPlus } from '@/components/icons'
@@ -161,21 +163,23 @@ function ReadOnlyField({ label, value }) {
 // Unit lives inline as a suffix adornment (kts, L, Mtr…) instead of
 // crowding the label — a field's label just names the thing, the unit
 // reads right where the number is.
-function UnitField({ label, unit, value, onChange, disabled, step, required }) {
+function UnitField({ label, name, unit, value, onChange, disabled, step, required }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label>
         {label}
         {required && <span className="text-destructive"> *</span>}
       </Label>
-      <InputGroup>
-        <InputGroupInput type="number" step={step} value={value} onChange={onChange} disabled={disabled} />
-        {unit && (
-          <InputGroupAddon align="inline-end">
-            <InputGroupText>{unit}</InputGroupText>
-          </InputGroupAddon>
-        )}
-      </InputGroup>
+      <FieldFrame name={name}>
+        <InputGroup>
+          <InputGroupInput type="number" step={step} value={value} onChange={onChange} disabled={disabled} />
+          {unit && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupText>{unit}</InputGroupText>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
+      </FieldFrame>
     </div>
   )
 }
@@ -201,6 +205,78 @@ function KpiTile({ label, value }) {
   )
 }
 
+const REQUIRED = 'This field is required.'
+const FIELD_LABELS = {
+  rig: 'Rig', drilling_dtl_dt: 'Drilling Date', pob_operator: 'Operator POB', pob_essar: 'Seros POB', pob_essar_serv: 'Seros Services POB', pob_others: 'Others POB',
+  wind_speed: 'Wind Speed', current_k: 'Current K', at_press_mbar: 'At Press', vdl: 'VDL', avdl: 'AVDL', tot_vdl: 'Total VDL', kg: 'KG', kg_margin: 'KG Margin',
+  draft: 'Draft', consumption_diesel: 'Consumption: Diesel', consumption_water: 'Consumption: Water', received_diesel: 'Received: Diesel',
+  received_water: 'Received: Water', generated_water: 'Generated: Water', remark: 'Operations Summary', downtime_reason: 'Downtime Reason', ops: 'Time Log',
+}
+const REQUIRED_NUMBERS = ['pob_operator', 'pob_essar', 'wind_speed', 'current_k', 'at_press_mbar', 'vdl', 'avdl', 'tot_vdl', 'kg', 'kg_margin', 'draft', 'consumption_diesel', 'consumption_water']
+const WHOLE_NUMBERS = ['pob_operator', 'pob_essar', 'pob_essar_serv', 'pob_others', 'wind_speed', 'at_press_mbar', 'vdl', 'avdl', 'tot_vdl', 'consumption_diesel', 'consumption_water', 'received_diesel', 'received_water', 'generated_water']
+// The legacy "0 or more" rules, and the database digit limits (value, decimals).
+const NON_NEGATIVE = ['at_press_mbar', 'vdl', 'avdl', 'kg', 'kg_margin', 'draft', 'consumption_diesel', 'consumption_water', 'received_diesel', 'received_water', 'generated_water']
+const DECIMAL_LIMITS = { kg: [99.99, 2], kg_margin: [9.99, 2], draft: [99.99, 2], current_k: [9.9, 1] }
+const MIN_SUMMARY_LENGTH = 10
+const MAX_DAY_HOURS = 24
+
+// Which of the six hour buckets a rate code adds to (same mapping as the server), or null.
+function hourBucket(code = '') {
+  if (code === 'R1') return 'operating'
+  if (code === 'R2' || code === 'ILM-R2') return 'standby'
+  if (code.startsWith('Other')) return 'service'
+  if (code === 'R3') return 'repair_rate'
+  if (code === 'R0') return 'zero_rate'
+  if (['IPM', 'IPM - Adjacent', 'IPM - Lateral', 'ILM'].includes(code)) return 'rig_move'
+  return null
+}
+const opHours = (o) => Math.round(((new Date(o.time_to) - new Date(o.time_from)) / 3600000) * 100) / 100
+const isDowntime = (o) => o.prj_drilling_rate_label === 'R0' || o.prj_drilling_rate_label === 'R3'
+function dayHours(ops) {
+  return Math.round(ops.reduce((sum, o) => sum + (hourBucket(o.prj_drilling_rate_label) ? opHours(o) : 0), 0) * 100) / 100
+}
+
+// Browser checks, mirroring DrillingDtlSerializer on the server. `original` is the saved report's form values when
+// editing (null when creating): a rule about a value is only judged when that value is new or changed, so an old report
+// (hours above 24, a short summary, downtime without a reason...) stays editable for something else.
+function checkForm(form, original, today) {
+  const e = {}
+  const changed = (name) => !original || JSON.stringify(form[name]) !== JSON.stringify(original[name])
+  if (!form.rig) e.rig = REQUIRED
+  if (!form.drilling_dtl_dt) e.drilling_dtl_dt = REQUIRED
+  else if (form.drilling_dtl_dt > today && changed('drilling_dtl_dt')) e.drilling_dtl_dt = "The Drilling Date can't be in the future."
+
+  const required = original ? REQUIRED_NUMBERS : [...REQUIRED_NUMBERS, 'received_water']
+  for (const f of required) if (String(form[f]).trim() === '') e[f] = REQUIRED
+  for (const f of WHOLE_NUMBERS) {
+    const v = String(form[f]).trim()
+    if (v === '' || e[f]) continue
+    if (!/^-?\d+$/.test(v)) e[f] = "Enter a number without decimals."
+    else if (NON_NEGATIVE.includes(f) && Number(v) < 0) e[f] = "This can't be negative."
+  }
+  for (const f of ['kg', 'kg_margin', 'draft', 'current_k']) {
+    const v = String(form[f]).trim()
+    if (v === '' || e[f]) continue
+    const [max, places] = DECIMAL_LIMITS[f]
+    if (!/^-?\d+(\.\d+)?$/.test(v)) e[f] = 'Enter a number.'
+    else if (Number(v) < 0) e[f] = "This can't be negative."
+    else if ((v.split('.')[1] || '').replace(/0+$/, '').length > places) e[f] = `Use at most ${places} decimal${places > 1 ? 's' : ''}.`
+    else if (Number(v) > max) e[f] = `${FIELD_LABELS[f]} can be at most ${max}.`
+  }
+
+  const remark = (form.remark || '').trim()
+  if (!remark) e.remark = REQUIRED
+  else if (remark.length < MIN_SUMMARY_LENGTH && changed('remark')) e.remark = `Give more detail in the Operations Summary (at least ${MIN_SUMMARY_LENGTH} characters).`
+
+  // The document doesn't require a time log to save a report (rows are added one by one afterwards), so none is needed.
+  if (form.ops.length > 0 && changed('ops')) {
+    const total = dayHours(form.ops)
+    if (total > MAX_DAY_HOURS) e.ops = `The hours in the time log add up to ${total}; a day can't be more than ${MAX_DAY_HOURS}.`
+    if (form.ops.some(isDowntime) && !(form.downtime_reason || '').trim()) e.downtime_reason = 'Enter the Downtime Reason (the time log has Repair Rate or Zero Rate time).'
+  }
+  return e
+}
+
 export default function DrillingReportFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -218,6 +294,16 @@ export default function DrillingReportFormPage() {
   const [role, setRole] = useState({ can_finalize: false, can_approve: false, can_reject: false, can_revise_self: false, can_revise_previous: false, can_edit_as_approver: false })
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
+  // Boxes outlined after a refused save. The outline goes away as soon as anything in the form is edited.
+  const [fieldErrState, setFieldErrState] = useState({ at: null, errors: {} })
+  const fieldErrors = fieldErrState.at === JSON.stringify(form) ? fieldErrState.errors : {}
+  function showErrors(data) {
+    setFieldErrState({ at: JSON.stringify(form), errors: buildFieldErrors(data, FIELD_LABELS) })
+    toast.error(formatApiError(data, FIELD_LABELS), { style: { whiteSpace: 'pre-line' } })
+    requestAnimationFrame(scrollToFirstFieldError)
+  }
+  // Time-log row being added: the boxes that are still empty are outlined.
+  const [opErrors, setOpErrors] = useState({})
   const [notFound, setNotFound] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [confirmingReject, setConfirmingReject] = useState(false)
@@ -341,10 +427,21 @@ export default function DrillingReportFormPage() {
   }
 
   function addOpRow() {
-    if (!newOp.time_from || !newOp.time_to || !newOp.drilling_ops || !newOp.drilling_section || !newOp.prj_drilling_rate) {
-      toast.error('Time From/To, Operation, Section, and Rate are required for a new row')
+    const missing = {}
+    if (!newOp.time_from) missing.time_from = 'Time From'
+    if (!newOp.time_to) missing.time_to = 'Time To'
+    if (!newOp.drilling_ops) missing.drilling_ops = 'Operation'
+    if (!newOp.drilling_section) missing.drilling_section = 'Section'
+    if (newOp.depth_from === '') missing.depth_from = 'Depth From'
+    if (newOp.depth_to === '') missing.depth_to = 'Depth To'
+    if (!newOp.operation_desc.trim()) missing.operation_desc = 'Details of Operations'
+    if (!newOp.prj_drilling_rate) missing.prj_drilling_rate = 'Rate'
+    if (Object.keys(missing).length) {
+      setOpErrors(missing)
+      toast.error(`Please fill in ${Object.values(missing).join(', ').replace(/, ([^,]*)$/, ' and $1')} for the new row.`)
       return
     }
+    setOpErrors({})
     const time_from = toIso(form.drilling_dtl_dt, newOp.time_from)
     const time_to = toIso(form.drilling_dtl_dt, newOp.time_to, newOp.time_from)
     setForm((f) => ({ ...f, ops: [...f.ops, { ...newOp, time_from, time_to }] }))
@@ -353,49 +450,39 @@ export default function DrillingReportFormPage() {
   }
 
   function buildPayload() {
-    if (!form.rig) return { error: 'Rig is required' }
-    if (!form.drilling_dtl_dt) return { error: 'Drilling Date is required' }
-    const required = ['pob_operator', 'pob_essar', 'wind_speed', 'current_k', 'at_press_mbar', 'vdl', 'avdl', 'tot_vdl', 'kg', 'kg_margin', 'draft', 'consumption_diesel', 'consumption_water']
-    for (const f of required) {
-      if (form[f] === '' || form[f] == null) return { error: `${f.replace(/_/g, ' ')} is required` }
-    }
-    if (!form.remark || !form.remark.trim()) return { error: 'Operations Summary is required' }
-    if (form.ops.length === 0) return { error: 'At least one time-log row is required' }
-
     return {
-      payload: {
-        rig: form.rig,
-        drilling_dtl_dt: form.drilling_dtl_dt,
-        pob_operator: form.pob_operator, pob_essar: form.pob_essar,
-        pob_essar_serv: form.pob_essar_serv === '' ? null : form.pob_essar_serv,
-        pob_others: form.pob_others === '' ? null : form.pob_others,
-        wind_speed: form.wind_speed, current_k: form.current_k, at_press_mbar: form.at_press_mbar,
-        vdl: form.vdl, avdl: form.avdl, tot_vdl: form.tot_vdl, kg: form.kg, kg_margin: form.kg_margin, draft: form.draft,
-        consumption_diesel: form.consumption_diesel, consumption_water: form.consumption_water,
-        received_diesel: form.received_diesel === '' ? null : form.received_diesel,
-        received_water: form.received_water === '' ? null : form.received_water,
-        generated_water: form.generated_water === '' ? null : form.generated_water,
-        remark: form.remark.trim(),
-        downtime_reason: form.downtime_reason || null,
-        ops: form.ops.map((o) => ({
-          ...(o.drilling_dtl_ops_id ? { drilling_dtl_ops_id: o.drilling_dtl_ops_id } : {}),
-          time_from: o.time_from, time_to: o.time_to, work_shift: o.work_shift,
-          drilling_ops: o.drilling_ops, drilling_section: o.drilling_section,
-          // rop_trip_mh is server-computed (round((Depth_To-Depth_From)/Duration),
-          // confirmed against real historical rows) — never sent, same as duration.
-          depth_from: o.depth_from, depth_to: o.depth_to,
-          operation_desc: o.operation_desc, prj_drilling_rate: o.prj_drilling_rate,
-        })),
-      },
+      rig: form.rig,
+      drilling_dtl_dt: form.drilling_dtl_dt,
+      pob_operator: form.pob_operator, pob_essar: form.pob_essar,
+      pob_essar_serv: form.pob_essar_serv === '' ? null : form.pob_essar_serv,
+      pob_others: form.pob_others === '' ? null : form.pob_others,
+      wind_speed: form.wind_speed, current_k: form.current_k, at_press_mbar: form.at_press_mbar,
+      vdl: form.vdl, avdl: form.avdl, tot_vdl: form.tot_vdl, kg: form.kg, kg_margin: form.kg_margin, draft: form.draft,
+      consumption_diesel: form.consumption_diesel, consumption_water: form.consumption_water,
+      received_diesel: form.received_diesel === '' ? null : form.received_diesel,
+      received_water: form.received_water === '' ? null : form.received_water,
+      generated_water: form.generated_water === '' ? null : form.generated_water,
+      remark: form.remark.trim(),
+      downtime_reason: form.downtime_reason || null,
+      ops: form.ops.map((o) => ({
+        ...(o.drilling_dtl_ops_id ? { drilling_dtl_ops_id: o.drilling_dtl_ops_id } : {}),
+        time_from: o.time_from, time_to: o.time_to, work_shift: o.work_shift,
+        drilling_ops: o.drilling_ops, drilling_section: o.drilling_section,
+        // rop_trip_mh is server-computed (round((Depth_To-Depth_From)/Duration),
+        // confirmed against real historical rows) — never sent, same as duration.
+        depth_from: o.depth_from, depth_to: o.depth_to,
+        operation_desc: o.operation_desc, prj_drilling_rate: o.prj_drilling_rate,
+      })),
     }
   }
 
   async function save() {
-    const { payload, error } = buildPayload()
-    if (error) {
-      toast.error(error)
+    const found = checkForm(form, isEdit && snapshot ? JSON.parse(snapshot) : null, localDateStr())
+    if (Object.keys(found).length) {
+      showErrors(found)
       return
     }
+    const payload = buildPayload()
     setSaving(true)
     const res = await apiFetch(isEdit ? `${API}${id}/` : API, {
       method: isEdit ? 'PATCH' : 'POST',
@@ -413,7 +500,7 @@ export default function DrillingReportFormPage() {
       }
     } else {
       const data = await res.json().catch(() => ({}))
-      toast.error(formatApiError(data))
+      showErrors(data)
     }
   }
 
@@ -469,7 +556,7 @@ export default function DrillingReportFormPage() {
     ? JSON.stringify(form) !== JSON.stringify(emptyForm())
     : snapshot !== null && JSON.stringify(form) !== snapshot
   const { dialog: leaveDialog, allowNextNavigation } = useUnsavedChanges(hasChanges, {
-    onSave: !loading && !saving && !buildPayload().error && (isEdit ? canEdit : canAdd) ? save : undefined,
+    onSave: !loading && !saving && (isEdit ? canEdit : canAdd) ? save : undefined,
   })
 
   if (notFound) return <Navigate to="/drilling/drilling-report" replace />
@@ -486,7 +573,7 @@ export default function DrillingReportFormPage() {
   const locked = isEdit && selectedRecord?.cr_status === 'F' && !role.can_edit_as_approver
   const canEditFields = !isEdit ? canAdd : (canEdit && !locked) || role.can_edit_as_approver
   const disabled = !canEditFields
-  const isDirty = !isEdit ? !buildPayload().error : snapshot !== null && JSON.stringify(form) !== snapshot
+  const isDirty = !isEdit ? hasChanges : snapshot !== null && JSON.stringify(form) !== snapshot
   const status = statusInfo(selectedRecord)
   const heading = isEdit ? (loading ? 'Loading…' : `${form.rig_label} — ${formatDay(form.drilling_dtl_dt)}`) : 'New Drilling Report'
   const canSave = canEditFields
@@ -569,7 +656,7 @@ export default function DrillingReportFormPage() {
       {loading ? (
         <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
       ) : (
-        <div className="flex w-full flex-col gap-4">
+        <FieldErrorScope errors={fieldErrors} className="flex w-full flex-col gap-4">
           {selectedRecord?.cr_status === 'N' && selectedRecord?.revision_note && (
             <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-700 dark:text-orange-400">
               <p className="text-[11px] font-bold tracking-widest uppercase">Revision note</p>
@@ -580,11 +667,15 @@ export default function DrillingReportFormPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label>Rig <span className="text-destructive">*</span></Label>
-                <RemoteCombobox field={RIG_FIELD} value={form.rig} onChange={(v) => onRigOrDateChange({ rig: v })} labelValue={form.rig_label} disabled={disabled} />
+                <FieldFrame name="rig">
+                  <RemoteCombobox field={RIG_FIELD} value={form.rig} onChange={(v) => onRigOrDateChange({ rig: v })} labelValue={form.rig_label} disabled={disabled} />
+                </FieldFrame>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Drilling Date <span className="text-destructive">*</span></Label>
-                <Input type="date" value={form.drilling_dtl_dt} onChange={(e) => onRigOrDateChange({ drilling_dtl_dt: e.target.value })} disabled={disabled} />
+                <FieldFrame name="drilling_dtl_dt">
+                  <Input type="date" max={localDateStr()} value={form.drilling_dtl_dt} onChange={(e) => onRigOrDateChange({ drilling_dtl_dt: e.target.value })} disabled={disabled} />
+                </FieldFrame>
               </div>
               <ReadOnlyField label="Location" value={wellInfo.location} />
               <ReadOnlyField label="Project" value={wellInfo.contract_no} />
@@ -593,34 +684,34 @@ export default function DrillingReportFormPage() {
 
           <Section title="Personnel on Board (POB)">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <UnitField label="Operator" value={form.pob_operator} onChange={(e) => setForm((f) => ({ ...f, pob_operator: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Seros" value={form.pob_essar} onChange={(e) => setForm((f) => ({ ...f, pob_essar: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Seros Services" value={form.pob_essar_serv} onChange={(e) => setForm((f) => ({ ...f, pob_essar_serv: e.target.value }))} disabled={disabled} />
-              <UnitField label="Others" value={form.pob_others} onChange={(e) => setForm((f) => ({ ...f, pob_others: e.target.value }))} disabled={disabled} />
+              <UnitField label="Operator" name="pob_operator" value={form.pob_operator} onChange={(e) => setForm((f) => ({ ...f, pob_operator: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Seros" name="pob_essar" value={form.pob_essar} onChange={(e) => setForm((f) => ({ ...f, pob_essar: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Seros Services" name="pob_essar_serv" value={form.pob_essar_serv} onChange={(e) => setForm((f) => ({ ...f, pob_essar_serv: e.target.value }))} disabled={disabled} />
+              <UnitField label="Others" name="pob_others" value={form.pob_others} onChange={(e) => setForm((f) => ({ ...f, pob_others: e.target.value }))} disabled={disabled} />
             </div>
           </Section>
 
           <Section title="Rig Conditions">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <UnitField label="Wind Speed" unit="kts" value={form.wind_speed} onChange={(e) => setForm((f) => ({ ...f, wind_speed: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Current K" unit="kts" step="0.1" value={form.current_k} onChange={(e) => setForm((f) => ({ ...f, current_k: e.target.value }))} disabled={disabled} required />
-              <UnitField label="At Press" unit="mbar" value={form.at_press_mbar} onChange={(e) => setForm((f) => ({ ...f, at_press_mbar: e.target.value }))} disabled={disabled} required />
-              <UnitField label="VDL" unit="MT" value={form.vdl} onChange={(e) => setForm((f) => ({ ...f, vdl: e.target.value }))} disabled={disabled} required />
-              <UnitField label="AVDL" unit="MT" value={form.avdl} onChange={(e) => setForm((f) => ({ ...f, avdl: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Total VDL" unit="MT" value={form.tot_vdl} onChange={(e) => setForm((f) => ({ ...f, tot_vdl: e.target.value }))} disabled={disabled} required />
-              <UnitField label="KG" unit="Mtr" step="0.01" value={form.kg} onChange={(e) => setForm((f) => ({ ...f, kg: e.target.value }))} disabled={disabled} required />
-              <UnitField label="KG Margin" unit="Mtr" step="0.01" value={form.kg_margin} onChange={(e) => setForm((f) => ({ ...f, kg_margin: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Draft" unit="Mtr" step="0.01" value={form.draft} onChange={(e) => setForm((f) => ({ ...f, draft: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Wind Speed" name="wind_speed" unit="kts" value={form.wind_speed} onChange={(e) => setForm((f) => ({ ...f, wind_speed: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Current K" name="current_k" unit="kts" step="0.1" value={form.current_k} onChange={(e) => setForm((f) => ({ ...f, current_k: e.target.value }))} disabled={disabled} required />
+              <UnitField label="At Press" name="at_press_mbar" unit="mbar" value={form.at_press_mbar} onChange={(e) => setForm((f) => ({ ...f, at_press_mbar: e.target.value }))} disabled={disabled} required />
+              <UnitField label="VDL" name="vdl" unit="MT" value={form.vdl} onChange={(e) => setForm((f) => ({ ...f, vdl: e.target.value }))} disabled={disabled} required />
+              <UnitField label="AVDL" name="avdl" unit="MT" value={form.avdl} onChange={(e) => setForm((f) => ({ ...f, avdl: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Total VDL" name="tot_vdl" unit="MT" value={form.tot_vdl} onChange={(e) => setForm((f) => ({ ...f, tot_vdl: e.target.value }))} disabled={disabled} required />
+              <UnitField label="KG" name="kg" unit="Mtr" step="0.01" value={form.kg} onChange={(e) => setForm((f) => ({ ...f, kg: e.target.value }))} disabled={disabled} required />
+              <UnitField label="KG Margin" name="kg_margin" unit="Mtr" step="0.01" value={form.kg_margin} onChange={(e) => setForm((f) => ({ ...f, kg_margin: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Draft" name="draft" unit="Mtr" step="0.01" value={form.draft} onChange={(e) => setForm((f) => ({ ...f, draft: e.target.value }))} disabled={disabled} required />
             </div>
           </Section>
 
           <Section title="Fluid & Fuel Accounting">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <UnitField label="Consumption: Diesel" unit="L" value={form.consumption_diesel} onChange={(e) => setForm((f) => ({ ...f, consumption_diesel: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Consumption: Water" unit="L" value={form.consumption_water} onChange={(e) => setForm((f) => ({ ...f, consumption_water: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Received: Diesel" unit="L" value={form.received_diesel} onChange={(e) => setForm((f) => ({ ...f, received_diesel: e.target.value }))} disabled={disabled} />
-              <UnitField label="Received: Water" unit="L" value={form.received_water} onChange={(e) => setForm((f) => ({ ...f, received_water: e.target.value }))} disabled={disabled} />
-              <UnitField label="Generated: Water" unit="L" value={form.generated_water} onChange={(e) => setForm((f) => ({ ...f, generated_water: e.target.value }))} disabled={disabled} />
+              <UnitField label="Consumption: Diesel" name="consumption_diesel" unit="L" value={form.consumption_diesel} onChange={(e) => setForm((f) => ({ ...f, consumption_diesel: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Consumption: Water" name="consumption_water" unit="L" value={form.consumption_water} onChange={(e) => setForm((f) => ({ ...f, consumption_water: e.target.value }))} disabled={disabled} required />
+              <UnitField label="Received: Diesel" name="received_diesel" unit="L" value={form.received_diesel} onChange={(e) => setForm((f) => ({ ...f, received_diesel: e.target.value }))} disabled={disabled} />
+              <UnitField label="Received: Water" name="received_water" unit="L" value={form.received_water} onChange={(e) => setForm((f) => ({ ...f, received_water: e.target.value }))} disabled={disabled} />
+              <UnitField label="Generated: Water" name="generated_water" unit="L" value={form.generated_water} onChange={(e) => setForm((f) => ({ ...f, generated_water: e.target.value }))} disabled={disabled} />
             </div>
           </Section>
 
@@ -628,11 +719,15 @@ export default function DrillingReportFormPage() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label>Operations Summary <span className="text-destructive">*</span></Label>
-                <Textarea rows={5} maxLength={500} value={form.remark} onChange={(e) => setForm((f) => ({ ...f, remark: e.target.value }))} disabled={disabled} />
+                <FieldFrame name="remark">
+                  <Textarea rows={5} maxLength={500} value={form.remark} onChange={(e) => setForm((f) => ({ ...f, remark: e.target.value }))} disabled={disabled} />
+                </FieldFrame>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label>Downtime Reason</Label>
-                <Input value={form.downtime_reason} onChange={(e) => setForm((f) => ({ ...f, downtime_reason: e.target.value }))} disabled={disabled} />
+                <Label>Downtime Reason{form.ops.some(isDowntime) && <span className="text-destructive"> *</span>}</Label>
+                <FieldFrame name="downtime_reason">
+                  <Input value={form.downtime_reason} maxLength={100} onChange={(e) => setForm((f) => ({ ...f, downtime_reason: e.target.value }))} disabled={disabled} />
+                </FieldFrame>
                 <p className="text-[11px] text-muted-foreground">Clears automatically once no Repair Rate or Zero Rate rows remain in the time log.</p>
               </div>
             </div>
@@ -731,26 +826,31 @@ export default function DrillingReportFormPage() {
                   ))}
                   {addingOp && (
                     <tr ref={newRowRef} className="border-t border-dashed border-border bg-muted/20">
-                      <td className="px-2 py-2"><TimeField24h value={newOp.time_from} onChange={(v) => setNewOp((r) => ({ ...r, time_from: v }))} /></td>
-                      <td className="px-2 py-2"><TimeField24h value={newOp.time_to} onChange={(v) => setNewOp((r) => ({ ...r, time_to: v }))} /></td>
+                      <td className="px-2 py-2"><div className={opErrors.time_from ? 'rounded-lg ring-2 ring-destructive/70' : ''}><TimeField24h value={newOp.time_from} onChange={(v) => setNewOp((r) => ({ ...r, time_from: v }))} /></div></td>
+                      <td className="px-2 py-2"><div className={opErrors.time_to ? 'rounded-lg ring-2 ring-destructive/70' : ''}><TimeField24h value={newOp.time_to} onChange={(v) => setNewOp((r) => ({ ...r, time_to: v }))} /></div></td>
                       <td className="px-2 py-2"><TilePicker options={SHIFT_OPTIONS} value={newOp.work_shift} onChange={(v) => setNewOp((r) => ({ ...r, work_shift: v }))} /></td>
                       <td className="px-2 py-2 text-right text-muted-foreground">auto</td>
                       <td className="px-2 py-2">
+                        <div className={opErrors.drilling_ops ? 'rounded-lg ring-2 ring-destructive/70' : ''}>
                         <RemoteCombobox
                           field={OPS_FIELD}
                           value={newOp.drilling_ops}
                           onChange={(v) => setNewOp((r) => ({ ...r, drilling_ops: v, prj_drilling_rate: null, prj_drilling_rate_label: '' }))}
                           labelValue={newOp.drilling_ops_label}
                         />
+                        </div>
                       </td>
                       <td className="px-2 py-2">
-                        <RemoteCombobox field={SECTION_FIELD} value={newOp.drilling_section} onChange={(v) => setNewOp((r) => ({ ...r, drilling_section: v }))} labelValue={newOp.drilling_section_label} />
+                        <div className={opErrors.drilling_section ? 'rounded-lg ring-2 ring-destructive/70' : ''}>
+                          <RemoteCombobox field={SECTION_FIELD} value={newOp.drilling_section} onChange={(v) => setNewOp((r) => ({ ...r, drilling_section: v }))} labelValue={newOp.drilling_section_label} />
+                        </div>
                       </td>
-                      <td className="px-2 py-2"><Input type="number" step="0.01" value={newOp.depth_from} onChange={(e) => setNewOp((r) => ({ ...r, depth_from: e.target.value }))} className="h-9 w-full text-right" /></td>
-                      <td className="px-2 py-2"><Input type="number" step="0.01" value={newOp.depth_to} onChange={(e) => setNewOp((r) => ({ ...r, depth_to: e.target.value }))} className="h-9 w-full text-right" /></td>
+                      <td className="px-2 py-2"><Input type="number" step="0.01" value={newOp.depth_from} onChange={(e) => setNewOp((r) => ({ ...r, depth_from: e.target.value }))} className={`h-9 w-full text-right ${opErrors.depth_from ? 'border-destructive ring-2 ring-destructive/40' : ''}`} /></td>
+                      <td className="px-2 py-2"><Input type="number" step="0.01" value={newOp.depth_to} onChange={(e) => setNewOp((r) => ({ ...r, depth_to: e.target.value }))} className={`h-9 w-full text-right ${opErrors.depth_to ? 'border-destructive ring-2 ring-destructive/40' : ''}`} /></td>
                       <td className="px-2 py-2 text-right text-muted-foreground">auto</td>
-                      <td className="px-2 py-2"><Input value={newOp.operation_desc} maxLength={200} onChange={(e) => setNewOp((r) => ({ ...r, operation_desc: e.target.value }))} className="h-9 w-full" /></td>
+                      <td className="px-2 py-2"><Input value={newOp.operation_desc} maxLength={200} onChange={(e) => setNewOp((r) => ({ ...r, operation_desc: e.target.value }))} className={`h-9 w-full ${opErrors.operation_desc ? 'border-destructive ring-2 ring-destructive/40' : ''}`} /></td>
                       <td className="px-2 py-2">
+                        <div className={opErrors.prj_drilling_rate ? 'rounded-lg ring-2 ring-destructive/70' : ''}>
                         <RemoteCombobox
                           field={rateField}
                           value={newOp.prj_drilling_rate}
@@ -758,6 +858,7 @@ export default function DrillingReportFormPage() {
                           labelValue={newOp.prj_drilling_rate_label}
                           disabled={!form.rig}
                         />
+                        </div>
                       </td>
                       <td className="px-2 py-2"><Button size="sm" onClick={addOpRow}>Insert</Button></td>
                     </tr>
@@ -765,12 +866,19 @@ export default function DrillingReportFormPage() {
                 </tbody>
               </table>
             </div>
+            <FieldFrame name="ops" />
+            {form.ops.length > 0 && (
+              <p className={`text-xs ${dayHours(form.ops) > MAX_DAY_HOURS ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}>
+                Hours counted towards the day: {dayHours(form.ops)} of {MAX_DAY_HOURS} maximum
+                {form.ops.some((o) => !hourBucket(o.prj_drilling_rate_label)) && ' (rows with Force Majeure, MOB or similar rates are not counted)'}.
+              </p>
+            )}
           </Section>
 
           {isEdit && !hasApprovalActions && (
             <p className="text-xs text-muted-foreground">No approval actions available to you on this record right now.</p>
           )}
-        </div>
+        </FieldErrorScope>
       )}
 
       <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>

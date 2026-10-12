@@ -5,6 +5,7 @@ import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
+import { localDateStr } from '@/lib/naiveDateTime'
 import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -123,6 +124,14 @@ export default function HazardIdCardListPage() {
     return f
   }, [searchParams])
   const query = searchParams.get('q') || ''
+  const today = localDateStr()
+  // From can't be after To, and To can't be in the future (the legacy report rules).
+  const dateError =
+    filters.date_from && filters.date_to && filters.date_from > filters.date_to
+      ? "From date can't be after To date."
+      : filters.date_to && filters.date_to > today
+        ? "To date can't be in the future."
+        : ''
   const ordering = searchParams.get('ordering') || '-event_dt'
 
   function setFilter(key, value) {
@@ -184,6 +193,14 @@ export default function HazardIdCardListPage() {
 
   function loadPage(pageNum, searchQuery, append) {
     const thisRequest = ++requestIdRef.current
+    if (dateError) {
+      setRows([])
+      setTotalCount(0)
+      setHasMore(false)
+      setLoading(false)
+      setLoadingMore(false)
+      return
+    }
     if (append) setLoadingMore(true)
     else setLoading(true)
     const params = new URLSearchParams()
@@ -252,6 +269,10 @@ export default function HazardIdCardListPage() {
   }
 
   async function printReport() {
+    if (dateError) {
+      toast.error(dateError)
+      return
+    }
     // Open the tab synchronously (in direct response to the click) so
     // popup blockers don't reject it — same pattern as
     // IncidentDetailsListPage's printFlashReport.
@@ -321,6 +342,7 @@ export default function HazardIdCardListPage() {
             <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">From</span>
             <input
               type="date"
+              max={today}
               value={filters.date_from}
               onChange={(e) => setFilter('date_from', e.target.value)}
               className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
@@ -330,11 +352,13 @@ export default function HazardIdCardListPage() {
             <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">To</span>
             <input
               type="date"
+              max={today}
               value={filters.date_to}
               onChange={(e) => setFilter('date_to', e.target.value)}
               className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
             />
           </label>
+          {dateError && <p className="self-center text-xs text-destructive">{dateError}</p>}
           <label className="flex min-w-[220px] flex-1 flex-col gap-1">
             <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Search</span>
             <div className="relative">

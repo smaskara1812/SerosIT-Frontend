@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { fieldMessage, formatApiError, showFormError } from '@/lib/errors'
-import { joinNaiveDt, splitNaiveDt } from '@/lib/naiveDateTime'
+import { joinNaiveDt, localDateStr, splitNaiveDt } from '@/lib/naiveDateTime'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 const FIELD_LABELS = {
-  rig: 'Rig', drill_dt: 'Drill Date and Time', drill_location: 'Drill Location',
+  rig: 'Rig', drill_dt: 'Drill Date and Time', drill_date: 'Drill Date', drill_time: 'Drill Time', drill_location: 'Drill Location',
   hse_drill_1: 'Type of Drill/Training - 1', hse_drill_2: 'Type of Drill/Training - 2', head_count: 'Head Count',
   control_room_on_shore: 'Control Room on shore', initiated_by_fs_emp_1: 'Initiated By - 1', initiated_by_fs_emp_2: 'Initiated By - 2',
   initial_response_time: 'Initial Response Time', no_of_participants: 'No. of Participants',
@@ -134,6 +134,52 @@ function buildFieldErrors(data) {
     }
   }
   return out
+}
+
+const REQUIRED = 'This field is required.'
+
+// "Now" as a naive string in the same format as joinNaiveDt, to compare dates as text.
+function nowNaive() {
+  const d = new Date()
+  return `${localDateStr(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`
+}
+
+// Checks the legacy rules in the browser first, so a mistake shows at once with no trip
+// to the server (the server checks the same rules again and is the one that counts).
+// Keys are the API field names buildFieldErrors understands. `original` is the saved
+// record when editing: a rule about a value is only checked when that value is new or
+// changed, so an old record that already breaks one can still be edited for something else.
+function checkForm(form, original) {
+  const norm = (v) => (typeof v === 'string' ? v.trim() || null : v === '' || v === undefined ? null : v)
+  const changed = (...names) => !original || names.some((n) => norm(form[n]) !== norm(original[n]))
+  const errs = {}
+  const positive = (name, label) => {
+    if (norm(form[name]) === null) errs[name] = REQUIRED
+    else if (Number(form[name]) <= 0 && changed(name)) errs[name] = `${label} must be more than 0.`
+  }
+
+  if (!form.rig) errs.rig = REQUIRED
+  if (!form.drill_date) errs.drill_date = 'Enter the drill date.'
+  else if (!form.drill_time) errs.drill_time = 'Enter the drill time.'
+  else if (changed('drill_date', 'drill_time') && joinNaiveDt(form.drill_date, form.drill_time) > nowNaive()) {
+    errs.drill_dt = "Drill date and time can't be in the future."
+  }
+  if (!norm(form.drill_location)) errs.drill_location = REQUIRED
+  if (!form.hse_drill_1) errs.hse_drill_1 = REQUIRED
+  if (form.hse_drill_2 && String(form.hse_drill_2) === String(form.hse_drill_1)) errs.hse_drill_2 = 'Type of Drill/Training - 2 must differ from - 1.'
+  positive('head_count', 'Head Count')
+  if (!form.control_room_on_shore) errs.control_room_on_shore = REQUIRED
+  if (!form.initiated_by_fs_emp_1) errs.initiated_by_fs_emp_1 = REQUIRED
+  if (form.initiated_by_fs_emp_2 && form.initiated_by_fs_emp_2 === form.initiated_by_fs_emp_1) errs.initiated_by_fs_emp_2 = 'Initiated By - 2 must differ from - 1.'
+  positive('initial_response_time', 'Initial Response Time')
+  positive('no_of_participants', 'No. of Participants')
+  if (!errs.no_of_participants && !errs.head_count && Number(form.no_of_participants) > Number(form.head_count) && changed('no_of_participants', 'head_count')) {
+    errs.no_of_participants = 'No. of Participants cannot be greater than Head Count.'
+  }
+  positive('drill_muster', 'Drill Muster')
+  positive('total_time_of_drill', 'Total Time of Drill')
+  if (!form.approved_by_oim_fs_emp) errs.approved_by_oim_fs_emp = REQUIRED
+  return errs
 }
 
 function PlainSelect({ value, onChange, options, placeholder, disabled }) {
@@ -259,6 +305,13 @@ export default function HseDrillRecordFormPage() {
   async function handleSave() {
     setError('')
     setFieldErrors({})
+    const found = checkForm(form, isEdit && snapshot ? JSON.parse(snapshot) : null)
+    if (Object.keys(found).length) {
+      setFieldErrors(buildFieldErrors(found))
+      showFormError(formatApiError(found, FIELD_LABELS), { setError, bannerRef })
+      requestAnimationFrame(() => requestAnimationFrame(() => document.querySelector('.ring-destructive\\/70')?.scrollIntoView({ behavior: 'smooth', block: 'center' })))
+      return
+    }
     setSaving(true)
     try {
       const url = isEdit ? `/api/qhse/hse-drill-record/${id}/` : '/api/qhse/hse-drill-record/'
@@ -342,7 +395,7 @@ export default function HseDrillRecordFormPage() {
               <Input value={form.drill_record_no} readOnly disabled className="bg-muted" placeholder="Generated after Add" />
             </Field>
             <Field label="Drill Date" required error={fieldErrors.drill_date}>
-              <Input type="date" value={form.drill_date} onChange={(e) => set({ drill_date: e.target.value })} disabled={!canWrite} />
+              <Input type="date" max={localDateStr()} value={form.drill_date} onChange={(e) => set({ drill_date: e.target.value })} disabled={!canWrite} />
             </Field>
             <Field label="Drill Time" required error={fieldErrors.drill_time}>
               <Input type="time" value={form.drill_time} onChange={(e) => set({ drill_time: e.target.value })} disabled={!canWrite} />

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
+import { localDateStr } from '@/lib/naiveDateTime'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -79,7 +81,8 @@ const LON_HEMISPHERE_OPTIONS = [
 // (e.g. `08°36'00.00"N`). Longitude always carries its hemisphere letter in
 // the real data; Latitude never actually did (a legacy gap) — this app
 // writes both correctly going forward while keeping the same string shape.
-const COORD_RE = /^(\d{1,3})°(\d{1,2})'(\d{1,2})\.(\d{1,2})"([NSEW]?)$/
+// The fraction may be missing in old records (`23°35'17."N`): it reads as 00.
+const COORD_RE = /^(\d{1,3})°(\d{1,2})'(\d{1,2})\.(\d{0,2})"([NSEW]?)$/
 
 function composeCoord({ deg, min, sec, frac, hemisphere }) {
   if (deg === '' || deg == null || min === '' || min == null || sec === '' || sec == null) return null
@@ -118,6 +121,68 @@ function emptyForm() {
   }
 }
 
+const REQUIRED = 'This field is required.'
+const FIELD_LABELS = {
+  contract: 'Project', rig: 'Rig', latitude: 'Latitude', longitude: 'Longitude', location: 'Location', total_water_depth: 'Total Water Depth',
+  first_anchor_down_dt: 'First Anchor Down', distance_covered_kms_knots: 'Nautical Miles / Kilometres Covered', drilling_rate: 'Rig Move Rate Type',
+  drilling_completion_dt: 'Drilling Completion',
+}
+const DEGREE_LIMIT = { latitude: 90, longitude: 180 }
+
+// Browser checks, mirroring DrillingHdrSerializer.validate on the server. `original` is the saved
+// record's form values when editing (null when creating): a rule about a value is only checked when
+// that value is new or changed, so an old record (no distance, an unreadable coordinate...) can still be
+// saved, for example to add the Drilling Completion.
+function checkForm(form, original, creating, now) {
+  const e = {}
+  const changed = (...names) => !original || names.some((n) => JSON.stringify(form[n]) !== JSON.stringify(original[n]))
+  if (!form.contract && changed('contract')) e.contract = REQUIRED
+  if (!form.rig) e.rig = REQUIRED
+
+  for (const [name, key] of [['latitude', 'lat'], ['longitude', 'lon']]) {
+    if (!changed(key)) continue
+    const { deg, min, sec, frac } = form[key]
+    const whole = (v) => /^\d+$/.test(String(v).trim())
+    if ([deg, min, sec].some((v) => v === '' || v == null)) e[name] = 'Enter the degrees, minutes and seconds.'
+    else if (![deg, min, sec].every(whole) || (frac !== '' && frac != null && !whole(frac))) e[name] = 'Degrees, minutes and seconds must be whole numbers, 0 or more.'
+    else if (Number(deg) > DEGREE_LIMIT[name]) e[name] = `Degrees must be between 0 and ${DEGREE_LIMIT[name]}.`
+    else if (Number(min) > 59) e[name] = 'Minutes must be between 0 and 59.'
+    else if (Number(sec) > 59) e[name] = 'Seconds must be between 0 and 59.'
+    else if (Number(frac || 0) > 99) e[name] = 'The decimals of the seconds must be between 0 and 99.'
+  }
+
+  if (!form.location.trim()) e.location = REQUIRED
+  else if (form.location.trim().length > 25) e.location = 'Location can be at most 25 characters.'
+
+  const depth = String(form.total_water_depth).trim()
+  if (depth === '') {
+    if (creating) e.total_water_depth = REQUIRED
+  } else if (!/^\d+$/.test(depth) && changed('total_water_depth')) e.total_water_depth = 'Total Water Depth must be a whole number, 0 or more.'
+
+  const anchor = form.first_anchor_down_date && form.first_anchor_down_time ? `${form.first_anchor_down_date}T${form.first_anchor_down_time}` : ''
+  if (!anchor) e.first_anchor_down_dt = REQUIRED
+  else if (anchor > now && changed('first_anchor_down_date', 'first_anchor_down_time')) e.first_anchor_down_dt = "First Anchor Down date and time can't be in the future."
+
+  const distance = String(form.distance_covered_kms_knots).trim()
+  if (distance === '') {
+    if (changed('distance_covered_kms_knots')) e.distance_covered_kms_knots = REQUIRED
+  } else if (changed('distance_covered_kms_knots')) {
+    if (!/^\d+(\.\d{1,2})?$/.test(distance)) e.distance_covered_kms_knots = 'Enter a number, 0 or more, with at most 2 decimals.'
+    else if (Number(distance) > 9999.99) e.distance_covered_kms_knots = 'Nautical Miles / Kilometres Covered cannot exceed 9999.99.'
+  }
+  if (!form.drilling_rate && changed('drilling_rate')) e.drilling_rate = REQUIRED
+
+  const hasDate = Boolean(form.drilling_completion_date)
+  const hasTime = Boolean(form.drilling_completion_time)
+  if (hasDate !== hasTime) {
+    e.drilling_completion_dt = hasDate ? 'Enter the completion time with its date.' : 'Enter the completion date with its time.'
+  } else if (hasDate && changed('drilling_completion_date', 'drilling_completion_time', 'first_anchor_down_date')) {
+    if (`${form.drilling_completion_date}T${form.drilling_completion_time}` > now) e.drilling_completion_dt = "Drilling Completion date and time can't be in the future."
+    else if (form.first_anchor_down_date && form.drilling_completion_date < form.first_anchor_down_date) e.drilling_completion_dt = "Drilling Completion can't be before the First Anchor Down date."
+  }
+  return e
+}
+
 function emptyFilters() {
   return { contract: null, contractLabel: '', drilling_rate: '', date_from: '', date_to: '' }
 }
@@ -144,17 +209,18 @@ function ReadOnlyField({ label, value }) {
   )
 }
 
-function CoordFields({ label, coord, onChange, hemisphereOptions, disabled }) {
+function CoordFields({ label, name, coord, onChange, hemisphereOptions, disabled }) {
   function set(field, val) {
     onChange({ ...coord, [field]: val })
   }
   return (
     <div className="flex flex-col gap-1.5">
       <Label>{label}</Label>
+      <FieldFrame name={name}>
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] text-muted-foreground">Degree</span>
-          <Input type="number" min="0" value={coord.deg} onChange={(e) => set('deg', e.target.value)} disabled={disabled} className="h-9 w-16" />
+          <Input type="number" min="0" max={name === 'latitude' ? 90 : 180} value={coord.deg} onChange={(e) => set('deg', e.target.value)} disabled={disabled} className="h-9 w-16" />
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-[11px] text-muted-foreground">Minutes</span>
@@ -182,6 +248,7 @@ function CoordFields({ label, coord, onChange, hemisphereOptions, disabled }) {
           </select>
         </div>
       </div>
+      </FieldFrame>
     </div>
   )
 }
@@ -217,6 +284,14 @@ export default function DrillingInformationPage() {
   const [rigOptions, setRigOptions] = useState([])
   const [loadingRigs, setLoadingRigs] = useState(false)
   const [saving, setSaving] = useState(false)
+  // Boxes outlined after a refused save. The outline goes away as soon as anything in the form is edited.
+  const [fieldErrState, setFieldErrState] = useState({ at: null, errors: {} })
+  const fieldErrors = fieldErrState.at === JSON.stringify(form) ? fieldErrState.errors : {}
+  function showErrors(data) {
+    setFieldErrState({ at: JSON.stringify(form), errors: buildFieldErrors(data, FIELD_LABELS) })
+    toast.error(formatApiError(data, FIELD_LABELS))
+    requestAnimationFrame(scrollToFirstFieldError)
+  }
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   // The map plots every currently-filtered well at once, which is a
@@ -404,52 +479,38 @@ export default function DrillingInformationPage() {
     loadRigOptions(id)
   }
 
+  // Latitude and Longitude are only sent when they were entered or changed, so a legacy value the form
+  // can't fully read is left exactly as stored.
   function buildPayload() {
-    const latitude = composeCoord(form.lat)
-    const longitude = composeCoord(form.lon)
-    if (!form.rig) return { error: 'Rig is required' }
-    if (!latitude) return { error: 'Latitude is incomplete' }
-    if (!longitude) return { error: 'Longitude is incomplete' }
-    if (!form.location.trim()) return { error: 'Location is required' }
-    if (!form.first_anchor_down_date || !form.first_anchor_down_time) {
-      return { error: 'First Anchor Down date and time are required' }
+    const original = !creating && snapshot ? JSON.parse(snapshot) : null
+    const payload = {
+      contract: form.contract || null,
+      rig: form.rig,
+      location: form.location.trim(),
+      total_water_depth: form.total_water_depth === '' ? null : form.total_water_depth,
+      first_anchor_down_dt: `${form.first_anchor_down_date}T${form.first_anchor_down_time}:00`,
+      distance_covered_kms_knots: form.distance_covered_kms_knots === '' ? null : form.distance_covered_kms_knots,
+      drilling_rate: form.drilling_rate ? Number(form.drilling_rate) : null,
+      drilling_completion_dt: form.drilling_completion_date ? `${form.drilling_completion_date}T${form.drilling_completion_time}:00` : null,
     }
-    if (!form.distance_covered_kms_knots) return { error: 'Nautical Miles / Kilometres Covered is required' }
-    if (Number(form.distance_covered_kms_knots) > 9999.99) {
-      return { error: 'Nautical Miles / Kilometres Covered cannot exceed 9999.99' }
-    }
-    if (!form.drilling_rate) return { error: 'Rig move rate type is required' }
-    if (form.drilling_completion_date && !form.drilling_completion_time) {
-      return { error: 'Drilling Completion time is required alongside its date' }
-    }
-    if (!form.drilling_completion_date && form.drilling_completion_time) {
-      return { error: 'Drilling Completion date is required alongside its time' }
-    }
+    if (!original || JSON.stringify(form.lat) !== JSON.stringify(original.lat)) payload.latitude = composeCoord(form.lat)
+    if (!original || JSON.stringify(form.lon) !== JSON.stringify(original.lon)) payload.longitude = composeCoord(form.lon)
+    return payload
+  }
 
-    return {
-      payload: {
-        contract: form.contract || null,
-        rig: form.rig,
-        latitude,
-        longitude,
-        location: form.location.trim(),
-        total_water_depth: form.total_water_depth === '' ? null : form.total_water_depth,
-        first_anchor_down_dt: `${form.first_anchor_down_date}T${form.first_anchor_down_time}:00`,
-        distance_covered_kms_knots: form.distance_covered_kms_knots,
-        drilling_rate: Number(form.drilling_rate),
-        drilling_completion_dt: form.drilling_completion_date
-          ? `${form.drilling_completion_date}T${form.drilling_completion_time}:00`
-          : null,
-      },
-    }
+  const nowLocal = () => `${localDateStr()}T${new Date().toTimeString().slice(0, 5)}`
+
+  function currentErrors() {
+    return checkForm(form, !creating && snapshot ? JSON.parse(snapshot) : null, creating, nowLocal())
   }
 
   async function save() {
-    const { payload, error } = buildPayload()
-    if (error) {
-      toast.error(error)
+    const found = currentErrors()
+    if (Object.keys(found).length) {
+      showErrors(found)
       return
     }
+    const payload = buildPayload()
     setSaving(true)
     const isCreate = creating
     const res = await apiFetch(isCreate ? API : `${API}${selectedId}/`, {
@@ -468,7 +529,7 @@ export default function DrillingInformationPage() {
       selectRow(data)
     } else {
       const data = await res.json().catch(() => ({}))
-      toast.error(formatApiError(data))
+      showErrors(data)
     }
   }
 
@@ -516,7 +577,7 @@ export default function DrillingInformationPage() {
   // every required field is filled (nothing to compare against yet);
   // editing compares the live form against the snapshot taken when the
   // record was loaded.
-  const isDirty = creating ? !buildPayload().error : snapshot !== null && JSON.stringify(form) !== snapshot
+  const isDirty = creating ? JSON.stringify(form) !== JSON.stringify(emptyForm()) : snapshot !== null && JSON.stringify(form) !== snapshot
 
 
   const hasChanges = creating
@@ -673,7 +734,7 @@ export default function DrillingInformationPage() {
               <p className="text-sm text-muted-foreground">Select a record, or create a new one.</p>
             )}
             {showForm && (
-              <div className="mx-auto flex max-w-2xl flex-col gap-4">
+              <FieldErrorScope errors={fieldErrors} className="mx-auto flex max-w-2xl flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                     {creating ? 'New Drilling Record' : form.location}
@@ -687,36 +748,41 @@ export default function DrillingInformationPage() {
 
                 <div className="flex flex-col gap-1.5">
                   <Label>Project</Label>
-                  <RemoteCombobox
-                    field={PROJECT_FIELD}
-                    value={form.contract}
-                    onChange={onProjectChange}
-                    labelValue={form.contractLabel}
-                    disabled={disabled}
-                  />
+                  <FieldFrame name="contract">
+                    <RemoteCombobox
+                      field={PROJECT_FIELD}
+                      value={form.contract}
+                      onChange={onProjectChange}
+                      labelValue={form.contractLabel}
+                      disabled={disabled}
+                    />
+                  </FieldFrame>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <Label>Rig</Label>
-                  <StaticCombobox
-                    items={rigItems}
-                    value={form.rig}
-                    onChange={(v) => setForm((f) => ({ ...f, rig: v ? Number(v) : null }))}
-                    disabled={disabled || !form.contract || loadingRigs}
-                    placeholder={
-                      !form.contract
-                        ? 'Pick a project first'
-                        : loadingRigs
-                          ? 'Loading rigs…'
-                          : rigItems.length
-                            ? 'Select a rig…'
-                            : 'No rigs mapped to you on this project'
-                    }
-                  />
+                  <FieldFrame name="rig">
+                    <StaticCombobox
+                      items={rigItems}
+                      value={form.rig}
+                      onChange={(v) => setForm((f) => ({ ...f, rig: v ? Number(v) : null }))}
+                      disabled={disabled || !form.contract || loadingRigs}
+                      placeholder={
+                        !form.contract
+                          ? 'Pick a project first'
+                          : loadingRigs
+                            ? 'Loading rigs…'
+                            : rigItems.length
+                              ? 'Select a rig…'
+                              : 'No rigs mapped to you on this project'
+                      }
+                    />
+                  </FieldFrame>
                 </div>
 
                 <CoordFields
                   label="Latitude"
+                  name="latitude"
                   coord={form.lat}
                   onChange={(lat) => setForm((f) => ({ ...f, lat }))}
                   hemisphereOptions={LAT_HEMISPHERE_OPTIONS}
@@ -724,6 +790,7 @@ export default function DrillingInformationPage() {
                 />
                 <CoordFields
                   label="Longitude"
+                  name="longitude"
                   coord={form.lon}
                   onChange={(lon) => setForm((f) => ({ ...f, lon }))}
                   hemisphereOptions={LON_HEMISPHERE_OPTIONS}
@@ -735,25 +802,33 @@ export default function DrillingInformationPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <Label>Location</Label>
-                    <Input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} disabled={disabled} />
+                    <FieldFrame name="location">
+                      <Input value={form.location} maxLength={25} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} disabled={disabled} />
+                    </FieldFrame>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>Total Water Depth (Mtr)</Label>
-                    <Input
-                      type="number"
-                      value={form.total_water_depth}
-                      onChange={(e) => setForm((f) => ({ ...f, total_water_depth: e.target.value }))}
-                      disabled={disabled}
-                    />
+                    <FieldFrame name="total_water_depth">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.total_water_depth}
+                        onChange={(e) => setForm((f) => ({ ...f, total_water_depth: e.target.value }))}
+                        disabled={disabled}
+                      />
+                    </FieldFrame>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <Label>First Anchor Down Date/Time</Label>
+                    <FieldFrame name="first_anchor_down_dt">
                     <div className="flex gap-2">
                       <Input
                         type="date"
+                        max={localDateStr()}
                         value={form.first_anchor_down_date}
                         onChange={(e) => setForm((f) => ({ ...f, first_anchor_down_date: e.target.value }))}
                         disabled={disabled}
@@ -765,28 +840,34 @@ export default function DrillingInformationPage() {
                         disabled={disabled}
                       />
                     </div>
+                    </FieldFrame>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>Nautical Miles / Kilometres Covered (9999.99 max)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      max="9999.99"
-                      value={form.distance_covered_kms_knots}
-                      onChange={(e) => setForm((f) => ({ ...f, distance_covered_kms_knots: e.target.value }))}
-                      disabled={disabled}
-                    />
+                    <FieldFrame name="distance_covered_kms_knots">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="9999.99"
+                        value={form.distance_covered_kms_knots}
+                        onChange={(e) => setForm((f) => ({ ...f, distance_covered_kms_knots: e.target.value }))}
+                        disabled={disabled}
+                      />
+                    </FieldFrame>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <Label>Rig Move Rate Type</Label>
-                  <TilePicker
-                    options={RIG_MOVE_RATE_OPTIONS}
-                    value={form.drilling_rate}
-                    onChange={(v) => setForm((f) => ({ ...f, drilling_rate: v }))}
-                    disabled={disabled}
-                  />
+                  <FieldFrame name="drilling_rate">
+                    <TilePicker
+                      options={RIG_MOVE_RATE_OPTIONS}
+                      value={form.drilling_rate}
+                      onChange={(v) => setForm((f) => ({ ...f, drilling_rate: v }))}
+                      disabled={disabled}
+                    />
+                  </FieldFrame>
                 </div>
 
                 {/* Consumption/hours totals — real columns this record
@@ -805,9 +886,12 @@ export default function DrillingInformationPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <Label>Drilling Completion Date/Time</Label>
+                        <FieldFrame name="drilling_completion_dt">
                         <div className="flex gap-2">
                           <Input
                             type="date"
+                            min={form.first_anchor_down_date || undefined}
+                            max={localDateStr()}
                             value={form.drilling_completion_date}
                             onChange={(e) => setForm((f) => ({ ...f, drilling_completion_date: e.target.value }))}
                             disabled={disabled}
@@ -819,6 +903,7 @@ export default function DrillingInformationPage() {
                             disabled={disabled}
                           />
                         </div>
+                        </FieldFrame>
                       </div>
                     </div>
 
@@ -851,7 +936,7 @@ export default function DrillingInformationPage() {
                     </Button>
                   </div>
                 )}
-              </div>
+              </FieldErrorScope>
             )}
           </div>
         )}

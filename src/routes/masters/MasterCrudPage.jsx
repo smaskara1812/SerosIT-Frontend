@@ -40,6 +40,7 @@ import {
 } from '@/components/icons'
 import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, X } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
+import { nextDay } from '@/lib/mastersChecks'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
@@ -639,6 +640,9 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
                 : 'text'
       }
       step={field.type === 'number' ? 'any' : undefined}
+      // Date pickers: `maxToday` stops at today, `minAfter: 'other_field'` starts the day after that field's date.
+      max={field.type === 'date' && field.maxToday ? localDateStr() : undefined}
+      min={field.type === 'date' && field.minAfter ? nextDay(form?.[field.minAfter]) : field.type === 'date' && field.minToday ? localDateStr() : undefined}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
@@ -907,9 +911,17 @@ export default function MasterCrudPage() {
   }
 
   async function handleSave() {
-    setSaving(true)
     setError('')
     setFieldErrors({})
+    // A schema can declare `checkForm(form, original, today)` for rules the browser can check itself.
+    const found = schema.checkForm ? schema.checkForm(form, selected && snapshot ? JSON.parse(snapshot) : null, localDateStr()) : {}
+    if (Object.keys(found).length) {
+      showFormError(formatApiError(found, schema), { setError, bannerRef })
+      setFieldErrors(buildFieldErrors(found, schema))
+      scrollToFirstFieldError()
+      return
+    }
+    setSaving(true)
     try {
       const isEdit = Boolean(selected)
       const url = isEdit ? `${schema.apiBase}${selected[schema.idField]}/` : schema.apiBase

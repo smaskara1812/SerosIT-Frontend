@@ -1,3 +1,5 @@
+import { checkRigCertificate, checkRigCertificateSchedule } from '@/lib/mastersChecks'
+
 // One entry per master, keyed by the URL slug used in nav.js paths
 // (/masters/<slug>). Drives the generic MasterCrudPage: which API to hit,
 // what the list shows, and what the create/edit form fields are.
@@ -2958,6 +2960,7 @@ export const mastersSchemas = {
   'rig-certificates': {
     title: 'Rig Certificates',
     menuKey: 'qhse.rig_certificates',
+    checkForm: checkRigCertificate,
     apiBase: '/api/qhse/rig-certificates/',
     idField: 'rig_cert_id',
     nameField: 'display_name',
@@ -3000,8 +3003,8 @@ export const mastersSchemas = {
       },
       { name: 'validity', label: 'Validity', readOnly: true },
       { name: 'certificate_no', label: 'Certificate No.', required: true },
-      { name: 'cert_date', label: 'Date', type: 'date', required: true },
-      { name: 'valid_till', label: 'Valid Till', type: 'date' },
+      { name: 'cert_date', label: 'Date', type: 'date', required: true, maxToday: true },
+      { name: 'valid_till', label: 'Valid Till', type: 'date', minAfter: 'cert_date' },
       { name: 'remark', label: 'Remark (75 Chars.)', wide: true },
       {
         name: 'certificate_path',
@@ -3020,6 +3023,7 @@ export const mastersSchemas = {
   'rig-certificate-schedule': {
     title: 'Rig Certificate Schedule',
     menuKey: 'qhse.rig_certificate_schedule',
+    checkForm: checkRigCertificateSchedule,
     apiBase: '/api/qhse/rig-certificate-schedule/',
     idField: 'rig_cert_schedule_id',
     nameField: 'rig_cert_display',
@@ -3039,7 +3043,7 @@ export const mastersSchemas = {
         derives: { rig_name: 'rig_name' },
       },
       { name: 'rig_name', label: 'Rig Name', readOnly: true },
-      { name: 'scheduled_dt', label: 'Scheduled Date', type: 'date', required: true },
+      { name: 'scheduled_dt', label: 'Scheduled Date', type: 'date', required: true, minToday: true },
       {
         name: 'schedule_type',
         label: 'Schedule Type',
@@ -3051,7 +3055,7 @@ export const mastersSchemas = {
         ],
       },
       { name: 'remark', label: 'Remark (75 Chars.)', wide: true },
-      { name: 'completion_dt', label: 'Completion Date', type: 'date' },
+      { name: 'completion_dt', label: 'Completion Date', type: 'date', maxToday: true },
     ],
   },
   activities: {

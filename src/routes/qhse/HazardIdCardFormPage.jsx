@@ -7,7 +7,7 @@ import { can } from '@/lib/permissions'
 import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
 import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
-import { joinNaiveDt, splitNaiveDt } from '@/lib/naiveDateTime'
+import { joinNaiveDt, localDateStr, splitNaiveDt } from '@/lib/naiveDateTime'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 const FIELD_LABELS = {
-  rig: 'Rig', event_dt: 'Event Date and Time', reported_by_party: 'Reported By Party', reported_by_fs_emp: 'Reported By',
+  rig: 'Rig', event_dt: 'Event Date and Time', event_time: 'Event Time', close_out_time: 'Close Out Time', reported_by_party: 'Reported By Party', reported_by_fs_emp: 'Reported By',
   reported_by_name: 'Reported By', work_location: 'Location of Hazard', haz_type: 'Type of Hazard',
   timeout_for_safety: 'Timeout For Safety', hazard_desc: 'Hazard Description', action_taken: 'Action Taken',
   resp_dept: 'Responsible Dept', resp_rank: 'Responsible Position', close_out_dt: 'Close Out Date and Time', haz_id_card_status: 'Status',
@@ -116,6 +116,64 @@ function PlainSelect({ value, onChange, options, placeholder, disabled }) {
       ))}
     </select>
   )
+}
+
+const REQUIRED = 'This field is required.'
+const NO_CONTRACT = 'No active contract for this rig'
+
+// "Now" as a naive string in the same format as joinNaiveDt, to compare dates as text.
+function nowNaive() {
+  const d = new Date()
+  return `${localDateStr(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`
+}
+
+// Checks the legacy rules in the browser first, so a mistake shows at once with no
+// trip to the server. The server checks the same rules again (it is the one that
+// counts). `original` is the saved card when editing: a rule is only checked when
+// the fields it involves are new or changed, so an old card that already breaks one
+// can still be edited for something else.
+function checkForm(form, original) {
+  const norm = (v) => (typeof v === 'string' ? v.trim() || null : v === '' || v === undefined ? null : v)
+  const changed = (...names) => !original || names.some((n) => norm(form[n]) !== norm(original[n]))
+  const errs = {}
+  const now = nowNaive()
+
+  if (!form.rig) errs.rig = REQUIRED
+  else if (form.contract_label === NO_CONTRACT && changed('rig')) {
+    errs.rig = 'This rig has no active project contract in master data. Ask an administrator to assign one.'
+  }
+
+  const eventDt = joinNaiveDt(form.event_date, form.event_time)
+  if (changed('event_date', 'event_time')) {
+    if (!form.event_date) errs.event_dt = 'Enter the event date.'
+    else if (!form.event_time) errs.event_time = 'Enter the event time.'
+    else if (eventDt > now) errs.event_dt = "Event date and time can't be in the future."
+  }
+
+  if (!form.reported_by_party) errs.reported_by_party = REQUIRED
+  if (changed('reported_by_party', 'reported_by_fs_emp', 'reported_by_name')) {
+    if (form.reported_by_party === 'EOSIL') {
+      if (!form.reported_by_fs_emp) errs.reported_by_fs_emp = 'Reported By is required when party is EOSIL.'
+    } else if (form.reported_by_party && !norm(form.reported_by_name)) errs.reported_by_name = 'Reported By is required.'
+  }
+
+  if (!form.work_location) errs.work_location = REQUIRED
+  if (!form.haz_type) errs.haz_type = REQUIRED
+  if (!norm(form.hazard_desc)) errs.hazard_desc = REQUIRED
+  if (!form.resp_dept) errs.resp_dept = REQUIRED
+  if (!form.resp_rank) errs.resp_rank = REQUIRED
+  if (!form.haz_id_card_status) errs.haz_id_card_status = REQUIRED
+
+  if (changed('haz_id_card_status', 'close_out_date', 'close_out_time', 'event_date', 'event_time')) {
+    if (form.haz_id_card_status === 'C' && !form.close_out_date) errs.close_out_dt = 'Close Out Date/Time is required when Status is Closed.'
+    else if (form.close_out_date && !form.close_out_time) errs.close_out_time = 'Enter the close-out time.'
+    else if (form.close_out_date) {
+      const closeDt = joinNaiveDt(form.close_out_date, form.close_out_time)
+      if (closeDt > now) errs.close_out_dt = "Close-out date and time can't be in the future."
+      else if (form.event_date && closeDt < eventDt) errs.close_out_dt = "Close-out date and time can't be before the event date and time."
+    }
+  }
+  return errs
 }
 
 export default function HazardIdCardFormPage() {
@@ -226,7 +284,7 @@ export default function HazardIdCardFormPage() {
 
   function set(patch) {
     setFieldErrors((prev) => {
-      const keys = Object.keys(patch).map((k) => FORM_TO_API[k] || k).filter((k) => prev[k])
+      const keys = Object.keys(patch).flatMap((k) => [k, FORM_TO_API[k] || k]).filter((k) => prev[k])
       return keys.length ? { ...prev, ...Object.fromEntries(keys.map((k) => [k, undefined])) } : prev
     })
     setForm((f) => ({ ...f, ...patch }))
@@ -253,9 +311,16 @@ export default function HazardIdCardFormPage() {
   }
 
   async function handleSave() {
-    setSaving(true)
     setError('')
     setFieldErrors({})
+    const found = checkForm(form, isEdit && snapshot ? JSON.parse(snapshot) : null)
+    if (Object.keys(found).length) {
+      showFormError(formatApiError(found, FIELD_LABELS), { setError, bannerRef })
+      setFieldErrors(buildFieldErrors(found, FIELD_LABELS))
+      scrollToFirstFieldError()
+      return
+    }
+    setSaving(true)
     try {
       const url = isEdit ? `/api/qhse/hazard-id-card/${id}/` : '/api/qhse/hazard-id-card/'
       const res = await apiFetch(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(buildPayload()) })
@@ -345,9 +410,9 @@ export default function HazardIdCardFormPage() {
               <Input value={form.contract_label} readOnly disabled className="bg-muted" />
             </Field>
             <Field name="event_dt" label="Event Date" required>
-              <Input type="date" value={form.event_date} onChange={(e) => set({ event_date: e.target.value })} disabled={!writable} />
+              <Input type="date" max={localDateStr()} value={form.event_date} onChange={(e) => set({ event_date: e.target.value })} disabled={!writable} />
             </Field>
-            <Field name="event_dt" label="Event Time" required>
+            <Field name="event_time" label="Event Time" required>
               <Input type="time" value={form.event_time} onChange={(e) => set({ event_time: e.target.value })} disabled={!writable} />
             </Field>
           </SectionCard>
@@ -428,9 +493,9 @@ export default function HazardIdCardFormPage() {
               />
             </Field>
             <Field name="close_out_dt" label="Close Out Date">
-              <Input type="date" value={form.close_out_date} onChange={(e) => set({ close_out_date: e.target.value })} disabled={!writable} />
+              <Input type="date" max={localDateStr()} value={form.close_out_date} onChange={(e) => set({ close_out_date: e.target.value })} disabled={!writable} />
             </Field>
-            <Field name="close_out_dt" label="Close Out Time">
+            <Field name="close_out_time" label="Close Out Time">
               <Input type="time" value={form.close_out_time} onChange={(e) => set({ close_out_time: e.target.value })} disabled={!writable} />
             </Field>
             <Field name="haz_id_card_status" label="Status" required>

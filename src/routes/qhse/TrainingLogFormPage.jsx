@@ -59,6 +59,81 @@ function Field({ label, name, required, children, hint }) {
   )
 }
 
+// Browser checks for the Training Log form, mirroring core/training_log.py so a
+// mistake shows on the field at once instead of after a round trip. The server
+// still checks everything. Each function returns { api_field: message }.
+const REQUIRED = 'This field is required.'
+
+// `original` is the saved log when editing: "not in the future" is only checked
+// when the Training Date is new or changed, so an old log stays editable.
+function checkHdr(h, original, today) {
+  const e = {}
+  if (!h.rig) e.rig = REQUIRED
+  if (!h.cert) e.cert = REQUIRED
+  if (!h.training_dt) e.training_dt = REQUIRED
+  else if (h.training_dt > today && (!original || h.training_dt !== original.training_dt)) e.training_dt = "Training Date can't be in the future."
+  if (!h.training_location.trim()) e.training_location = REQUIRED
+  if (!h.training_type) e.training_type = REQUIRED
+  if (h.course_duration === '' || h.course_duration == null) e.course_duration = REQUIRED
+  else if (!/^\d+$/.test(String(h.course_duration)) || Number(h.course_duration) < 1 || Number(h.course_duration) > 255) {
+    e.course_duration = 'Duration must be between 1 and 255 days.'
+  }
+  if (!h.training_org) e.training_org = REQUIRED
+  if (!h.training_org_dtl) e.training_org_dtl = REQUIRED
+  if (!h.assessment_conducted) e.assessment_conducted = REQUIRED
+  return e
+}
+
+// Certificate fields shared by a new trainee and a saved row. `before` holds the
+// saved values of a saved row (null for a new one); a date is only judged against
+// today when it is new or changed.
+function checkCertificate({ issued, no, dt, valid }, before, today) {
+  const e = {}
+  if (!issued) {
+    e.certificate_issued = REQUIRED
+    return e
+  }
+  if (issued !== 'Y') return e
+  if (!no || !no.trim()) e.certificate_no = REQUIRED
+  else if (no.trim().length > 25) e.certificate_no = 'Certificate No. can be at most 25 characters.'
+  if (!dt) e.certificate_dt = REQUIRED
+  else if (dt > today && (!before || dt !== before.dt)) e.certificate_dt = "Certificate Date can't be in the future."
+  if (!valid) e.cert_valid_upto = REQUIRED
+  else if (dt && valid < dt) e.cert_valid_upto = "Valid Upto can't be before the Certificate Date."
+  else if (valid <= today && (!before || valid !== before.valid)) e.cert_valid_upto = 'Valid Upto must be after today.'
+  return e
+}
+
+function checkTrainee(nt, isCompany, today) {
+  const e = {}
+  if (!nt.party) {
+    e.training_party = REQUIRED
+    return e
+  }
+  if (isCompany) {
+    if (!nt.fs_emp) e.fs_emp = REQUIRED
+  } else {
+    if (!nt.fs_category) e.fs_category = REQUIRED
+    if (!nt.fname.trim()) e.trainee_fname = REQUIRED
+    if (!nt.lname.trim()) e.trainee_lname = REQUIRED
+    if (!nt.designation.trim()) e.trainee_designation = REQUIRED
+    if (!nt.department.trim()) e.trainee_department = REQUIRED
+    if (!nt.company.trim()) e.company_name = REQUIRED
+  }
+  return { ...e, ...checkCertificate({ issued: nt.issued, no: nt.no, dt: nt.dt, valid: nt.valid }, null, today) }
+}
+
+// A saved trainee row whose certificate details were changed. `saved` is the
+// [issued, no, dt, valid] list the page remembers from the last load.
+function checkSavedRow(t, saved, today) {
+  const [, , sDt, sValid] = saved
+  return checkCertificate(
+    { issued: t.certificate_issued, no: t.certificate_no, dt: t.certificate_dt, valid: t.cert_valid_upto },
+    { dt: sDt, valid: sValid },
+    today,
+  )
+}
+
 export default function TrainingLogFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -184,6 +259,8 @@ export default function TrainingLogFormPage() {
   async function handleCreate() {
     setError('')
     setFieldErrors({})
+    const found = checkHdr(hdr, null, today)
+    if (Object.keys(found).length) return failHdr(found)
     setSaving(true)
     try {
       const res = await apiFetch(API, { method: 'POST', body: JSON.stringify(hdrPayload()) })
@@ -202,6 +279,22 @@ export default function TrainingLogFormPage() {
   async function handleSave() {
     setError('')
     setFieldErrors({})
+    if (hdrDirty) {
+      const found = checkHdr(hdr, JSON.parse(hdrSnap), today)
+      if (Object.keys(found).length) return failHdr(found)
+    }
+    const rowProblems = {}
+    for (const t of changedRows) {
+      const found = checkSavedRow(t, JSON.parse(orig[t.training_log_dtl_id]), today)
+      if (Object.keys(found).length) rowProblems[t.training_log_dtl_id] = formatApiError(found, FIELD_LABELS)
+    }
+    if (Object.keys(rowProblems).length) {
+      setRowErrors(rowProblems)
+      const first = trainees.find((t) => rowProblems[t.training_log_dtl_id])
+      showFormError(`${first.trainee_fname} ${first.trainee_lname}: ${rowProblems[first.training_log_dtl_id]}`, { setError, bannerRef })
+      requestAnimationFrame(() => document.getElementById(`trainee-row-${first.training_log_dtl_id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+      return
+    }
     setSaving(true)
     const failed = {}
     try {
@@ -255,6 +348,13 @@ export default function TrainingLogFormPage() {
   async function handleAddTrainee() {
     setError('')
     setFieldErrors({})
+    const found = checkTrainee(nt, isCompany, today)
+    if (Object.keys(found).length) {
+      showFormError(formatApiError(found, FIELD_LABELS), { setError, bannerRef })
+      setFieldErrors(buildFieldErrors(found, FIELD_LABELS))
+      scrollToFirstFieldError()
+      return
+    }
     const body = { hdr: Number(id), training_party: nt.party, certificate_issued: nt.issued || null }
     if (isCompany) {
       body.fs_emp = nt.fs_emp

@@ -61,6 +61,33 @@ function Field({ label, required, children, error, wide }) {
   )
 }
 
+const REQUIRED = 'This field is required.'
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+const EMAIL_MSG = 'Enter a valid email address.'
+
+// Browser checks, mirroring core/training_org.py (the duplicate-name and duplicate-mobile rules need the database).
+function checkOrg(org, creating) {
+  const e = {}
+  if (creating && !org.training_org_name.trim()) e.training_org_name = REQUIRED
+  if (!org.training_org_address.trim()) e.training_org_address = REQUIRED
+  if (creating && !org.location) e.location = REQUIRED
+  const mail = (org.training_org_email || '').trim()
+  if (mail && !EMAIL.test(mail)) e.training_org_email = EMAIL_MSG
+  return e
+}
+
+
+function checkTrainer(t) {
+  const e = {}
+  if (!(t.trainer_fname || '').trim()) e.trainer_fname = REQUIRED
+  if (!(t.trainer_lname || '').trim()) e.trainer_lname = REQUIRED
+  const mobile = (t.trainer_mobile_no || '').trim()
+  if (mobile && !/^\d+$/.test(mobile)) e.trainer_mobile_no = 'Mobile number can contain digits only.'
+  const mail = (t.trainer_email_id || '').trim()
+  if (mail && !EMAIL.test(mail)) e.trainer_email_id = EMAIL_MSG
+  return e
+}
+
 export default function TrainingOrgFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -161,6 +188,8 @@ export default function TrainingOrgFormPage() {
   async function handleCreate() {
     setError('')
     setFieldErrors({})
+    const found = checkOrg(org, true)
+    if (Object.keys(found).length) return failOrg(found)
     setSaving(true)
     try {
       const res = await apiFetch(API, { method: 'POST', body: JSON.stringify(orgPayload()) })
@@ -179,6 +208,22 @@ export default function TrainingOrgFormPage() {
   async function handleSave() {
     setError('')
     setFieldErrors({})
+    if (orgDirty) {
+      const found = checkOrg(org, false)
+      if (Object.keys(found).length) return failOrg(found)
+    }
+    const rowProblems = {}
+    for (const t of changedTrainers) {
+      const found = checkTrainer(t)
+      if (Object.keys(found).length) rowProblems[t.training_org_dtl_id] = formatApiError(found, FIELD_LABELS)
+    }
+    if (Object.keys(rowProblems).length) {
+      setRowErrors(rowProblems)
+      const first = trainers.find((t) => rowProblems[t.training_org_dtl_id])
+      showFormError(`${first.trainer_fname} ${first.trainer_lname}: ${rowProblems[first.training_org_dtl_id]}`, { setError, bannerRef })
+      requestAnimationFrame(() => document.getElementById(`trainer-row-${first.training_org_dtl_id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+      return
+    }
     setSaving(true)
     const failed = {}
     try {
@@ -212,15 +257,8 @@ export default function TrainingOrgFormPage() {
   async function handleAddTrainer() {
     setError('')
     setFieldErrors({})
-    const missing = {}
-    if (!newTrainer.trainer_fname.trim()) missing.trainer_fname = 'This is required.'
-    if (!newTrainer.trainer_lname.trim()) missing.trainer_lname = 'This is required.'
-    if (Object.keys(missing).length) {
-      setFieldErrors(missing)
-      showFormError(`Please fill in ${[missing.trainer_fname && 'the trainer’s First Name', missing.trainer_lname && 'Last Name'].filter(Boolean).join(' and ')}.`, { setError, bannerRef })
-      scrollToFirstFieldError()
-      return
-    }
+    const found = checkTrainer(newTrainer)
+    if (Object.keys(found).length) return failOrg(found)
     setAdding(true)
     try {
       const res = await apiFetch(TRAINERS_API, { method: 'POST', body: JSON.stringify({ hdr: Number(id), ...trainerPayload(newTrainer) }) })

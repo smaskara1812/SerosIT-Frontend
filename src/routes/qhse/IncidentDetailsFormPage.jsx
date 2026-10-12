@@ -17,7 +17,8 @@ import { X } from 'lucide-react'
 
 const FIELD_LABELS = {
   rig: 'Rig', rig_incident_no: 'Rig Incident No.', unit_name: 'Unit', incident_party: 'Incident Belongs To',
-  incident_date: 'Incident Date and Time', incident_reported_dt: 'Incident Reported Date and Time', well_no: 'Well No.',
+  incident_date: 'Incident Date and Time', incident_time: 'Incident Time', incident_reported_dt: 'Incident Reported Date and Time',
+  incident_reported_time: 'Incident Reported Time', well_no: 'Well No.',
   country: 'Country', operator: 'Operator', drilling_superintendent: 'Drilling Superintendent', safety_officer: 'Safety Officer',
   incident_type: 'Nature of Accident/Incident', incident_severity: 'Incident Severity (Actual)',
   incident_severity_potential: 'Incident Severity (Potential)', person_injured: 'Person Injured', third_party: 'Belongs To',
@@ -205,6 +206,72 @@ function Field({ label, name, required, children, wide }) {
   )
 }
 
+const REQUIRED = 'This field is required.'
+
+// Checks the legacy rules in the browser first, so a mistake shows at once with
+// no trip to the server. The server checks the same rules again (it is the one
+// that counts); only "the Rig Incident No. is already used on this rig" and the
+// allowed-value lists are left to it, since the pickers already limit the lists.
+// `original` is the saved record when editing: a rule is only checked when the
+// fields it involves are new or changed, so an old incident that already breaks
+// one can still be edited for something else.
+function checkForm(form, original) {
+  const norm = (v) => (typeof v === 'string' ? v.trim() || null : v === '' || v === undefined ? null : v)
+  const changed = (...names) => !original || names.some((n) => norm(form[n]) !== norm(original[n]))
+  const errs = {}
+
+  if (changed('rig', 'unit_name')) {
+    if (!form.rig && !norm(form.unit_name)) errs.rig = 'Pick a rig or enter a unit name.'
+    else if (form.rig && norm(form.unit_name)) errs.unit_name = 'Pick a rig or enter a unit name, not both.'
+  }
+  if (!form.incident_party) errs.incident_party = 'Select who the incident belongs to.'
+
+  if (changed('incident_date', 'incident_time')) {
+    if (!form.incident_date) errs.incident_date = 'Enter the incident date.'
+    else if (!form.incident_time) errs.incident_time = 'Enter the incident time.'
+    else if (new Date(joinDt(form.incident_date, form.incident_time)) > new Date()) errs.incident_date = "Incident date and time can't be in the future."
+  }
+  if (changed('incident_reported_dt', 'incident_reported_time', 'incident_date', 'incident_time')) {
+    if (!form.incident_reported_dt) errs.incident_reported_dt = 'Enter when the incident was reported.'
+    else if (!form.incident_reported_time) errs.incident_reported_time = 'Enter the time the incident was reported.'
+    else if (form.incident_date && joinDt(form.incident_reported_dt, form.incident_reported_time) < joinDt(form.incident_date, form.incident_time)) {
+      errs.incident_reported_dt = "Reported date and time can't be before the incident date and time."
+    }
+  }
+
+  if (!form.incident_type) errs.incident_type = REQUIRED
+  if (!form.incident_severity) errs.incident_severity = REQUIRED
+  if (!form.incident_severity_potential) errs.incident_severity_potential = REQUIRED
+  if (!norm(form.incident_descr)) errs.incident_descr = REQUIRED
+  if (!form.immediate_incident_cause) errs.immediate_incident_cause = REQUIRED
+  if (!form.rig_operation) errs.rig_operation = REQUIRED
+  if (!form.work_location) errs.work_location = REQUIRED
+  if (!form.contact_expo_type) errs.contact_expo_type = REQUIRED
+
+  if (Number(form.financial_loss_amt) > 0 && !form.financial_loss_currency && changed('financial_loss_amt', 'financial_loss_currency')) {
+    errs.financial_loss_currency = 'Select the currency for the loss amount.'
+  }
+
+  if (form.person_injured === 'Y' && CONTRACTOR_REQUIRED_VALUES.has(form.third_party) && !form.contractor && changed('person_injured', 'third_party', 'contractor')) {
+    errs.contractor = 'Contractor is required when Belongs To is TP Contractors or Operator Contractors.'
+  }
+
+  const bodyParts = ['part_of_body_1', 'part_of_body_2', 'part_of_body_3', 'part_of_body_4']
+  const injury = ['person_injured', 'fs_emp', 'emp_name', 'rank', 'rank_name', 'total_rig_exp_months', ...bodyParts]
+  if (form.person_injured === 'Y' && changed(...injury)) {
+    if (!norm(form.emp_name) && !form.fs_emp) errs.emp_name = 'Enter the name of the injured person.'
+    if (!form.rank && !norm(form.rank_name)) errs.rank = "Select the injured person's designation."
+    if (norm(form.total_rig_exp_months) === null) errs.total_rig_exp_months = 'Enter the total rig/field experience in months.'
+    if (!bodyParts.some((n) => form[n])) errs.part_of_body_1 = 'Choose at least one part of the body that was injured.'
+  }
+  return errs
+}
+
+const todayString = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function IncidentDetailsFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -245,7 +312,7 @@ export default function IncidentDetailsFormPage() {
 
   function set(patch) {
     setFieldErrors((prev) => {
-      const keys = Object.keys(patch).map((k) => FORM_TO_API[k] || k).filter((k) => prev[k])
+      const keys = Object.keys(patch).flatMap((k) => [k, FORM_TO_API[k] || k]).filter((k) => prev[k])
       return keys.length ? { ...prev, ...Object.fromEntries(keys.map((k) => [k, undefined])) } : prev
     })
     setForm((f) => ({ ...f, ...patch }))
@@ -299,9 +366,16 @@ export default function IncidentDetailsFormPage() {
   }
 
   async function handleSave() {
-    setSaving(true)
     setError('')
     setFieldErrors({})
+    const found = checkForm(form, isEdit && snapshot ? JSON.parse(snapshot) : null)
+    if (Object.keys(found).length) {
+      showFormError(formatApiError(found, FIELD_LABELS), { setError, bannerRef })
+      setFieldErrors(buildFieldErrors(found, FIELD_LABELS))
+      scrollToFirstFieldError()
+      return
+    }
+    setSaving(true)
     try {
       const url = isEdit ? `/api/qhse/incidents/${id}/` : '/api/qhse/incidents/'
       const res = await apiFetch(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(buildPayload()) })
@@ -409,16 +483,16 @@ export default function IncidentDetailsFormPage() {
             <Field name="incident_party" label="Incident Belongs To" required>
               <BelongsToSelect value={form.incident_party} onChange={(v) => set({ incident_party: v })} disabled={!canWrite} />
             </Field>
-            <Field name="incident_date" label="Incident Date">
-              <Input type="date" value={form.incident_date} onChange={(e) => set({ incident_date: e.target.value })} disabled={!canWrite} />
+            <Field name="incident_date" label="Incident Date" required>
+              <Input type="date" max={todayString()} value={form.incident_date} onChange={(e) => set({ incident_date: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field name="incident_date" label="Incident Time">
+            <Field name="incident_time" label="Incident Time" required>
               <Input type="time" value={form.incident_time} onChange={(e) => set({ incident_time: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field name="incident_reported_dt" label="Incident Reported Date">
+            <Field name="incident_reported_dt" label="Incident Reported Date" required>
               <Input type="date" value={form.incident_reported_dt} onChange={(e) => set({ incident_reported_dt: e.target.value })} disabled={!canWrite} />
             </Field>
-            <Field name="incident_reported_dt" label="Incident Reported Time">
+            <Field name="incident_reported_time" label="Incident Reported Time" required>
               <Input type="time" value={form.incident_reported_time} onChange={(e) => set({ incident_reported_time: e.target.value })} disabled={!canWrite} />
             </Field>
           </SectionCard>
@@ -495,16 +569,16 @@ export default function IncidentDetailsFormPage() {
                     disabled={!canWrite}
                   />
                 </Field>
-                <Field name="emp_name" label="Name of Person">
+                <Field name="emp_name" label="Name of Person" required>
                   <Input value={form.emp_name} onChange={(e) => set({ emp_name: e.target.value })} disabled={!canWrite} />
                 </Field>
-                <Field name="rank" label="Designation (Rank)">
+                <Field name="rank" label="Designation (Rank)" required>
                   <Input value={form.rank_name} disabled />
                 </Field>
-                <Field name="total_rig_exp_months" label="Total Rig/Field Exp (months)">
+                <Field name="total_rig_exp_months" label="Total Rig/Field Exp (months)" required>
                   <Input type="number" value={form.total_rig_exp_months} onChange={(e) => set({ total_rig_exp_months: e.target.value })} disabled={!canWrite} />
                 </Field>
-                <Field name="part_of_body_1" label="Part Of Body Injured 1">
+                <Field name="part_of_body_1" label="Part Of Body Injured 1" required>
                   <RemoteCombobox field={PART_OF_BODY_FIELD} value={form.part_of_body_1} labelValue={form.part_of_body_1_label} onChange={(v, raw) => set({ part_of_body_1: v, part_of_body_1_label: raw?.part_of_body_name || '' })} disabled={!canWrite} />
                 </Field>
                 <Field name="part_of_body_2" label="Part Of Body Injured 2">

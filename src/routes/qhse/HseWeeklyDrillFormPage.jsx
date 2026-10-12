@@ -61,7 +61,7 @@ function PlainSelect({ value, onChange, options, placeholder, disabled }) {
 
 const EMPTY_ROW = { drill: '', conducted: '', last: '', remarks: '' }
 
-function DrillsPanel({ hdrId, canAdd, canEdit, canDelete, onCountChange }) {
+function DrillsPanel({ hdrId, week, weekStart, weekEnd, canAdd, canEdit, canDelete, onCountChange }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [options, setOptions] = useState([])
@@ -115,9 +115,8 @@ function DrillsPanel({ hdrId, canAdd, canEdit, canDelete, onCountChange }) {
   }
 
   async function save() {
-    if (!row.drill) return toast.error('Drill must be selected')
-    if (!row.conducted) return toast.error('Drill Conducted Date is required')
-    if (!editingId && !row.last) return toast.error('Last Drill Conducted Date is required')
+    const problem = checkDrillRow(row, { editing: Boolean(editingId), start: weekStart, end: weekEnd, week })
+    if (problem) return toast.error(problem)
     setSaving(true)
     try {
       const isEdit = Boolean(editingId)
@@ -170,7 +169,10 @@ function DrillsPanel({ hdrId, canAdd, canEdit, canDelete, onCountChange }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-7">
       <h2 className="mb-1 text-xs font-bold tracking-widest text-muted-foreground uppercase">Drills conducted this week</h2>
-      <p className="mb-4 text-xs text-muted-foreground">Add each drill carried out in this week and the date it was conducted.</p>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Add each drill carried out in this week and the date it was conducted.
+        {weekStart && <> Week {week} runs from <b>{fmtDay(weekStart)}</b> to <b>{fmtDay(weekEnd)}</b>.</>}
+      </p>
 
       {showForm && (
         <div className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4">
@@ -194,6 +196,8 @@ function DrillsPanel({ hdrId, canAdd, canEdit, canDelete, onCountChange }) {
             <Field label="Drill Conducted Date" required>
               <Input
                 type="date"
+                min={weekStart || undefined}
+                max={weekEnd || undefined}
                 value={row.conducted}
                 onChange={(e) => {
                   setRow((r) => ({ ...r, conducted: e.target.value }))
@@ -208,6 +212,7 @@ function DrillsPanel({ hdrId, canAdd, canEdit, canDelete, onCountChange }) {
             >
               <Input
                 type="date"
+                max={row.conducted || undefined}
                 value={row.last}
                 onChange={(e) => setRow((r) => ({ ...r, last: e.target.value }))}
                 disabled={isEditing || lastLocked || !row.drill || !row.conducted}
@@ -298,6 +303,24 @@ function DrillsPanel({ hdrId, canAdd, canEdit, canDelete, onCountChange }) {
   )
 }
 
+// Browser checks for the drills panel. The server sends the week's start and end (week 1 holds
+// 1 January, Sunday to Saturday), so only the check lives here.
+function fmtDay(s) {
+  const [y, m, d] = s.split('-')
+  return `${Number(d)} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m) - 1]} ${y}`
+}
+
+// Browser check for the drills panel; returns a message or ''.
+function checkDrillRow(row, { editing, start, end, week }) {
+  if (!row.drill) return 'Drill must be selected'
+  if (!row.conducted) return 'Drill Conducted Date is required'
+  if (start && (row.conducted < start || row.conducted > end))
+    return `Drill Conducted Date must fall in week ${week} (${fmtDay(start)} to ${fmtDay(end)}).`
+  if (!editing && !row.last) return 'Last Drill Conducted Date is required'
+  if (!editing && row.last >= row.conducted) return 'Last Drill Conducted Date must be before the Drill Conducted Date.'
+  return ''
+}
+
 export default function HseWeeklyDrillFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -305,6 +328,7 @@ export default function HseWeeklyDrillFormPage() {
   const { user } = useAuth()
 
   const [form, setForm] = useState({ rig: null, rig_name: '', year: '', week: '' })
+  const [span, setSpan] = useState({ start: '', end: '' })
   const [loading, setLoading] = useState(isEdit)
   const [notFound, setNotFound] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -320,7 +344,10 @@ export default function HseWeeklyDrillFormPage() {
         if (!r.ok) throw new Error('not found')
         return r.json()
       })
-      .then((d) => setForm({ rig: d.rig, rig_name: d.rig_name, year: String(d.year), week: String(d.drill_week) }))
+      .then((d) => {
+        setForm({ rig: d.rig, rig_name: d.rig_name, year: String(d.year), week: String(d.drill_week) })
+        setSpan({ start: d.week_start, end: d.week_end })
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id, isEdit])
@@ -343,14 +370,16 @@ export default function HseWeeklyDrillFormPage() {
   async function handleAdd() {
     setError('')
     setFieldErrors({})
-    const stop = (key, msg) => {
-      setFieldErrors({ [key]: 'This is required.' })
+    const stop = (key, msg, inline = 'This is required.') => {
+      setFieldErrors({ [key]: inline })
       showFormError(msg, { setError, bannerRef })
       scrollToFirstFieldError()
     }
     if (!form.rig) return stop('rig', 'Please choose a Rig.')
     if (!/^\d{4}$/.test(form.year)) return stop('year', 'Please choose a Year.')
     if (!form.week) return stop('drill_week', 'Please enter the Week number.')
+    if (!/^\d+$/.test(form.week) || Number(form.week) < 1 || Number(form.week) > 53)
+      return stop('drill_week', 'Week must be a whole number from 1 to 53.', 'Enter a week from 1 to 53.')
     setSaving(true)
     try {
       const res = await apiFetch('/api/qhse/hse-weekly-drill/', {
@@ -439,6 +468,9 @@ export default function HseWeeklyDrillFormPage() {
           {isEdit && (
             <DrillsPanel
               hdrId={id}
+              week={form.week}
+              weekStart={span.start}
+              weekEnd={span.end}
               canAdd={can(user, MENU_KEY, 'add')}
               canEdit={can(user, MENU_KEY, 'edit')}
               canDelete={can(user, MENU_KEY, 'delete')}

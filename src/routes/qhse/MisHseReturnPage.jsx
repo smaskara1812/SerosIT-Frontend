@@ -11,6 +11,7 @@ import { MonthYearSelect } from '@/components/PeriodSelects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { localDateStr } from '@/lib/naiveDateTime'
 
 const FIELD_LABELS = { cost_centre: 'Cost Centre', rig: 'Rig', report_no: 'Report No.', report_month: 'Period' }
 
@@ -38,7 +39,7 @@ function emptyHeaderForm() {
   return { cost_centre: null, cost_centre_name: '', rig: null, rig_name: '', report_no: '', report_month: '' }
 }
 
-function NumInput({ value, onChange, disabled, step, wide }) {
+function NumInput({ value, onChange, disabled, step, wide, invalid, title }) {
   return (
     <Input
       type="number"
@@ -46,7 +47,9 @@ function NumInput({ value, onChange, disabled, step, wide }) {
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
       disabled={disabled}
-      className={`h-9 text-right ${wide ? 'w-28' : 'w-24'}`}
+      title={invalid ? title : undefined}
+      aria-invalid={invalid || undefined}
+      className={`h-9 text-right ${wide ? 'w-28' : 'w-24'} ${invalid ? 'border-destructive ring-2 ring-destructive/40' : ''}`}
     />
   )
 }
@@ -76,6 +79,128 @@ function activitiesPayload(rows) {
 }
 function environmentPayload(rows) {
   return rows.map((r) => ({ hse_consumable_id: r.hse_consumable_id, total_quantity: r.total_quantity, remarks: r.remarks }))
+}
+
+// Browser checks for the MIS Monthly HSE Return tab grids, mirroring
+// core/mis_hse_return.py so a bad box is outlined at once. The server still
+// checks everything. A row you start must be complete; a row left entirely
+// blank is ignored. Each checker returns { rowId: { field: message } }.
+const INT_MAX = 2147483647
+const blank = (v) => v === null || v === undefined || String(v).trim() === ''
+const text = (v) => String(v).trim()
+
+function whole(v, label, errs, field) {
+  if (blank(v)) {
+    errs[field] = `Enter ${label}.`
+    return null
+  }
+  const t = text(v)
+  if (!/^\d+(\.0*)?$/.test(t)) {
+    errs[field] = `${label} must be a whole number, 0 or more.`
+    return null
+  }
+  const n = Number(t)
+  if (n > INT_MAX) {
+    errs[field] = `${label} is too large.`
+    return null
+  }
+  return n
+}
+
+function amount(v, label, errs, field, max) {
+  if (blank(v)) {
+    errs[field] = `Enter ${label}.`
+    return null
+  }
+  const t = text(v)
+  if (!/^\d+(\.\d*)?$/.test(t)) {
+    errs[field] = `${label} must be a number, 0 or more.`
+    return null
+  }
+  if (/\.\d*[1-9]\d*$/.test(t) && t.split('.')[1].replace(/0+$/, '').length > 2) {
+    errs[field] = `${label} can have at most 2 decimal places.`
+    return null
+  }
+  if (Number(t) > max) {
+    errs[field] = `${label} is too large.`
+    return null
+  }
+  return Number(t)
+}
+
+const allBlank = (row, keys) => keys.every((k) => blank(row[k]))
+const put = (out, id, errs) => {
+  if (Object.keys(errs).length) out[id] = errs
+}
+
+function checkLti(v) {
+  const e = {}
+  whole(v, 'LTI Free Days', e, 'lti_free_days')
+  return e
+}
+
+function checkManhours(rows) {
+  const out = {}
+  for (const r of rows) {
+    const e = {}
+    if (!blank(r.no_of_personnel)) whole(r.no_of_personnel, 'No. of Personnel', e, 'no_of_personnel')
+    amount(r.hours_worked, 'Hours Worked', e, 'hours_worked', 99.99)
+    put(out, r.hse_manhours_party_id, e)
+  }
+  return out
+}
+
+function checkMeetings(rows) {
+  const out = {}
+  for (const r of rows) {
+    if (allBlank(r, ['total_meetings', 'total_seros_employees', 'total_contractors'])) continue
+    const e = {}
+    const meetings = whole(r.total_meetings, 'Total Meetings', e, 'total_meetings')
+    const staff = whole(r.total_seros_employees, 'Total SEROS Employees', e, 'total_seros_employees')
+    const contractors = whole(r.total_contractors, 'Total Contractors', e, 'total_contractors')
+    if (!Object.keys(e).length) {
+      if (meetings === 0 && (staff || contractors)) {
+        if (staff) e.total_seros_employees = 'Total SEROS Employees must be 0 when there are no meetings.'
+        if (contractors) e.total_contractors = 'Total Contractors must be 0 when there are no meetings.'
+      } else if (meetings && !(staff || contractors)) {
+        e.total_seros_employees = e.total_contractors = 'Enter the employees or contractors who attended (at least one is above 0).'
+      }
+    }
+    put(out, r.hse_meeting_id, e)
+  }
+  return out
+}
+
+function checkActivities(rows) {
+  const out = {}
+  for (const r of rows) {
+    if (allBlank(r, ['total_activities', 'seros_emp_count', 'contractor_count'])) continue
+    const e = {}
+    whole(r.total_activities, 'Total Activities', e, 'total_activities')
+    whole(r.seros_emp_count, 'SEROS Employees', e, 'seros_emp_count')
+    whole(r.contractor_count, 'Contractors', e, 'contractor_count')
+    put(out, r.hse_activity_id, e)
+  }
+  return out
+}
+
+function checkEnvironment(rows) {
+  const out = {}
+  for (const r of rows) {
+    const remarks = (r.remarks || '').trim()
+    if (blank(r.total_quantity) && !remarks) continue
+    const e = {}
+    amount(r.total_quantity, 'Total Quantity', e, 'total_quantity', 99999999.99)
+    put(out, r.hse_consumable_id, e)
+  }
+  return out
+}
+
+// "Toolbox Talk: Enter Total Meetings." lines for the banner/toast.
+function gridMessage(errors, nameOf) {
+  return Object.entries(errors)
+    .flatMap(([id, e]) => [...new Set(Object.values(e))].map((m) => `${nameOf(id)}: ${m}`))
+    .join('\n')
 }
 
 export default function MisHseReturnPage() {
@@ -117,6 +242,22 @@ export default function MisHseReturnPage() {
   // have unsaved edits instead of every Save button always being equally
   // clickable regardless of whether anything changed.
   const [snapshots, setSnapshots] = useState({})
+
+  // Boxes outlined after a refused save, per tab. Each entry remembers the tab's
+  // values at that moment, so the outline goes away as soon as anything is edited.
+  const [gridErrors, setGridErrors] = useState({})
+  const bad = (section, now, rowId, field) => {
+    const g = gridErrors[section]
+    return g && g.at === now ? g.errors[rowId]?.[field] : undefined
+  }
+
+  const nowStr = {
+    manhours: JSON.stringify(manhoursPayload(manhoursRows)),
+    incidents: JSON.stringify(ltiFreeDays),
+    meetings: JSON.stringify(meetingsPayload(meetingRows)),
+    activities: JSON.stringify(activitiesPayload(activityRows)),
+    environment: JSON.stringify(environmentPayload(environmentRows)),
+  }
 
   const loaded = Boolean(hdrId)
   const writable = canEdit && loaded
@@ -210,8 +351,8 @@ export default function MisHseReturnPage() {
   async function handleAdd() {
     setError('')
     setFieldErrors({})
-    const stop = (key, msg) => {
-      setFieldErrors({ [key]: 'This is required.' })
+    const stop = (key, msg, inline = 'This is required.') => {
+      setFieldErrors({ [key]: inline })
       showFormError(msg, { setError, bannerRef })
       scrollToFirstFieldError()
     }
@@ -223,6 +364,10 @@ export default function MisHseReturnPage() {
     // value to the server, where it'd fail parsing with a vaguer error.
     if (!/^\d{4}-\d{2}$/.test(form.report_month || '')) {
       stop('report_month', 'Please choose both the Month and the Year for the Period.')
+      return
+    }
+    if (form.report_month >= localDateStr().slice(0, 7)) {
+      stop('report_month', 'Period must be earlier than the current month.', 'Choose an earlier month.')
       return
     }
     setAdding(true)
@@ -268,13 +413,22 @@ export default function MisHseReturnPage() {
     }
   }
 
+  // Stops a save the browser can already see is wrong: outlines the boxes and says why.
+  function blocked(section, errors, nameOf, at) {
+    if (!Object.keys(errors).length) return false
+    setGridErrors((g) => ({ ...g, [section]: { at, errors } }))
+    toast.error(gridMessage(errors, nameOf), { style: { whiteSpace: 'pre-line' } })
+    return true
+  }
+
   async function saveSection(section, path, body, nextSnapshot) {
     setSavingTab(section)
     try {
       const res = await apiFetch(`/api/qhse/mis-hse-return/${hdrId}/${path}/`, { method: 'PUT', body: JSON.stringify(body) })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(formatApiError(data))
+        if (data.row_errors) setGridErrors((g) => ({ ...g, [section]: { at: nextSnapshot, errors: data.row_errors } }))
+        toast.error(data.detail && data.row_errors ? data.detail : formatApiError(data), { style: { whiteSpace: 'pre-line' } })
         return
       }
       toast.success('Saved')
@@ -505,6 +659,7 @@ export default function MisHseReturnPage() {
                   dirty={JSON.stringify(manhoursPayload(manhoursRows)) !== snapshots.manhours}
                   onSave={() => {
                     const payload = manhoursPayload(manhoursRows)
+                    if (blocked('manhours', checkManhours(manhoursRows), (id) => manhoursRows.find((r) => String(r.hse_manhours_party_id) === id)?.party_name, JSON.stringify(payload))) return
                     saveSection('manhours', 'manhours', { rows: payload }, JSON.stringify(payload))
                   }}
                 >
@@ -525,6 +680,8 @@ export default function MisHseReturnPage() {
                           <td className="px-3 py-2 text-right">
                             <NumInput
                               value={row.no_of_personnel}
+                              invalid={Boolean(bad('manhours', nowStr.manhours, row.hse_manhours_party_id, 'no_of_personnel'))}
+                              title={bad('manhours', nowStr.manhours, row.hse_manhours_party_id, 'no_of_personnel')}
                               disabled={!writable}
                               onChange={(v) =>
                                 setManhoursRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, no_of_personnel: v } : r)))
@@ -535,6 +692,8 @@ export default function MisHseReturnPage() {
                             <NumInput
                               step="0.01"
                               value={row.hours_worked}
+                              invalid={Boolean(bad('manhours', nowStr.manhours, row.hse_manhours_party_id, 'hours_worked'))}
+                              title={bad('manhours', nowStr.manhours, row.hse_manhours_party_id, 'hours_worked')}
                               disabled={!writable}
                               onChange={(v) =>
                                 setManhoursRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, hours_worked: v } : r)))
@@ -554,11 +713,14 @@ export default function MisHseReturnPage() {
                   writable={writable}
                   saving={savingTab === 'incidents'}
                   dirty={JSON.stringify(ltiFreeDays) !== snapshots.incidents}
-                  onSave={() => saveSection('incidents', 'incidents', { lti_free_days: ltiFreeDays }, JSON.stringify(ltiFreeDays))}
+                  onSave={() => {
+                    if (blocked('incidents', Object.keys(checkLti(ltiFreeDays)).length ? { _: checkLti(ltiFreeDays) } : {}, () => 'Incidents', JSON.stringify(ltiFreeDays))) return
+                    saveSection('incidents', 'incidents', { lti_free_days: ltiFreeDays }, JSON.stringify(ltiFreeDays))
+                  }}
                 >
                   <div className="mb-4 flex items-center gap-3">
                     <Label>LTI free days</Label>
-                    <NumInput value={ltiFreeDays} disabled={!writable} onChange={setLtiFreeDays} wide />
+                    <NumInput value={ltiFreeDays} disabled={!writable} onChange={setLtiFreeDays} wide invalid={Boolean(bad('incidents', nowStr.incidents, '_', 'lti_free_days'))} title={bad('incidents', nowStr.incidents, '_', 'lti_free_days')} />
                   </div>
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50">
@@ -589,6 +751,7 @@ export default function MisHseReturnPage() {
                   dirty={JSON.stringify(meetingsPayload(meetingRows)) !== snapshots.meetings}
                   onSave={() => {
                     const payload = meetingsPayload(meetingRows)
+                    if (blocked('meetings', checkMeetings(meetingRows), (id) => meetingRows.find((r) => String(r.hse_meeting_id) === id)?.meeting_type, JSON.stringify(payload))) return
                     saveSection('meetings', 'meetings', { rows: payload }, JSON.stringify(payload))
                   }}
                 >
@@ -608,6 +771,8 @@ export default function MisHseReturnPage() {
                           <td className="px-3 py-2 text-right">
                             <NumInput
                               value={row.total_meetings}
+                              invalid={Boolean(bad('meetings', nowStr.meetings, row.hse_meeting_id, 'total_meetings'))}
+                              title={bad('meetings', nowStr.meetings, row.hse_meeting_id, 'total_meetings')}
                               disabled={!writable}
                               onChange={(v) => setMeetingRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, total_meetings: v } : r)))}
                             />
@@ -615,6 +780,8 @@ export default function MisHseReturnPage() {
                           <td className="px-3 py-2 text-right">
                             <NumInput
                               value={row.total_seros_employees}
+                              invalid={Boolean(bad('meetings', nowStr.meetings, row.hse_meeting_id, 'total_seros_employees'))}
+                              title={bad('meetings', nowStr.meetings, row.hse_meeting_id, 'total_seros_employees')}
                               disabled={!writable}
                               onChange={(v) =>
                                 setMeetingRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, total_seros_employees: v } : r)))
@@ -624,6 +791,8 @@ export default function MisHseReturnPage() {
                           <td className="px-3 py-2 text-right">
                             <NumInput
                               value={row.total_contractors}
+                              invalid={Boolean(bad('meetings', nowStr.meetings, row.hse_meeting_id, 'total_contractors'))}
+                              title={bad('meetings', nowStr.meetings, row.hse_meeting_id, 'total_contractors')}
                               disabled={!writable}
                               onChange={(v) =>
                                 setMeetingRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, total_contractors: v } : r)))
@@ -670,6 +839,7 @@ export default function MisHseReturnPage() {
                   dirty={JSON.stringify(activitiesPayload(activityRows)) !== snapshots.activities}
                   onSave={() => {
                     const payload = activitiesPayload(activityRows)
+                    if (blocked('activities', checkActivities(activityRows), (id) => activityRows.find((r) => String(r.hse_activity_id) === id)?.activity_name, JSON.stringify(payload))) return
                     saveSection('activities', 'activities', { rows: payload }, JSON.stringify(payload))
                   }}
                 >
@@ -691,6 +861,8 @@ export default function MisHseReturnPage() {
                           <td className="px-3 py-2 text-right">
                             <NumInput
                               value={row.total_activities}
+                              invalid={Boolean(bad('activities', nowStr.activities, row.hse_activity_id, 'total_activities'))}
+                              title={bad('activities', nowStr.activities, row.hse_activity_id, 'total_activities')}
                               disabled={!writable}
                               onChange={(v) =>
                                 setActivityRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, total_activities: v } : r)))
@@ -700,6 +872,8 @@ export default function MisHseReturnPage() {
                           <td className="px-3 py-2 text-right">
                             <NumInput
                               value={row.seros_emp_count}
+                              invalid={Boolean(bad('activities', nowStr.activities, row.hse_activity_id, 'seros_emp_count'))}
+                              title={bad('activities', nowStr.activities, row.hse_activity_id, 'seros_emp_count')}
                               disabled={!writable}
                               onChange={(v) =>
                                 setActivityRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, seros_emp_count: v } : r)))
@@ -709,6 +883,8 @@ export default function MisHseReturnPage() {
                           <td className="px-3 py-2 text-right">
                             <NumInput
                               value={row.contractor_count}
+                              invalid={Boolean(bad('activities', nowStr.activities, row.hse_activity_id, 'contractor_count'))}
+                              title={bad('activities', nowStr.activities, row.hse_activity_id, 'contractor_count')}
                               disabled={!writable}
                               onChange={(v) =>
                                 setActivityRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, contractor_count: v } : r)))
@@ -730,6 +906,7 @@ export default function MisHseReturnPage() {
                   dirty={JSON.stringify(environmentPayload(environmentRows)) !== snapshots.environment}
                   onSave={() => {
                     const payload = environmentPayload(environmentRows)
+                    if (blocked('environment', checkEnvironment(environmentRows), (id) => environmentRows.find((r) => String(r.hse_consumable_id) === id)?.consumable_name, JSON.stringify(payload))) return
                     saveSection('environment', 'environment', { rows: payload }, JSON.stringify(payload))
                   }}
                 >
@@ -752,6 +929,8 @@ export default function MisHseReturnPage() {
                               <NumInput
                                 step="0.01"
                                 value={row.total_quantity}
+                                invalid={Boolean(bad('environment', nowStr.environment, row.hse_consumable_id, 'total_quantity'))}
+                                title={bad('environment', nowStr.environment, row.hse_consumable_id, 'total_quantity')}
                                 disabled={!writable}
                                 onChange={(v) =>
                                   setEnvironmentRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, total_quantity: v } : r)))

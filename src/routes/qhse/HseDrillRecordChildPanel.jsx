@@ -184,6 +184,11 @@ export default function HseDrillRecordChildPanel({ hdrId, drillDate, canAdd, can
       toast.error('Time is required')
       return
     }
+    // Two events can't share a time within one drill record (the server checks too).
+    if (tab.hasTime && rows.some((r) => r[tab.idField] !== editingId && fmtTime(r.drill_rec_event_time) === `${time}:00`)) {
+      toast.error('This drill already has an event at that time.')
+      return
+    }
     const payload = { hdr: hdrId, [tab.descField]: desc.trim() }
     if (tab.hasTime) payload.drill_rec_event_time = joinNaiveDt(drillDate, time)
 
