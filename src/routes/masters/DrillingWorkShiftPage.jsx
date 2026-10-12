@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError } from '@/lib/errors'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -38,6 +38,27 @@ const SHIFT_OPTIONS = [
   { value: 'M', label: 'Morning' },
   { value: 'E', label: 'Evening' },
 ]
+const FIELD_LABELS = {
+  work_shift: 'Shift', work_shift_start_time: 'Start Time', work_shift_end_time: 'End Time', work_shift_days: 'Shift Days', work_shift_active: 'Active',
+}
+const DAYS_OPTIONS = [
+  { value: '1', label: '1 day' },
+  { value: '2', label: '2 days' },
+]
+const RING = 'rounded-lg ring-2 ring-destructive/70'
+
+// Browser check for one shift row, mirroring MstDrillingWorkShiftSerializer.
+function checkShift(shift, startTime, endTime, days) {
+  const e = {}
+  const required = 'This field is required.'
+  if (!shift) e.work_shift = required
+  if (!startTime) e.work_shift_start_time = required
+  if (!endTime) e.work_shift_end_time = required
+  if (!days) e.work_shift_days = required
+  else if (!['1', '2'].includes(String(days))) e.work_shift_days = 'Shift Days must be 1 or 2.'
+  return e
+}
+
 const ACTIVE_OPTIONS = [
   { value: 'Y', label: 'Active' },
   { value: 'N', label: 'Inactive' },
@@ -85,12 +106,15 @@ function ShiftFields({
   active,
   onActiveChange,
   disabled,
+  errors = {},
 }) {
   return (
     <>
       <td className="px-3 py-2">
         {onShiftChange ? (
-          <StaticCombobox items={shiftOptions} value={shift} onChange={onShiftChange} disabled={disabled} placeholder="Shift…" />
+          <div className={errors.work_shift ? RING : ''} title={errors.work_shift}>
+            <StaticCombobox items={shiftOptions} value={shift} onChange={onShiftChange} disabled={disabled} placeholder="Shift…" />
+          </div>
         ) : (
           <span className="font-medium text-foreground">
             {SHIFT_OPTIONS.find((s) => s.value === shift)?.label}
@@ -98,23 +122,24 @@ function ShiftFields({
         )}
       </td>
       <td className="px-3 py-2">
-        <Input type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} disabled={disabled} className="h-8" />
+        <div className={errors.work_shift_start_time ? RING : ''} title={errors.work_shift_start_time}>
+          <Input type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} disabled={disabled} className="h-8" />
+        </div>
       </td>
       <td className="px-3 py-2">
-        <Input type="time" value={endTime} onChange={(e) => onEndTimeChange(e.target.value)} disabled={disabled} className="h-8" />
+        <div className={errors.work_shift_end_time ? RING : ''} title={errors.work_shift_end_time}>
+          <Input type="time" value={endTime} onChange={(e) => onEndTimeChange(e.target.value)} disabled={disabled} className="h-8" />
+        </div>
       </td>
       <td className="px-3 py-2">
-        <Input
-          type="number"
-          min="1"
-          value={days}
-          onChange={(e) => onDaysChange(e.target.value)}
-          disabled={disabled}
-          className="h-8 w-16"
-        />
+        <div className={errors.work_shift_days ? RING : ''} title={errors.work_shift_days}>
+          <TilePicker options={DAYS_OPTIONS} value={String(days)} onChange={onDaysChange} disabled={disabled} />
+        </div>
       </td>
       <td className="px-3 py-2">
-        <TilePicker options={ACTIVE_OPTIONS} value={active} onChange={onActiveChange} disabled={disabled} />
+        <div className={errors.work_shift_active ? RING : ''} title={errors.work_shift_active}>
+          <TilePicker options={ACTIVE_OPTIONS} value={active} onChange={onActiveChange} disabled={disabled} />
+        </div>
       </td>
     </>
   )
@@ -128,26 +153,32 @@ function ShiftRow({ row, usedShifts, canEdit, canDelete, onSave, onDelete }) {
   const [days, setDays] = useState(row.work_shift_days)
   const [active, setActive] = useState(row.work_shift_active)
   const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
 
   // Editing an existing row can keep its own current shift as an option
   // even though it's "already used" — only the other row's shift needs excluding.
   const shiftOptions = SHIFT_OPTIONS.filter((s) => s.value === row.work_shift || !usedShifts.includes(s.value))
 
   async function save() {
-    if (!startTime || !endTime || !days) {
-      toast.error('Start time, end time and shift days are required')
+    const found = checkShift(shift, startTime, endTime, days)
+    if (Object.keys(found).length) {
+      setErrors(found)
+      toast.error(formatApiError(found, FIELD_LABELS))
       return
     }
     setSaving(true)
-    const ok = await onSave(row.drilling_work_shift_id, {
+    const res = await onSave(row.drilling_work_shift_id, {
       work_shift: shift,
       work_shift_start_time: startTime,
       work_shift_end_time: endTime,
-      work_shift_days: days,
+      work_shift_days: Number(days),
       work_shift_active: active,
     })
     setSaving(false)
-    if (ok) setEditing(false)
+    if (res === true) {
+      setErrors({})
+      setEditing(false)
+    } else setErrors(res?.errors || {})
   }
 
   if (editing) {
@@ -166,6 +197,7 @@ function ShiftRow({ row, usedShifts, canEdit, canDelete, onSave, onDelete }) {
           active={active}
           onActiveChange={setActive}
           disabled={saving}
+          errors={errors}
         />
         <td colSpan={2} className="px-3 py-2 text-right">
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={saving}>
@@ -222,6 +254,7 @@ function InsertRow({ remainingShifts, onInsert }) {
   const [days, setDays] = useState('1')
   const [active, setActive] = useState('Y')
   const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
 
   if (!remainingShifts.length) {
     return (
@@ -234,20 +267,24 @@ function InsertRow({ remainingShifts, onInsert }) {
   }
 
   async function insert() {
-    if (!shift || !startTime || !endTime || !days) {
-      toast.error('Shift, start time, end time and shift days are required')
+    const found = checkShift(shift, startTime, endTime, days)
+    if (Object.keys(found).length) {
+      setErrors(found)
+      toast.error(formatApiError(found, FIELD_LABELS))
       return
     }
     setSaving(true)
-    const ok = await onInsert({
+    const res = await onInsert({
       work_shift: shift,
       work_shift_start_time: startTime,
       work_shift_end_time: endTime,
-      work_shift_days: days,
+      work_shift_days: Number(days),
       work_shift_active: active,
     })
     setSaving(false)
-    if (ok) {
+    if (res !== true) setErrors(res?.errors || {})
+    else {
+      setErrors({})
       setShift('')
       setStartTime('')
       setEndTime('')
@@ -271,6 +308,7 @@ function InsertRow({ remainingShifts, onInsert }) {
         active={active}
         onActiveChange={setActive}
         disabled={saving}
+        errors={errors}
       />
       <td colSpan={2} className="px-3 py-2 text-right">
         <Button size="sm" onClick={insert} disabled={saving}>
@@ -363,8 +401,9 @@ export default function DrillingWorkShiftPage() {
       loadShifts(projectId, rigId)
       return true
     }
-    toast.error(formatApiError(await res.json().catch(() => null)))
-    return false
+    const data = (await res.json().catch(() => null)) || {}
+    toast.error(formatApiError(data, FIELD_LABELS))
+    return { errors: buildFieldErrors(data, FIELD_LABELS) }
   }
 
   async function deleteRow(id) {
@@ -388,8 +427,8 @@ export default function DrillingWorkShiftPage() {
       return true
     }
     const data = await res.json().catch(() => ({}))
-    toast.error(data.detail || 'Failed to add shift')
-    return false
+    toast.error(data.detail || formatApiError(data, FIELD_LABELS))
+    return { errors: buildFieldErrors(data, FIELD_LABELS) }
   }
 
   const usedShifts = (shifts || []).map((s) => s.work_shift)

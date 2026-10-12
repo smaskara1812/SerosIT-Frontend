@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
+import { localDateStr } from '@/lib/naiveDateTime'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -24,6 +26,31 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 const CONTRACT_LABELS = {
   location: 'Location', operator: 'Operator', prj_contract_no: 'Contract No.', prj_short_name: 'Short Name',
   prj_start_dt: 'Start Date', prj_end_dt: 'End Date',
+}
+
+const REQUIRED = 'This field is required.'
+
+// Browser checks, mirroring ProjectContractSerializer (the Contract No. repeat check needs the server).
+// `original` is the saved contract when editing: a rule is only judged on a value that is new or changed,
+// so an old contract (no short name, a hyphen in it...) stays editable.
+function checkHeader(form, original, today) {
+  const e = {}
+  const changed = (name) => !original || String(form[name] ?? '') !== String(original[name] ?? '')
+  if (!form.location) e.location = REQUIRED
+  if (!form.operator) e.operator = REQUIRED
+  if (!form.prj_contract_no.trim()) e.prj_contract_no = REQUIRED
+  const short = form.prj_short_name.trim()
+  if (!short) {
+    if (!original) e.prj_short_name = REQUIRED
+  } else if (changed('prj_short_name') && !/^[A-Za-z0-9-]+$/.test(short)) {
+    e.prj_short_name = 'Short Name can have only letters, digits and hyphens.'
+  }
+  if (!form.prj_start_dt) e.prj_start_dt = REQUIRED
+  else if (form.prj_start_dt > today && changed('prj_start_dt')) e.prj_start_dt = "Start Date can't be in the future."
+  if (form.prj_start_dt && form.prj_end_dt && form.prj_end_dt < form.prj_start_dt && (changed('prj_start_dt') || changed('prj_end_dt'))) {
+    e.prj_end_dt = "End Date can't be before the Start Date."
+  }
+  return e
 }
 
 const MENU_KEY = 'masters.project_contract'
@@ -194,6 +221,14 @@ export default function ProjectContractPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState(emptyHeader())
+  // Boxes outlined after a refused save. The outline goes away as soon as anything in the form is edited.
+  const [fieldErrState, setFieldErrState] = useState({ at: null, errors: {} })
+  const fieldErrors = fieldErrState.at === JSON.stringify(form) ? fieldErrState.errors : {}
+  function showErrors(data) {
+    setFieldErrState({ at: JSON.stringify(form), errors: buildFieldErrors(data, CONTRACT_LABELS) })
+    toast.error(formatApiError(data, CONTRACT_LABELS), { style: { whiteSpace: 'pre-line' } })
+    requestAnimationFrame(scrollToFirstFieldError)
+  }
   const [snapshot, setSnapshot] = useState(null)
   const [lines, setLines] = useState([])
   const [loadingDetail, setLoadingDetail] = useState(false)
@@ -301,13 +336,16 @@ export default function ProjectContractPage() {
     setLines([])
   }
 
-  const isDirty = creating
-    ? Boolean(form.location && form.operator && form.prj_contract_no.trim() && form.prj_start_dt)
-    : snapshot !== null && JSON.stringify(form) !== snapshot
+  const isDirty = creating ? JSON.stringify(form) !== JSON.stringify(emptyHeader()) : snapshot !== null && JSON.stringify(form) !== snapshot
 
   const canWrite = creating ? canAdd : canEdit
 
   async function handleSave() {
+    const found = checkHeader(form, selectedId && snapshot ? JSON.parse(snapshot) : null, localDateStr())
+    if (Object.keys(found).length) {
+      showErrors(found)
+      return
+    }
     setSaving(true)
     try {
       const isEdit = Boolean(selectedId)
@@ -324,7 +362,10 @@ export default function ProjectContractPage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(formatApiError(data, CONTRACT_LABELS))
+      if (!res.ok) {
+        showErrors(data)
+        return
+      }
       toast.success(isEdit ? 'Contract saved' : 'Contract created')
       if (!isEdit) {
         setCreating(false)
@@ -549,9 +590,10 @@ export default function ProjectContractPage() {
 
                 {!loadingDetail && (
                   <>
-                    <div className="grid max-w-2xl grid-cols-2 gap-4">
+                    <FieldErrorScope errors={fieldErrors} className="grid max-w-2xl grid-cols-2 gap-4">
                       <div className="col-span-2 flex flex-col gap-1.5">
-                        <Label>Location</Label>
+                        <Label>Location<span className="text-destructive"> *</span></Label>
+                        <FieldFrame name="location">
                         <RemoteCombobox
                           field={LOCATION_FIELD}
                           value={form.location}
@@ -559,9 +601,11 @@ export default function ProjectContractPage() {
                           disabled={!canWrite}
                           labelValue={form.location_name}
                         />
+                        </FieldFrame>
                       </div>
                       <div className="col-span-2 flex flex-col gap-1.5">
-                        <Label>Operator</Label>
+                        <Label>Operator<span className="text-destructive"> *</span></Label>
+                        <FieldFrame name="operator">
                         <RemoteCombobox
                           field={OPERATOR_FIELD}
                           value={form.operator}
@@ -569,43 +613,53 @@ export default function ProjectContractPage() {
                           disabled={!canWrite}
                           labelValue={form.operator_name}
                         />
+                        </FieldFrame>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <Label>Short Name</Label>
+                        <Label>Short Name{creating && <span className="text-destructive"> *</span>}</Label>
+                        <FieldFrame name="prj_short_name">
                         <Input
                           value={form.prj_short_name}
                           onChange={(e) => setForm({ ...form, prj_short_name: e.target.value })}
                           disabled={!canWrite}
                           maxLength={10}
                         />
+                        </FieldFrame>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <Label>Contract No.</Label>
+                        <Label>Contract No.<span className="text-destructive"> *</span></Label>
+                        <FieldFrame name="prj_contract_no">
                         <Input
                           value={form.prj_contract_no}
                           onChange={(e) => setForm({ ...form, prj_contract_no: e.target.value })}
                           disabled={!canWrite}
                           maxLength={110}
                         />
+                        </FieldFrame>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <Label>Start Date</Label>
+                        <Label>Start Date<span className="text-destructive"> *</span></Label>
+                        <FieldFrame name="prj_start_dt">
                         <Input
                           type="date"
+                          max={localDateStr()}
                           value={form.prj_start_dt || ''}
                           onChange={(e) => setForm({ ...form, prj_start_dt: e.target.value })}
                           disabled={!canWrite}
                         />
+                        </FieldFrame>
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <Label>Close Date</Label>
+                        <FieldFrame name="prj_end_dt">
                         <NullableDateField
                           value={form.prj_end_dt}
                           onChange={(v) => setForm({ ...form, prj_end_dt: v })}
                           disabled={!canWrite}
                         />
+                        </FieldFrame>
                       </div>
-                    </div>
+                    </FieldErrorScope>
 
                     {canWrite && (
                       <Button

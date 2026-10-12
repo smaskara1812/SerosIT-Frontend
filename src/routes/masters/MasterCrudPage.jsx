@@ -640,9 +640,9 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
                 : 'text'
       }
       step={field.type === 'number' ? 'any' : undefined}
-      // Date pickers: `maxToday` stops at today, `minAfter: 'other_field'` starts the day after that field's date.
+      // Date pickers: `maxToday` stops at today, `minAfter: 'other_field'` starts the day after that field's date, `minField` starts on it.
       max={field.type === 'date' && field.maxToday ? localDateStr() : undefined}
-      min={field.type === 'date' && field.minAfter ? nextDay(form?.[field.minAfter]) : field.type === 'date' && field.minToday ? localDateStr() : undefined}
+      min={field.type === 'date' && field.minAfter ? nextDay(form?.[field.minAfter]) : field.type === 'date' && field.minField ? form?.[field.minField] || undefined : field.type === 'date' && field.minToday ? localDateStr() : undefined}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}

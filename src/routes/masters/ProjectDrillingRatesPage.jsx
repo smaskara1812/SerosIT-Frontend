@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError } from '@/lib/errors'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -58,9 +58,12 @@ function StaticCombobox({ items, value, onChange, disabled, placeholder }) {
   )
 }
 
+const FIELD_LABELS = { drilling_rate: 'Rate Type', currency: 'Currency', rate: 'Rate' }
+const RING = 'rounded-lg ring-2 ring-destructive/70'
+
 /** Currency/Rate-Type row editor — shared by the insert row and an
  * in-place row edit, since both need the same three controls. */
-function RateFields({ rateTypeOptions, currencies, rateTypeId, onRateTypeChange, currencyId, onCurrencyChange, rate, onRateChange, disabled }) {
+function RateFields({ rateTypeOptions, currencies, rateTypeId, onRateTypeChange, currencyId, onCurrencyChange, rate, onRateChange, disabled, errors = {} }) {
   // Memoized so the items array reference is stable across unrelated parent
   // re-renders (e.g. typing in another field) — the combobox otherwise
   // treats a fresh array as a brand new option set and can drop an
@@ -78,13 +81,15 @@ function RateFields({ rateTypeOptions, currencies, rateTypeId, onRateTypeChange,
     <>
       <td className="px-3 py-2">
         {onRateTypeChange ? (
-          <StaticCombobox
-            items={rateTypeItems}
-            value={rateTypeId}
-            onChange={(v) => onRateTypeChange(v)}
-            disabled={disabled}
-            placeholder="Rate type…"
-          />
+          <div className={errors.drilling_rate ? RING : ''} title={errors.drilling_rate}>
+            <StaticCombobox
+              items={rateTypeItems}
+              value={rateTypeId}
+              onChange={(v) => onRateTypeChange(v)}
+              disabled={disabled}
+              placeholder="Rate type…"
+            />
+          </div>
         ) : (
           <span className="font-medium text-foreground">
             {rateTypeOptions.find((t) => String(t.drilling_rate_id) === String(rateTypeId))?.rate_code}
@@ -92,23 +97,27 @@ function RateFields({ rateTypeOptions, currencies, rateTypeId, onRateTypeChange,
         )}
       </td>
       <td className="px-3 py-2">
-        <StaticCombobox
-          items={currencyItems}
-          value={currencyId}
-          onChange={onCurrencyChange}
-          disabled={disabled}
-          placeholder="Currency…"
-        />
+        <div className={errors.currency ? RING : ''} title={errors.currency}>
+          <StaticCombobox
+            items={currencyItems}
+            value={currencyId}
+            onChange={onCurrencyChange}
+            disabled={disabled}
+            placeholder="Currency…"
+          />
+        </div>
       </td>
       <td className="px-3 py-2">
-        <Input
-          type="number"
-          step="0.01"
-          value={rate}
-          onChange={(e) => onRateChange(e.target.value)}
-          disabled={disabled}
-          className="h-8 w-28"
-        />
+        <div className={errors.rate ? RING : ''} title={errors.rate}>
+          <Input
+            type="number"
+            step="0.01"
+            value={rate}
+            onChange={(e) => onRateChange(e.target.value)}
+            disabled={disabled}
+            className="h-8 w-28"
+          />
+        </div>
       </td>
     </>
   )
@@ -120,6 +129,7 @@ function RateRow({ row, rateTypes, usedIds, currencies, canEdit, canDelete, onSa
   const [currencyId, setCurrencyId] = useState(row.currency)
   const [rate, setRate] = useState(row.rate ?? '')
   const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
 
   // Editing an existing row can keep its own current type as an option even
   // though it's "already used" — only other rows' types need excluding.
@@ -128,14 +138,22 @@ function RateRow({ row, rateTypes, usedIds, currencies, canEdit, canDelete, onSa
   )
 
   async function save() {
+    if (!rateTypeId) {
+      setErrors({ drilling_rate: 'This field is required.' })
+      toast.error('Please fill in Rate Type.')
+      return
+    }
     setSaving(true)
-    const ok = await onSave(row.prj_drilling_rate_id, {
+    const res = await onSave(row.prj_drilling_rate_id, {
       drilling_rate: rateTypeId,
       currency: currencyId || null,
       rate: rate === '' ? null : rate,
     })
     setSaving(false)
-    if (ok) setEditing(false)
+    if (res === true) {
+      setErrors({})
+      setEditing(false)
+    } else setErrors(res?.errors || {})
   }
 
   if (editing) {
@@ -151,6 +169,7 @@ function RateRow({ row, rateTypes, usedIds, currencies, canEdit, canDelete, onSa
           rate={rate}
           onRateChange={setRate}
           disabled={saving}
+          errors={errors}
         />
         <td colSpan={2} className="px-3 py-2 text-right">
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={saving}>
@@ -203,6 +222,7 @@ function InsertRow({ remainingTypes, currencies, onInsert }) {
   const [currencyId, setCurrencyId] = useState('')
   const [rate, setRate] = useState('')
   const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
 
   if (!remainingTypes.length) {
     return (
@@ -216,17 +236,20 @@ function InsertRow({ remainingTypes, currencies, onInsert }) {
 
   async function insert() {
     if (!rateTypeId) {
-      toast.error('Select a rate type')
+      setErrors({ drilling_rate: 'This field is required.' })
+      toast.error('Please fill in Rate Type.')
       return
     }
     setSaving(true)
-    const ok = await onInsert({
+    const res = await onInsert({
       drilling_rate: Number(rateTypeId),
       currency: currencyId ? Number(currencyId) : null,
       rate: rate === '' ? null : rate,
     })
     setSaving(false)
-    if (ok) {
+    if (res !== true) setErrors(res?.errors || {})
+    else {
+      setErrors({})
       setRateTypeId('')
       setCurrencyId('')
       setRate('')
@@ -245,6 +268,7 @@ function InsertRow({ remainingTypes, currencies, onInsert }) {
         rate={rate}
         onRateChange={setRate}
         disabled={saving}
+        errors={errors}
       />
       <td colSpan={2} className="px-3 py-2 text-right">
         <Button size="sm" onClick={insert} disabled={saving}>
@@ -352,8 +376,9 @@ export default function ProjectDrillingRatesPage() {
       loadRates(projectId, rigId)
       return true
     }
-    toast.error(formatApiError(await res.json().catch(() => null)))
-    return false
+    const data = (await res.json().catch(() => null)) || {}
+    toast.error(formatApiError(data, FIELD_LABELS))
+    return { errors: buildFieldErrors(data, FIELD_LABELS) }
   }
 
   async function deleteRow(id) {
@@ -377,8 +402,8 @@ export default function ProjectDrillingRatesPage() {
       return true
     }
     const data = await res.json().catch(() => ({}))
-    toast.error(data.detail || 'Failed to add rate')
-    return false
+    toast.error(data.detail || formatApiError(data, FIELD_LABELS))
+    return { errors: buildFieldErrors(data, FIELD_LABELS) }
   }
 
   const usedIds = (rates || []).map((r) => r.drilling_rate)

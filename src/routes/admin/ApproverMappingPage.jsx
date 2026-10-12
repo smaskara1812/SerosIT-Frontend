@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -18,6 +19,20 @@ import {
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { IconSearch, IconTrash, IconPlus } from '@/components/icons'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+
+const REQUIRED = 'This field is required.'
+const FIELD_LABELS = { approval_code: 'Approval Code', approver_user: 'User', approver_level: 'Level', approver_active: 'Active', details: 'Rig / Department Scope' }
+
+// Browser checks, mirroring ApproverMappingSerializer (the "this user already approves this code" rule
+// needs the server).
+function checkForm(form) {
+  const e = {}
+  if (!form.approval_code) e.approval_code = REQUIRED
+  if (!form.approver_user) e.approver_user = REQUIRED
+  if (!form.approver_level) e.approver_level = REQUIRED
+  if (form.details.length === 0) e.details = 'Add at least one rig to the scope.'
+  return e
+}
 
 const MENU_KEY = 'admin.approver_mapping'
 const API = '/api/masters/approver-mappings/'
@@ -139,6 +154,14 @@ export default function ApproverMappingPage() {
   const [form, setForm] = useState(emptyForm())
   const [snapshot, setSnapshot] = useState(null)
   const [saving, setSaving] = useState(false)
+  // Boxes outlined after a refused save. The outline goes away as soon as anything in the form is edited.
+  const [fieldErrState, setFieldErrState] = useState({ at: null, errors: {} })
+  const fieldErrors = fieldErrState.at === JSON.stringify(form) ? fieldErrState.errors : {}
+  function showErrors(data) {
+    setFieldErrState({ at: JSON.stringify(form), errors: buildFieldErrors(data, FIELD_LABELS) })
+    toast.error(formatApiError(data, FIELD_LABELS))
+    requestAnimationFrame(scrollToFirstFieldError)
+  }
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [addingRow, setAddingRow] = useState(false)
   const [newRow, setNewRow] = useState(emptyNewRow())
@@ -289,7 +312,11 @@ export default function ApproverMappingPage() {
 
   function addDetailRow() {
     if (!newRow.rig) {
-      toast.error('Rig is required for a new row')
+      toast.error('Please choose a Rig for the new row.')
+      return
+    }
+    if (form.details.some((d) => String(d.rig) === String(newRow.rig) && String(d.dept || '') === String(newRow.dept || ''))) {
+      toast.error('This rig and department are already in the scope.')
       return
     }
     setForm((f) => ({ ...f, details: [...f.details, newRow] }))
@@ -298,11 +325,6 @@ export default function ApproverMappingPage() {
   }
 
   function buildPayload() {
-    if (!form.approval_code) return { error: 'Approval Code is required' }
-    if (!form.approver_user) return { error: 'User is required' }
-    if (!form.approver_level) return { error: 'Level is required' }
-    if (form.details.length === 0) return { error: 'At least one Rig scope row is required' }
-
     return {
       payload: {
         approval_code: form.approval_code,
@@ -323,11 +345,12 @@ export default function ApproverMappingPage() {
   }
 
   async function save() {
-    const { payload, error } = buildPayload()
-    if (error) {
-      toast.error(error)
+    const found = checkForm(form)
+    if (Object.keys(found).length) {
+      showErrors(found)
       return
     }
+    const { payload } = buildPayload()
     setSaving(true)
     const isCreate = creating
     const res = await apiFetch(isCreate ? API : `${API}${selectedId}/`, {
@@ -342,7 +365,7 @@ export default function ApproverMappingPage() {
       selectRow(data)
     } else {
       const data = await res.json().catch(() => ({}))
-      toast.error(formatApiError(data))
+      showErrors(data)
     }
   }
 
@@ -364,7 +387,7 @@ export default function ApproverMappingPage() {
 
   const showForm = creating || selectedId != null
   const disabled = !creating && !canEdit
-  const isDirty = creating ? !buildPayload().error : snapshot !== null && JSON.stringify(form) !== snapshot
+  const isDirty = creating ? JSON.stringify(form) !== JSON.stringify(emptyForm()) : snapshot !== null && JSON.stringify(form) !== snapshot
 
 
   const hasChanges = creating
@@ -512,39 +535,45 @@ export default function ApproverMappingPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <FieldErrorScope errors={fieldErrors} className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <Label>Approval Code</Label>
-                  <RemoteCombobox
-                    field={APPROVAL_CODE_FIELD}
-                    value={form.approval_code}
-                    onChange={(id) => setForm((f) => ({ ...f, approval_code: id }))}
-                    labelValue={form.approval_code_label}
-                    disabled={disabled}
-                  />
+                  <Label>Approval Code<span className="text-destructive"> *</span></Label>
+                  <FieldFrame name="approval_code">
+                    <RemoteCombobox
+                      field={APPROVAL_CODE_FIELD}
+                      value={form.approval_code}
+                      onChange={(id) => setForm((f) => ({ ...f, approval_code: id }))}
+                      labelValue={form.approval_code_label}
+                      disabled={disabled}
+                    />
+                  </FieldFrame>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label>User</Label>
-                  <RemoteCombobox
-                    field={USER_FIELD}
-                    value={form.approver_user}
-                    onChange={(id) => setForm((f) => ({ ...f, approver_user: id }))}
-                    labelValue={form.approver_user_label}
-                    disabled={disabled}
-                  />
+                  <Label>User<span className="text-destructive"> *</span></Label>
+                  <FieldFrame name="approver_user">
+                    <RemoteCombobox
+                      field={USER_FIELD}
+                      value={form.approver_user}
+                      onChange={(id) => setForm((f) => ({ ...f, approver_user: id }))}
+                      labelValue={form.approver_user_label}
+                      disabled={disabled}
+                    />
+                  </FieldFrame>
                 </div>
-              </div>
+              </FieldErrorScope>
 
-              <div className="grid grid-cols-2 gap-4">
+              <FieldErrorScope errors={fieldErrors} className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <Label>Level</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={form.approver_level}
-                    onChange={(e) => setForm((f) => ({ ...f, approver_level: e.target.value }))}
-                    disabled={disabled}
-                  />
+                  <Label>Level<span className="text-destructive"> *</span></Label>
+                  <FieldFrame name="approver_level">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={form.approver_level}
+                      onChange={(e) => setForm((f) => ({ ...f, approver_level: e.target.value }))}
+                      disabled={disabled}
+                    />
+                  </FieldFrame>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label>Active</Label>
@@ -555,7 +584,7 @@ export default function ApproverMappingPage() {
                     disabled={disabled}
                   />
                 </div>
-              </div>
+              </FieldErrorScope>
 
               <div className="flex flex-col gap-2 border-t border-border pt-4">
                 <div className="flex items-center justify-between">
@@ -668,6 +697,7 @@ export default function ApproverMappingPage() {
                     </tbody>
                   </table>
                 </div>
+                {fieldErrors.details && <p className="text-xs text-destructive">{fieldErrors.details}</p>}
               </div>
 
               {(creating ? canAdd : canEdit) && (

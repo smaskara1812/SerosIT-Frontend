@@ -8,6 +8,7 @@ import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MultiSelectPopover } from '@/components/MultiSelectPopover'
+import { localDateStr } from '@/lib/naiveDateTime'
 import { IconSearch } from '@/components/icons'
 import { FileSpreadsheet, Printer } from 'lucide-react'
 
@@ -54,15 +55,25 @@ export default function IncidentRegisterPage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [search, setSearch] = useState('')
+  // Neither date can be in the future, and From can't be after To (the legacy report rules); a blank date is fine.
+  const today = localDateStr()
+  const dateError =
+    dateFrom && dateFrom > today
+      ? "From date can't be in the future."
+      : dateTo && dateTo > today
+        ? "To date can't be in the future."
+        : dateFrom && dateTo && dateFrom > dateTo
+          ? "From date can't be after To date."
+          : ''
   // No sortable column headers (legacy grid didn't have them either) —
   // always newest incident first.
   const ordering = '-date'
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
 
-  const [rows, setRows] = useState([])
-  const [count, setCount] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loadedRows, setRows] = useState([])
+  const [loadedCount, setCount] = useState(0)
+  const [loadingNow, setLoading] = useState(true)
   const requestIdRef = useRef(0)
 
   // Shared by exportExcel/printPdf/the list fetch — one source of truth for
@@ -104,6 +115,10 @@ export default function IncidentRegisterPage() {
   }, [category])
 
   useEffect(() => {
+    if (dateError) {
+      requestIdRef.current += 1 // an answer still on its way is ignored
+      return
+    }
     const timer = setTimeout(() => {
       const thisRequest = ++requestIdRef.current
       setLoading(true)
@@ -123,7 +138,7 @@ export default function IncidentRegisterPage() {
         })
     }, 300)
     return () => clearTimeout(timer)
-  }, [buildFilterParams, page, pageSize])
+  }, [buildFilterParams, page, pageSize, dateError])
 
   function toggleRig(rigId) {
     setSelectedRigIds((prev) => {
@@ -156,6 +171,10 @@ export default function IncidentRegisterPage() {
   }
 
   async function exportExcel() {
+    if (dateError) {
+      toast.error(dateError)
+      return
+    }
     const res = await apiFetch(`/api/qhse/incident-register/export/?${buildFilterParams().toString()}`)
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
@@ -169,6 +188,10 @@ export default function IncidentRegisterPage() {
   }
 
   async function printPdf() {
+    if (dateError) {
+      toast.error(dateError)
+      return
+    }
     // Open the tab synchronously (in direct response to the click) so
     // popup blockers don't reject it — same trick as the QHSE Incident
     // Flash Report's own print button (IncidentDetailsListPage.jsx).
@@ -200,6 +223,10 @@ export default function IncidentRegisterPage() {
   const allRigsSelected = selectedRigIds.size === 0
   const allTypesSelected = selectedTypeIds.size === 0
 
+  // With a wrong date range nothing is asked of the server and the list is empty.
+  const rows = dateError ? [] : loadedRows
+  const count = dateError ? 0 : loadedCount
+  const loading = dateError ? false : loadingNow
   const totalPages = Math.max(1, Math.ceil(count / pageSize))
   const start = count ? (page - 1) * pageSize + 1 : 0
   const end = Math.min(page * pageSize, count)
@@ -250,6 +277,7 @@ export default function IncidentRegisterPage() {
             <Input
               type="date"
               value={dateFrom}
+              max={today}
               onChange={(e) => {
                 setDateFrom(e.target.value)
                 setPage(1)
@@ -264,6 +292,7 @@ export default function IncidentRegisterPage() {
             <Input
               type="date"
               value={dateTo}
+              max={today}
               onChange={(e) => {
                 setDateTo(e.target.value)
                 setPage(1)
@@ -288,6 +317,7 @@ export default function IncidentRegisterPage() {
               />
             </div>
           </label>
+          {dateError && <p className="self-center text-xs text-destructive">{dateError}</p>}
           <Button size="lg" variant="outline" onClick={handleClear}>
             Clear
           </Button>

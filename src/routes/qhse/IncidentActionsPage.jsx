@@ -3,7 +3,8 @@ import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
@@ -59,6 +60,25 @@ const EMPTY_FORM = {
   action_status: 'OP',
 }
 
+const REQUIRED = 'This field is required.'
+const FIELD_LABELS = {
+  incident: 'Incident', action_recommended: 'Recommended Action', action_party: 'Action Party', target_date: 'Target Date',
+  completion_dt: 'Actual Closure Date', action_status: 'Status', deleted_remarks: 'Reason for delete',
+}
+
+// Browser checks, mirroring IncidentActionSerializer: the Target Date and the Actual Closure Date can't be
+// before the incident's own date.
+function checkForm(form) {
+  const e = {}
+  if (!form.incident) e.incident = REQUIRED
+  if (!form.action_recommended.trim()) e.action_recommended = REQUIRED
+  if (!form.action_party.trim()) e.action_party = REQUIRED
+  const incidentDay = (form.incident_date || '').slice(0, 10)
+  if (incidentDay && form.target_date && form.target_date < incidentDay) e.target_date = 'Target Date must be on or after the Incident Date.'
+  if (incidentDay && form.completion_dt && form.completion_dt < incidentDay) e.completion_dt = 'Actual Closure Date must be on or after the Incident Date.'
+  return e
+}
+
 function fmtDateTime(iso) {
   if (!iso) return ''
   const d = new Date(iso)
@@ -89,6 +109,14 @@ export default function IncidentActionsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteRemarks, setDeleteRemarks] = useState('')
   const [deleting, setDeleting] = useState(false)
+  // Boxes outlined after a refused save. The outline goes away as soon as anything in the form is edited.
+  const [fieldErrState, setFieldErrState] = useState({ at: null, errors: {} })
+  const fieldErrors = fieldErrState.at === JSON.stringify([form, deleteRemarks]) ? fieldErrState.errors : {}
+  function showErrors(data) {
+    setFieldErrState({ at: JSON.stringify([form, deleteRemarks]), errors: buildFieldErrors(data, FIELD_LABELS) })
+    toast.error(formatApiError(data, FIELD_LABELS))
+    requestAnimationFrame(scrollToFirstFieldError)
+  }
 
   usePageSubtitle(form.incident_label ? `Incident ${form.incident_label}` : null)
 
@@ -139,16 +167,9 @@ export default function IncidentActionsPage() {
   }
 
   async function save() {
-    if (!form.incident) {
-      toast.error('Incident must be selected')
-      return
-    }
-    if (!form.action_recommended.trim()) {
-      toast.error('Recommended Action must be entered')
-      return
-    }
-    if (!form.action_party.trim()) {
-      toast.error('Action Party must be entered')
+    const found = checkForm(form)
+    if (Object.keys(found).length) {
+      showErrors(found)
       return
     }
     setSaving(true)
@@ -167,7 +188,7 @@ export default function IncidentActionsPage() {
         { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(payload) }
       )
       if (!res.ok) {
-        toast.error(formatApiError(await res.json().catch(() => null)))
+        showErrors((await res.json().catch(() => null)) || {})
         return
       }
       toast.success(isEdit ? 'Action updated' : 'Action added')
@@ -181,7 +202,7 @@ export default function IncidentActionsPage() {
   async function confirmDelete() {
     if (!deleteTarget) return
     if (deleteRemarks.trim().length < 10) {
-      toast.error('Reason for delete must be at least 10 characters')
+      showErrors({ deleted_remarks: 'Enter a reason for deleting this record (at least 10 characters).' })
       return
     }
     setDeleting(true)
@@ -197,7 +218,7 @@ export default function IncidentActionsPage() {
         setDeleteTarget(null)
         setDeleteRemarks('')
       } else {
-        toast.error(formatApiError(await res.json().catch(() => null)))
+        showErrors((await res.json().catch(() => null)) || {})
       }
     } finally {
       setDeleting(false)
@@ -206,12 +227,15 @@ export default function IncidentActionsPage() {
 
   if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
 
+  const incidentDay = (form.incident_date || '').slice(0, 10) || undefined
+
   return (
-    <div className="flex h-full flex-col gap-3">
+    <FieldErrorScope errors={fieldErrors} className="flex h-full flex-col gap-3">
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div className="flex flex-col gap-1.5">
             <Label>* Incident</Label>
+            <FieldFrame name="incident">
             <RemoteCombobox
               field={INCIDENT_FIELD}
               value={form.incident}
@@ -228,6 +252,7 @@ export default function IncidentActionsPage() {
               }
               disabled={!canAdd && !canEdit}
             />
+            </FieldFrame>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Rig/Unit</Label>
@@ -250,12 +275,14 @@ export default function IncidentActionsPage() {
         <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <Label>* Recommended Action (500 chars)</Label>
-            <Textarea
-              value={form.action_recommended}
-              onChange={(e) => set({ action_recommended: e.target.value })}
-              maxLength={500}
-              rows={4}
-            />
+            <FieldFrame name="action_recommended">
+              <Textarea
+                value={form.action_recommended}
+                onChange={(e) => set({ action_recommended: e.target.value })}
+                maxLength={500}
+                rows={4}
+              />
+            </FieldFrame>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Action Planned/Taken (250 chars)</Label>
@@ -269,21 +296,28 @@ export default function IncidentActionsPage() {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>* Action Party (100 chars)</Label>
-              <Input value={form.action_party} onChange={(e) => set({ action_party: e.target.value })} maxLength={100} />
+              <FieldFrame name="action_party">
+                <Input value={form.action_party} onChange={(e) => set({ action_party: e.target.value })} maxLength={100} />
+              </FieldFrame>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Target Date</Label>
-              <Input type="date" value={form.target_date} onChange={(e) => set({ target_date: e.target.value })} />
+              <FieldFrame name="target_date">
+                <Input type="date" min={incidentDay} value={form.target_date} onChange={(e) => set({ target_date: e.target.value })} />
+              </FieldFrame>
             </div>
             {editingId && (
               <div className="flex gap-3">
                 <div className="flex flex-1 flex-col gap-1.5">
                   <Label>Actual Closure Date</Label>
-                  <Input
-                    type="date"
-                    value={form.completion_dt}
-                    onChange={(e) => set({ completion_dt: e.target.value, action_status: e.target.value ? 'CL' : form.action_status })}
-                  />
+                  <FieldFrame name="completion_dt">
+                    <Input
+                      type="date"
+                      min={incidentDay}
+                      value={form.completion_dt}
+                      onChange={(e) => set({ completion_dt: e.target.value, action_status: e.target.value ? 'CL' : form.action_status })}
+                    />
+                  </FieldFrame>
                 </div>
                 <div className="flex flex-1 flex-col gap-1.5">
                   <Label>Status</Label>
@@ -407,12 +441,14 @@ export default function IncidentActionsPage() {
             <DialogTitle>Delete this action?</DialogTitle>
             <DialogDescription>This can't be undone. Please give a reason (at least 10 characters).</DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={deleteRemarks}
-            onChange={(e) => setDeleteRemarks(e.target.value)}
-            placeholder="Reason for deleting this record…"
-            rows={3}
-          />
+          <FieldFrame name="deleted_remarks">
+            <Textarea
+              value={deleteRemarks}
+              onChange={(e) => setDeleteRemarks(e.target.value)}
+              placeholder="Reason for deleting this record…"
+              rows={3}
+            />
+          </FieldFrame>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
               Cancel
@@ -423,6 +459,6 @@ export default function IncidentActionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </FieldErrorScope>
   )
 }

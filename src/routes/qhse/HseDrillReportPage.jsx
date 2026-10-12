@@ -22,6 +22,8 @@ const QUARTERS = ['JAN-MAR', 'APR-JUN', 'JUL-SEP', 'OCT-DEC']
 const HALVES = ['JAN-JUN', 'JUL-DEC']
 
 const EMPTY = { period: '', month: '', to_month: '', year: '', sub: '' }
+const THIS_YEAR = new Date().getFullYear()
+const THIS_MONTH = `${THIS_YEAR}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
 
 const selectClass =
   'h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/50'
@@ -72,7 +74,16 @@ export default function HseDrillReportPage() {
     ((f.period === 'QUARTERLY' || f.period === 'BIANNUAL') && f.year && f.sub) ||
     (f.period === 'ANNUAL' && f.year) ||
     (f.period === 'DATE_RANGE' && f.month && f.to_month)
-  const canPrint = Boolean(periodReady) && selected.size > 0
+  // Date Range: To can't be before From and can't be after the current month (mirrors the server).
+  const rangeProblem =
+    f.period === 'DATE_RANGE' && f.month && f.to_month
+      ? f.to_month < f.month
+        ? "To Month/Year can't be before Month/Year."
+        : f.to_month > THIS_MONTH
+          ? "To Month/Year can't be after the current month."
+          : ''
+      : ''
+  const canPrint = Boolean(periodReady) && selected.size > 0 && !rangeProblem
 
   async function handlePrint() {
     setPrinting(true)
@@ -172,10 +183,13 @@ export default function HseDrillReportPage() {
           {f.period === 'DATE_RANGE' && (
             <>
               <Field label="Month/Year" required>
-                <MonthYearSelect value={f.month} onChange={(v) => set({ month: v })} />
+                <MonthYearSelect value={f.month} maxYear={THIS_YEAR} onChange={(v) => set({ month: v })} />
               </Field>
               <Field label="To Month/Year" required>
-                <MonthYearSelect value={f.to_month} onChange={(v) => set({ to_month: v })} />
+                <div className={rangeProblem ? 'rounded-lg ring-2 ring-destructive/70' : ''}>
+                  <MonthYearSelect value={f.to_month} maxYear={THIS_YEAR} onChange={(v) => set({ to_month: v })} />
+                </div>
+                {rangeProblem && <p className="text-xs text-destructive">{rangeProblem}</p>}
               </Field>
             </>
           )}

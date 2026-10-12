@@ -22,6 +22,17 @@ function todayIso() {
   return localDateStr()
 }
 
+// Date rules for the From/To boxes, mirrored on the server: neither date can be later than today, and To
+// can't be before From (the same day is fine). Returns { from, to } messages for the boxes that are wrong.
+function dateProblems(fromDt, toDt, today) {
+  const p = {}
+  if (fromDt && fromDt > today) p.from = "From date can't be in the future."
+  if (toDt && toDt > today) p.to = "To date can't be in the future."
+  if (fromDt && toDt && fromDt > toDt && !p.from && !p.to) p.to = "To date can't be before the From date."
+  return p
+}
+const RING = 'ring-2 ring-destructive/70 border-destructive'
+
 export default function DrillingTrippingAnalysisPage() {
   const { user } = useAuth()
   const canExport = can(user, MENU_KEY, 'export')
@@ -50,6 +61,8 @@ export default function DrillingTrippingAnalysisPage() {
   const liveParamString = buildParams().toString()
   const filtersAreStale = result !== null && appliedParams !== liveParamString
 
+  const dateIssues = dateProblems(fromDt, toDt, todayIso())
+
   function runQuery() {
     if (!rigId) {
       setError('Pick a rig.')
@@ -61,8 +74,8 @@ export default function DrillingTrippingAnalysisPage() {
       setResult(null)
       return
     }
-    if (fromDt > toDt) {
-      setError('From date must be before To date.')
+    if (Object.keys(dateProblems(fromDt, toDt, todayIso())).length) {
+      setError(Object.values(dateProblems(fromDt, toDt, todayIso())).join('\n'))
       setResult(null)
       return
     }
@@ -130,11 +143,11 @@ export default function DrillingTrippingAnalysisPage() {
 
         <div className="flex flex-col gap-2">
           <Label className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">From</Label>
-          <Input type="date" value={fromDt} onChange={(e) => setFromDt(e.target.value)} />
+          <Input type="date" max={todayIso()} value={fromDt} onChange={(e) => setFromDt(e.target.value)} className={dateIssues.from ? RING : ''} title={dateIssues.from} />
         </div>
         <div className="flex flex-col gap-2">
           <Label className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">To</Label>
-          <Input type="date" value={toDt} onChange={(e) => setToDt(e.target.value)} />
+          <Input type="date" min={fromDt || undefined} max={todayIso()} value={toDt} onChange={(e) => setToDt(e.target.value)} className={dateIssues.to ? RING : ''} title={dateIssues.to} />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -174,7 +187,7 @@ export default function DrillingTrippingAnalysisPage() {
 
       {(error || filtersAreStale) && (
         <div className="-mt-2 flex flex-col gap-1">
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && <p className="text-xs whitespace-pre-line text-destructive">{error}</p>}
           {!error && filtersAreStale && (
             <p className="text-xs text-muted-foreground">Filters have changed — select Update Results to refresh the table below.</p>
           )}

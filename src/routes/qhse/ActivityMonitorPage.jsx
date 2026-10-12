@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatApiError, showFormError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -15,6 +16,11 @@ import { Download } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
 
 const MENU_KEY = 'qhse.activity_monitor'
+
+const FIELD_LABELS = {
+  activity: 'Activity', rig: 'Rig', scheduled_dt: 'Schedule Date', planning_remark: 'Planning Remark', completion_dt: 'Completion Date',
+  completion_remark: 'Completion Remark', next_schedule_required: 'Next Schedule Required', next_scheduled_dt: 'Next Schedule Date',
+}
 
 const ACTIVITY_FIELD = {
   type: 'select-remote',
@@ -115,6 +121,14 @@ export default function ActivityMonitorPage() {
   const [editForm, setEditForm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // The box the server named when it refused a save. The outline goes away as soon as anything in the form is edited.
+  const [fieldErrState, setFieldErrState] = useState({ at: null, errors: {} })
+  const fieldErrors = fieldErrState.at === JSON.stringify([addForm, editForm]) ? fieldErrState.errors : {}
+  function failWith(data) {
+    setFieldErrState({ at: JSON.stringify([addForm, editForm]), errors: buildFieldErrors(data, FIELD_LABELS) })
+    showFormError(formatApiError(data, FIELD_LABELS), { setError, bannerRef })
+    requestAnimationFrame(scrollToFirstFieldError)
+  }
   const bannerRef = useRef(null)
 
   usePageSubtitle(totalCount ? `${totalCount.toLocaleString()} records` : null)
@@ -242,7 +256,7 @@ export default function ActivityMonitorPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        showFormError(formatApiError(data), { setError, bannerRef })
+        failWith(data)
         return
       }
       toast.success(`${data.activity_name} scheduled`)
@@ -283,7 +297,7 @@ export default function ActivityMonitorPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        showFormError(formatApiError(data), { setError, bannerRef })
+        failWith(data)
         return
       }
       setDetail(data)
@@ -360,7 +374,7 @@ export default function ActivityMonitorPage() {
           editForm.next_scheduled_dt > editForm.scheduled_dt)))
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    <FieldErrorScope errors={fieldErrors} className="flex h-full flex-col gap-3">
       <div className="flex flex-1 gap-5 overflow-hidden">
         <div className="flex w-[320px] shrink-0 flex-col rounded-2xl border border-border bg-card">
           <div className="flex items-center justify-between p-3 pb-2">
@@ -494,6 +508,7 @@ export default function ActivityMonitorPage() {
                     <Label>
                       Activity<span className="text-destructive"> *</span>
                     </Label>
+                    <FieldFrame name="activity">
                     <RemoteCombobox
                       field={ACTIVITY_FIELD}
                       value={addForm.activity}
@@ -510,12 +525,14 @@ export default function ActivityMonitorPage() {
                         }))
                       }
                     />
+                    </FieldFrame>
                   </div>
                   {rigNeededForAdd && (
                     <div className="col-span-2 flex flex-col gap-1.5">
                       <Label>
                         Rig<span className="text-destructive"> *</span>
                       </Label>
+                      <FieldFrame name="rig">
                       <RemoteCombobox
                         field={RIG_FIELD}
                         value={addForm.rig}
@@ -524,6 +541,7 @@ export default function ActivityMonitorPage() {
                           setAddForm((f) => ({ ...f, rig: v, rig_label: raw?.rig_name || '' }))
                         }
                       />
+                      </FieldFrame>
                     </div>
                   )}
                   {suggest?.blocked && (
@@ -536,6 +554,7 @@ export default function ActivityMonitorPage() {
                     <Label>
                       Schedule Date<span className="text-destructive"> *</span>
                     </Label>
+                    <FieldFrame name="scheduled_dt">
                     <Input
                       type="date"
                       value={addForm.scheduled_dt || ''}
@@ -545,14 +564,17 @@ export default function ActivityMonitorPage() {
                       }}
                       disabled={addBlocked}
                     />
+                    </FieldFrame>
                   </div>
                   <div className="col-span-2 flex flex-col gap-1.5">
                     <Label>Planning Remark</Label>
+                    <FieldFrame name="planning_remark">
                     <Input
                       value={addForm.planning_remark}
                       onChange={(e) => setAddForm((f) => ({ ...f, planning_remark: e.target.value }))}
                       disabled={addBlocked}
                     />
+                    </FieldFrame>
                   </div>
                 </div>
                 <Button onClick={handleAdd} disabled={saving || !canSubmitAdd} className="mt-5">
@@ -595,12 +617,14 @@ export default function ActivityMonitorPage() {
                         <Label>
                           Schedule Date<span className="text-destructive"> *</span>
                         </Label>
+                        <FieldFrame name="scheduled_dt">
                         <Input
                           type="date"
                           value={editForm.scheduled_dt}
                           onChange={(e) => setEditForm((f) => ({ ...f, scheduled_dt: e.target.value }))}
                           disabled={detail.is_completed || !canEdit}
                         />
+                        </FieldFrame>
                       </div>
                       {showOriginalDate && (
                         <div className="flex flex-col gap-1.5">
@@ -613,11 +637,13 @@ export default function ActivityMonitorPage() {
                           Planning Remark
                           {scheduleChanged && <span className="text-destructive"> *</span>}
                         </Label>
+                        <FieldFrame name="planning_remark">
                         <Input
                           value={editForm.planning_remark}
                           onChange={(e) => setEditForm((f) => ({ ...f, planning_remark: e.target.value }))}
                           disabled={detail.is_completed || !canEdit}
                         />
+                        </FieldFrame>
                       </div>
                     </div>
 
@@ -629,6 +655,7 @@ export default function ActivityMonitorPage() {
                         <div className="grid max-w-xl grid-cols-2 gap-4">
                           <div className="flex flex-col gap-1.5">
                             <Label>Completion Date</Label>
+                            <FieldFrame name="completion_dt">
                             <Input
                               type="date"
                               value={editForm.completion_dt}
@@ -636,6 +663,7 @@ export default function ActivityMonitorPage() {
                               onChange={(e) => setEditForm((f) => ({ ...f, completion_dt: e.target.value }))}
                               disabled={!canEdit}
                             />
+                            </FieldFrame>
                           </div>
                           <div className="flex flex-col gap-1.5">
                             <Label>Completion Gap</Label>
@@ -646,11 +674,13 @@ export default function ActivityMonitorPage() {
                               Completion Remark
                               {editForm.completion_dt && <span className="text-destructive"> *</span>}
                             </Label>
+                            <FieldFrame name="completion_remark">
                             <Input
                               value={editForm.completion_remark}
                               onChange={(e) => setEditForm((f) => ({ ...f, completion_remark: e.target.value }))}
                               disabled={!canEdit}
                             />
+                            </FieldFrame>
                           </div>
                         </div>
 
@@ -665,6 +695,7 @@ export default function ActivityMonitorPage() {
                             <Label>
                               Next Schedule Required{completingNow && <span className="text-destructive"> *</span>}
                             </Label>
+                            <FieldFrame name="next_schedule_required">
                             <select
                               value={editForm.next_schedule_required}
                               onChange={(e) =>
@@ -676,12 +707,14 @@ export default function ActivityMonitorPage() {
                               <option value="Y">Yes</option>
                               <option value="N">No</option>
                             </select>
+                            </FieldFrame>
                           </div>
                           {editForm.next_schedule_required === 'Y' && (
                             <div className="flex flex-col gap-1.5">
                               <Label>
                                 Next Schedule Date{completingNow && <span className="text-destructive"> *</span>}
                               </Label>
+                              <FieldFrame name="next_scheduled_dt">
                               <Input
                                 type="date"
                                 value={editForm.next_scheduled_dt}
@@ -690,6 +723,7 @@ export default function ActivityMonitorPage() {
                                 }
                                 disabled={!canEdit}
                               />
+                              </FieldFrame>
                             </div>
                           )}
                           {editForm.next_schedule_required === 'Y' && (
@@ -720,6 +754,6 @@ export default function ActivityMonitorPage() {
           )}
         </div>
       </div>
-    </div>
+    </FieldErrorScope>
   )
 }

@@ -25,8 +25,22 @@ import {
   IconX,
 } from '@/components/icons'
 import { Download } from 'lucide-react'
+import { formatApiError } from '@/lib/errors'
 
 const MENU_KEY = 'masters.job_descriptions'
+const LABELS = { jd_dtl_description: 'Description', jd_dtl_order: 'Order', jd_hdr_description: 'Section', jd_hdr_order: 'Order' }
+const RING = 'border-destructive ring-2 ring-destructive/40'
+const MIN_DETAIL = 10
+
+// Browser check for a line's text, mirroring JobDescriptionDtlSerializer: at least 10 characters when new or changed.
+function checkLine(text, original) {
+  const t = text.trim()
+  if (!t) return 'This field is required.'
+  if (t.length < MIN_DETAIL && t !== (original || '').trim()) return `Give a fuller description (at least ${MIN_DETAIL} characters).`
+  return ''
+}
+// The next free Order number: one more than the highest in use (not the count, which repeats a number after a delete).
+const nextOrder = (rows, key) => Math.max(0, ...rows.map((r) => Number(r[key]) || 0)) + 1
 
 function IconPencil(props) {
   return (
@@ -51,17 +65,27 @@ function DetailLine({ line, canEdit, canDelete, onSave, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(line.jd_dtl_description)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   function cancel() {
     setText(line.jd_dtl_description)
+    setError('')
     setEditing(false)
   }
 
   async function save() {
+    const problem = checkLine(text, line.jd_dtl_description)
+    if (problem) {
+      setError(problem)
+      return
+    }
     setSaving(true)
-    await onSave(line.jd_dtl_id, text)
+    const result = await onSave(line.jd_dtl_id, text)
     setSaving(false)
-    setEditing(false)
+    if (result === true) {
+      setError('')
+      setEditing(false)
+    } else setError(result || 'Could not save this line.')
   }
 
   if (!editing) {
@@ -98,16 +122,20 @@ function DetailLine({ line, canEdit, canDelete, onSave, onDelete }) {
     <div className="rounded-lg border border-[#1a3f7a]/30 bg-[#eef3fb]/40 p-2.5">
       <Textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          setText(e.target.value)
+          setError('')
+        }}
         autoFocus
         rows={3}
-        className="bg-background"
+        className={`bg-background ${error ? RING : ''}`}
       />
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
       <div className="mt-2 flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={cancel}>
           Cancel
         </Button>
-        <Button size="sm" onClick={save} disabled={saving || !text.trim()}>
+        <Button size="sm" onClick={save} disabled={saving}>
           {saving ? 'Saving…' : 'Save'}
         </Button>
       </div>
@@ -121,6 +149,7 @@ function SectionCard({ index, section, canAdd, canEdit, canDelete, onRefresh }) 
   const [savingTitle, setSavingTitle] = useState(false)
   const [addingLine, setAddingLine] = useState(false)
   const [newLine, setNewLine] = useState('')
+  const [newLineError, setNewLineError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function saveTitle() {
@@ -159,9 +188,10 @@ function SectionCard({ index, section, canAdd, canEdit, canDelete, onRefresh }) 
     if (res.ok) {
       toast.success('Line updated')
       onRefresh()
-    } else {
-      toast.error('Failed to update line')
+      return true
     }
+    const data = (await res.json().catch(() => null)) || {}
+    return formatApiError(data, LABELS)
   }
 
   async function deleteLine(id) {
@@ -176,21 +206,26 @@ function SectionCard({ index, section, canAdd, canEdit, canDelete, onRefresh }) 
   }
 
   async function addLine() {
-    if (!newLine.trim()) return
+    const problem = checkLine(newLine, '')
+    if (problem) {
+      setNewLineError(problem)
+      return
+    }
     const res = await apiFetch('/api/masters/job-description-details/', {
       method: 'POST',
       body: JSON.stringify({
         header: section.jd_hdr_id,
         jd_dtl_description: newLine,
-        jd_dtl_order: section.details.length + 1,
+        jd_dtl_order: nextOrder(section.details, 'jd_dtl_order'),
       }),
     })
     if (res.ok) {
       setNewLine('')
+      setNewLineError('')
       setAddingLine(false)
       onRefresh()
     } else {
-      toast.error('Failed to add line')
+      setNewLineError(formatApiError((await res.json().catch(() => null)) || {}, LABELS))
     }
   }
 
@@ -287,24 +322,29 @@ function SectionCard({ index, section, canAdd, canEdit, canDelete, onRefresh }) 
           <div className="mt-1 rounded-lg border border-[#1a3f7a]/30 bg-[#eef3fb]/40 p-2.5">
             <Textarea
               value={newLine}
-              onChange={(e) => setNewLine(e.target.value)}
+              onChange={(e) => {
+                setNewLine(e.target.value)
+                setNewLineError('')
+              }}
               autoFocus
               rows={3}
               placeholder="New line…"
-              className="bg-background"
+              className={`bg-background ${newLineError ? RING : ''}`}
             />
+            {newLineError && <p className="mt-1 text-xs text-destructive">{newLineError}</p>}
             <div className="mt-2 flex justify-end gap-2">
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
                   setNewLine('')
+                  setNewLineError('')
                   setAddingLine(false)
                 }}
               >
                 Cancel
               </Button>
-              <Button size="sm" onClick={addLine} disabled={!newLine.trim()}>
+              <Button size="sm" onClick={addLine}>
                 Add
               </Button>
             </div>
@@ -400,7 +440,7 @@ export default function JobDescriptionsPage() {
       body: JSON.stringify({
         rank: selectedRank.rank_id,
         jd_hdr_description: newSectionTitle,
-        jd_hdr_order: sections.length + 1,
+        jd_hdr_order: nextOrder(sections, 'jd_hdr_order'),
       }),
     })
     if (res.ok) {
@@ -409,7 +449,7 @@ export default function JobDescriptionsPage() {
       toast.success('Section added')
       loadSections(selectedRank.rank_id)
     } else {
-      toast.error('Failed to add section')
+      toast.error(formatApiError((await res.json().catch(() => null)) || {}, LABELS))
     }
   }
 

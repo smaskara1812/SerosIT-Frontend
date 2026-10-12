@@ -3,7 +3,8 @@ import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
-import { formatApiError } from '@/lib/errors'
+import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
+import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
@@ -70,6 +71,21 @@ function isOthersSubcause(label) {
   return (label || '').trim().toLowerCase().startsWith('others')
 }
 
+const REQUIRED = 'This field is required.'
+const FIELD_LABELS = { incident: 'Incident', root_cause: 'Root Cause', root_subcause: 'Root Subcause', root_subcause_others: 'Additional Details', deleted_remarks: 'Reason for delete' }
+
+// Browser checks, mirroring IncidentRootCauseSerializer (the "this incident already has it" rule needs the server).
+function checkForm(form) {
+  const e = {}
+  if (!form.incident) e.incident = REQUIRED
+  if (!form.root_cause) e.root_cause = REQUIRED
+  if (!form.root_subcause) e.root_subcause = REQUIRED
+  if (isOthersSubcause(form.root_subcause_label) && !form.root_subcause_others.trim()) {
+    e.root_subcause_others = "Enter a description for this 'Others' subcause."
+  }
+  return e
+}
+
 function fmtDateTime(iso) {
   if (!iso) return ''
   const d = new Date(iso)
@@ -92,6 +108,14 @@ export default function IncidentRootCausePage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteRemarks, setDeleteRemarks] = useState('')
   const [deleting, setDeleting] = useState(false)
+  // Boxes outlined after a refused save. The outline goes away as soon as anything in the form is edited.
+  const [fieldErrState, setFieldErrState] = useState({ at: null, errors: {} })
+  const fieldErrors = fieldErrState.at === JSON.stringify([form, deleteRemarks]) ? fieldErrState.errors : {}
+  function showErrors(data) {
+    setFieldErrState({ at: JSON.stringify([form, deleteRemarks]), errors: buildFieldErrors(data, FIELD_LABELS) })
+    toast.error(formatApiError(data, FIELD_LABELS))
+    requestAnimationFrame(scrollToFirstFieldError)
+  }
 
   usePageSubtitle(form.incident_label ? `Incident ${form.incident_label}` : null)
 
@@ -134,20 +158,9 @@ export default function IncidentRootCausePage() {
   }
 
   async function save() {
-    if (!form.incident) {
-      toast.error('Incident must be selected')
-      return
-    }
-    if (!form.root_cause) {
-      toast.error('Root Cause must be selected')
-      return
-    }
-    if (!form.root_subcause) {
-      toast.error('Root Subcause must be selected')
-      return
-    }
-    if (isOthersSubcause(form.root_subcause_label) && !form.root_subcause_others.trim()) {
-      toast.error("Enter a description for this 'Others' subcause")
+    const found = checkForm(form)
+    if (Object.keys(found).length) {
+      showErrors(found)
       return
     }
     setSaving(true)
@@ -164,7 +177,7 @@ export default function IncidentRootCausePage() {
         { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(payload) }
       )
       if (!res.ok) {
-        toast.error(formatApiError(await res.json().catch(() => null)))
+        showErrors((await res.json().catch(() => null)) || {})
         return
       }
       toast.success(isEdit ? 'Root cause updated' : 'Root cause added')
@@ -180,7 +193,7 @@ export default function IncidentRootCausePage() {
   async function confirmDelete() {
     if (!deleteTarget) return
     if (deleteRemarks.trim().length < 10) {
-      toast.error('Reason for delete must be at least 10 characters')
+      showErrors({ deleted_remarks: 'Enter a reason for deleting this record (at least 10 characters).' })
       return
     }
     setDeleting(true)
@@ -196,7 +209,7 @@ export default function IncidentRootCausePage() {
         setDeleteTarget(null)
         setDeleteRemarks('')
       } else {
-        toast.error(formatApiError(await res.json().catch(() => null)))
+        showErrors((await res.json().catch(() => null)) || {})
       }
     } finally {
       setDeleting(false)
@@ -206,11 +219,12 @@ export default function IncidentRootCausePage() {
   if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    <FieldErrorScope errors={fieldErrors} className="flex h-full flex-col gap-3">
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <Label>* Incident</Label>
+            <FieldFrame name="incident">
             <RemoteCombobox
               field={INCIDENT_FIELD}
               value={form.incident}
@@ -225,6 +239,7 @@ export default function IncidentRootCausePage() {
               }
               disabled={!canAdd && !canEdit}
             />
+            </FieldFrame>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Rig/Unit</Label>
@@ -239,6 +254,7 @@ export default function IncidentRootCausePage() {
         <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <Label>* Root Cause</Label>
+            <FieldFrame name="root_cause">
             <RemoteCombobox
               field={ROOT_CAUSE_FIELD}
               value={form.root_cause}
@@ -248,9 +264,11 @@ export default function IncidentRootCausePage() {
               }
               disabled={!form.incident}
             />
+            </FieldFrame>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>* Root Subcause</Label>
+            <FieldFrame name="root_subcause">
             <RemoteCombobox
               field={ROOT_SUBCAUSE_FIELD}
               value={form.root_subcause}
@@ -259,9 +277,11 @@ export default function IncidentRootCausePage() {
               onChange={(v, raw) => set({ root_subcause: v, root_subcause_label: raw?.incident_subcause || '' })}
               disabled={!form.root_cause}
             />
+            </FieldFrame>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>{isOthersSubcause(form.root_subcause_label) ? '* Additional Details' : 'Additional Details'}</Label>
+            <FieldFrame name="root_subcause_others">
             <Input
               value={form.root_subcause_others}
               onChange={(e) => set({ root_subcause_others: e.target.value })}
@@ -273,6 +293,7 @@ export default function IncidentRootCausePage() {
                   : ''
               }
             />
+            </FieldFrame>
           </div>
         </div>
 
@@ -370,12 +391,14 @@ export default function IncidentRootCausePage() {
             <DialogTitle>Delete this root cause?</DialogTitle>
             <DialogDescription>This can't be undone. Please give a reason (at least 10 characters).</DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={deleteRemarks}
-            onChange={(e) => setDeleteRemarks(e.target.value)}
-            placeholder="Reason for deleting this record…"
-            rows={3}
-          />
+          <FieldFrame name="deleted_remarks">
+            <Textarea
+              value={deleteRemarks}
+              onChange={(e) => setDeleteRemarks(e.target.value)}
+              placeholder="Reason for deleting this record…"
+              rows={3}
+            />
+          </FieldFrame>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
               Cancel
@@ -386,6 +409,6 @@ export default function IncidentRootCausePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </FieldErrorScope>
   )
 }
