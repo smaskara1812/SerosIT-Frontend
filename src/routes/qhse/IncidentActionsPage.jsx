@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -102,6 +103,8 @@ export default function IncidentActionsPage() {
   const canDelete = can(user, MENU_KEY, 'delete')
 
   const [form, setForm] = useState(EMPTY_FORM)
+  // ?incident=<id> (for example from the Compliance Radar) opens with that incident already chosen.
+  const [linkParams] = useSearchParams()
   const [editingId, setEditingId] = useState(null)
   const [rows, setRows] = useState([])
   const [loadingRows, setLoadingRows] = useState(false)
@@ -135,6 +138,29 @@ export default function IncidentActionsPage() {
       .then((data) => setRows(data.results || []))
       .finally(() => setLoadingRows(false))
   }
+
+  useEffect(() => {
+    const id = linkParams.get('incident')
+    if (!id || !/^\d+$/.test(id)) return
+    let cancelled = false
+    apiFetch(`/api/qhse/incidents/${id}/`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((raw) => {
+        if (cancelled || !raw) return
+        set({
+          incident: raw.incident_id,
+          incident_label: raw.rig_incident_no || '',
+          rig_name: raw.rig_name || '',
+          incident_date: raw.incident_date || '',
+          well_no: raw.well_no || '',
+          incident_type_name: raw.incident_type_name || '',
+        })
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     loadRows(form.incident)

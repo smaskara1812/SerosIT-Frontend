@@ -119,3 +119,26 @@ export function useUrlString(paramKey) {
 
   return [value, setValue]
 }
+
+// Sets several URL params in one update, e.g. setMany({ rig: '3', category: 'survey', state: '' }).
+// Separate useUrlString setters called in the same click do not combine — each one starts from the
+// URL as it was before the click — so related filters must change through a single call like this.
+export function useUrlBatch() {
+  const [, setSearchParams] = useSearchParams()
+  return useCallback(
+    (values) => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev)
+          for (const [key, value] of Object.entries(values)) {
+            if (value) params.set(key, value)
+            else params.delete(key)
+          }
+          return params
+        },
+        { replace: true }
+      )
+    },
+    [setSearchParams]
+  )
+}

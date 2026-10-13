@@ -77,6 +77,10 @@ const ContractExposureDashboardPage = lazy(() => import('@/routes/dashboards/Con
 const ItAssetDashboardPage = lazy(() => import('@/routes/dashboards/ItAssetDashboardPage'))
 const NptAnalysisDashboardPage = lazy(() => import('@/routes/dashboards/NptAnalysisDashboardPage'))
 const IncidentDashboardPage = lazy(() => import('@/routes/dashboards/IncidentDashboardPage'))
+const ComplianceRadarPage = lazy(() => import('@/routes/dashboards/ComplianceRadarPage'))
+const SafetyPerformancePage = lazy(() => import('@/routes/dashboards/SafetyPerformancePage'))
+const FuelWaterPage = lazy(() => import('@/routes/dashboards/FuelWaterPage'))
+const RigMovesPage = lazy(() => import('@/routes/dashboards/RigMovesPage'))
 // Rig Health Index pulled from the app for now — page and its backend
 // view (rig_health_dashboard.py) are kept, just not wired up here.
 // import RigHealthDashboardPage from '@/routes/dashboards/RigHealthDashboardPage'
@@ -185,6 +189,10 @@ function App() {
           <Route path="/dashboards/it-asset-overview" element={<ItAssetDashboardPage />} />
           <Route path="/dashboards/npt-analysis" element={<NptAnalysisDashboardPage />} />
           <Route path="/dashboards/incident-dashboard" element={<IncidentDashboardPage />} />
+          <Route path="/dashboards/compliance-radar" element={<ComplianceRadarPage />} />
+          <Route path="/dashboards/safety-performance" element={<SafetyPerformancePage />} />
+          <Route path="/dashboards/fuel-water" element={<FuelWaterPage />} />
+          <Route path="/dashboards/rig-moves" element={<RigMovesPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
         </Route>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
 import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { toast } from 'sonner'
@@ -100,10 +101,13 @@ export default function ActivityMonitorPage() {
   // '' = the backend's own status-based default (overdue-first for Open,
   // newest-first otherwise) — only set explicitly when the user picks one.
   const [ordering, setOrdering] = useState('')
-  const [activityFilter, setActivityFilter] = useState(null)
-  const [activityFilterLabel, setActivityFilterLabel] = useState('')
-  const [rigFilter, setRigFilter] = useState(null)
-  const [rigFilterLabel, setRigFilterLabel] = useState('')
+  // A link from elsewhere (for example the Compliance Radar) can open one record and narrow the
+  // list to its activity and rig: ?select=<id>&activity=<id>&activity_label=..&rig=<id>&rig_label=..
+  const [linkParams] = useSearchParams()
+  const [activityFilter, setActivityFilter] = useState(linkParams.get('activity') ? Number(linkParams.get('activity')) : null)
+  const [activityFilterLabel, setActivityFilterLabel] = useState(linkParams.get('activity_label') || '')
+  const [rigFilter, setRigFilter] = useState(linkParams.get('rig') ? Number(linkParams.get('rig')) : null)
+  const [rigFilterLabel, setRigFilterLabel] = useState(linkParams.get('rig_label') || '')
   const listRef = useRef(null)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
@@ -211,6 +215,13 @@ export default function ActivityMonitorPage() {
       })
       .finally(() => setLoadingDetail(false))
   }
+
+  useEffect(() => {
+    const id = linkParams.get('select')
+    // Deferred a tick so this is not a synchronous state change inside the effect.
+    if (id && /^\d+$/.test(id)) queueMicrotask(() => selectRow(Number(id)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Re-fetch the suggested date / blocked state whenever Activity or Rig
   // changes in Add mode — mirrors legacy's postback-on-lookup-selection.

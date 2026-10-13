@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
@@ -77,7 +77,18 @@ export default function DrillingReportListPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [query, setQuery] = useState('')
-  const [filters, setFilters] = useState(emptyFilters())
+  // A link from elsewhere (for example the Home "to approve" tile) can open the list already narrowed:
+  // ?scope=pending_for_me or ?status=pending
+  const [linkParams] = useSearchParams()
+  const [filters, setFilters] = useState(() => {
+    const scope = linkParams.get('scope')
+    const status = linkParams.get('status')
+    return {
+      ...emptyFilters(),
+      scope: SCOPE_TABS.some((t) => t.value && t.value === scope) ? scope : '',
+      status: STATUS_OPTIONS.some((o) => o.value && o.value === status) ? status : '',
+    }
+  })
   const [showFilters, setShowFilters] = useState(false)
 
   const listRef = useRef(null)

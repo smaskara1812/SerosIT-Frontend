@@ -9,6 +9,7 @@ import { navLeavesByPath, isLeafAccessible } from '@/lib/shortcuts'
 import { IconPlus } from '@/components/icons'
 import ShortcutsPicker from '@/routes/ShortcutsPicker'
 import PageSearch from '@/components/PageSearch'
+import AttentionDigest from '@/components/home/AttentionDigest'
 
 // One tile per top-level nav group (Masters, IT Asset, Reports, Admin) —
 // never the full leaf list, which is what MastersHub.jsx already is for.
@@ -245,6 +246,8 @@ export default function Home() {
       </div>
 
       <PageSearch />
+
+      <AttentionDigest />
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-foreground">Jump back in</h2>

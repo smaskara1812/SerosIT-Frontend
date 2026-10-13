@@ -59,6 +59,9 @@ import {
   Gauge,
   HardDrive,
   Grid3x3,
+  Radar,
+  ShieldPlus,
+  Fuel,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -127,6 +130,34 @@ export const navTree = [
             path: '/dashboards/incident-dashboard',
             icon: Grid3x3,
             menuKey: 'dashboards.incident_dashboard',
+          },
+          {
+            key: 'compliance_radar',
+            label: 'Compliance Radar',
+            path: '/dashboards/compliance-radar',
+            icon: Radar,
+            menuKey: 'dashboards.compliance_radar',
+          },
+          {
+            key: 'safety_performance',
+            label: 'Safety Performance',
+            path: '/dashboards/safety-performance',
+            icon: ShieldPlus,
+            menuKey: 'dashboards.safety_performance',
+          },
+          {
+            key: 'fuel_water',
+            label: 'Fuel and Water',
+            path: '/dashboards/fuel-water',
+            icon: Fuel,
+            menuKey: 'dashboards.fuel_water',
+          },
+          {
+            key: 'rig_moves',
+            label: 'Rig Moves',
+            path: '/dashboards/rig-moves',
+            icon: Truck,
+            menuKey: 'dashboards.rig_moves',
           },
           // Rig Health Index pulled from the nav for now (not removed —
           // see RigHealthDashboardPage.jsx / rig_health_dashboard.py,

@@ -689,6 +689,9 @@ export default function MasterCrudPage() {
     : null
   const hasActiveFilter = Boolean(schema.activeField || schema.dateActiveField)
   const [selectedId, setSelectedId] = useState(null)
+  // A record opened from a link elsewhere (?select=<id>&q=<search>): fetched on its own so it
+  // shows even when it is not on the first page of the list.
+  const [pinned, setPinned] = useState(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState(() => emptyForm(schema))
   const [loading, setLoading] = useState(true)
@@ -831,6 +834,27 @@ export default function MasterCrudPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
+  // Opened from a link with ?select=<id> (and ?q=<text> to narrow the list): select that record and,
+  // when asked, apply the search. Declared after the slug effect so it wins over that reset.
+  const selectParam = searchParams.get('select')
+  const qParam = searchParams.get('q')
+  useEffect(() => {
+    if (!selectParam || !schema) return
+    let cancelled = false
+    apiFetch(`${schema.apiBase}${selectParam}/`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((rec) => {
+        if (cancelled || !rec) return
+        setPinned(rec)
+        setSelectedId(rec[schema.idField])
+        if (qParam) setQuery(qParam)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, selectParam])
+
   // Debounced server-side search — resets to page 1 on every new query.
   useEffect(() => {
     clearTimeout(searchTimerRef.current)
@@ -867,7 +891,9 @@ export default function MasterCrudPage() {
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) loadMore()
   }
 
-  const selected = rows.find((r) => r[schema.idField] === selectedId)
+  const selected =
+    rows.find((r) => r[schema.idField] === selectedId) ??
+    (pinned && pinned[schema.idField] === selectedId ? pinned : undefined)
   const canWrite = creating ? canAdd : canEdit
 
   useEffect(() => {

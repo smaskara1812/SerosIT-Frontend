@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -117,7 +117,15 @@ export default function IncidentDetailsListPage() {
   const [meta, setMeta] = useState({ years: [] })
   const [rigs, setRigs] = useState([])
 
-  const [filters, setFilters] = useState({ year: '', rig: '', severity: '', person_injured: '' })
+  // A link from elsewhere (for example Safety Performance) can open the list already filtered:
+  // ?year=2026&rig=3&severity=H&person_injured=Y
+  const [linkParams] = useSearchParams()
+  const [filters, setFilters] = useState(() => ({
+    year: linkParams.get('year') || '',
+    rig: linkParams.get('rig') || '',
+    severity: linkParams.get('severity') || '',
+    person_injured: linkParams.get('person_injured') || '',
+  }))
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)

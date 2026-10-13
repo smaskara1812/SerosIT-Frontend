@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
 import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { localDateStr } from '@/lib/naiveDateTime'
@@ -271,7 +272,10 @@ export default function DrillingInformationPage() {
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [query, setQuery] = useState('')
+  // A link from elsewhere (for example the Rig Moves dashboard) can open one well and narrow the
+  // list to it: ?select=<id>&q=<text>
+  const [linkParams] = useSearchParams()
+  const [query, setQuery] = useState(linkParams.get('q') || '')
   const [filters, setFilters] = useState(emptyFilters())
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState('list')
@@ -443,6 +447,21 @@ export default function DrillingInformationPage() {
     setRigOptions([])
     setViewMode('list')
   }
+
+  useEffect(() => {
+    const id = linkParams.get('select')
+    if (!id || !/^\d+$/.test(id)) return
+    let cancelled = false
+    apiFetch(`${API}${id}/`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((row) => {
+        if (!cancelled && row) selectRow(row)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function selectRow(row) {
     setCreating(false)
