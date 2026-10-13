@@ -51,7 +51,7 @@ export default function OperationsAnalyticsPage() {
   const requestIdRef = useRef(0)
 
   useEffect(() => {
-    cachedGet('/api/masters/rigs/?active=Y&page_size=200&fields=rig_id,rig_name')
+    cachedGet('/api/masters/rigs/?active=Y&page_size=200&fields=rig_id,rig_name,rig_subtype_name')
       .then((data) => setRigs(data.results || data || []))
   }, [])
 

@@ -103,7 +103,7 @@ export default function DrillingDailyDataPage() {
   }, [result])
 
   useEffect(() => {
-    cachedGet('/api/masters/rigs/?active=Y&page_size=200&fields=rig_id,rig_name')
+    cachedGet('/api/masters/rigs/?active=Y&page_size=200&fields=rig_id,rig_name,rig_subtype_name')
       .then((data) => setRigs(data.results || data || []))
   }, [])
 
