@@ -1,81 +1,82 @@
+import { lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from '@/routes/Login'
 import Home from '@/routes/Home'
 import ProtectedRoute from '@/routes/ProtectedRoute'
 import AdminRoute from '@/routes/AdminRoute'
 import MastersRoute from '@/routes/MastersRoute'
-import FsListPage from '@/routes/masters/fs/FsListPage'
-import FsFormPage from '@/routes/masters/fs/FsFormPage'
+const FsListPage = lazy(() => import('@/routes/masters/fs/FsListPage'))
+const FsFormPage = lazy(() => import('@/routes/masters/fs/FsFormPage'))
 import AppShell from '@/components/layout/AppShell'
-import UserRights from '@/routes/admin/UserRights'
-import UserManagement from '@/routes/admin/UserManagement'
-import AuditTrail from '@/routes/admin/AuditTrail'
-import EmailLog from '@/routes/admin/EmailLog'
-import MastersHub from '@/routes/masters/MastersHub'
-import MasterCrudPage from '@/routes/masters/MasterCrudPage'
-import JobDescriptionsPage from '@/routes/masters/JobDescriptionsPage'
-import ProjectContractPage from '@/routes/masters/ProjectContractPage'
-import ProjectDrillingRatesPage from '@/routes/masters/ProjectDrillingRatesPage'
-import DrillingWorkShiftPage from '@/routes/masters/DrillingWorkShiftPage'
-import FsCatgToRigTypeMappingPage from '@/routes/masters/FsCatgToRigTypeMappingPage'
-import IncidentsPage from '@/routes/reports/IncidentsPage'
-import HazardCardsPage from '@/routes/reports/HazardCardsPage'
-import ItAssetsPage from '@/routes/itasset/ItAssetsPage'
-import ItAssetFormPage from '@/routes/itasset/ItAssetFormPage'
-import ItAssetHoldersPage from '@/routes/itasset/ItAssetHoldersPage'
-import ItAssetHolderFormPage from '@/routes/itasset/ItAssetHolderFormPage'
-import ItAccessoriesPage from '@/routes/itasset/ItAccessoriesPage'
-import ItAccessoryFormPage from '@/routes/itasset/ItAccessoryFormPage'
-import ItAccessoryHoldersPage from '@/routes/itasset/ItAccessoryHoldersPage'
-import ItAccessoryHolderFormPage from '@/routes/itasset/ItAccessoryHolderFormPage'
-import ItAssetReportPage from '@/routes/itasset/ItAssetReportPage'
-import DrillingInformationPage from '@/routes/drilling/DrillingInformationPage'
-import DrillingReportListPage from '@/routes/drilling/DrillingReportListPage'
-import DrillingReportFormPage from '@/routes/drilling/DrillingReportFormPage'
-import PerformanceDashboardPage from '@/routes/drilling/PerformanceDashboardPage'
-import OperationsAnalyticsPage from '@/routes/drilling/OperationsAnalyticsPage'
-import DrillingTrippingAnalysisPage from '@/routes/drilling/DrillingTrippingAnalysisPage'
-import DrillingDailyDataPage from '@/routes/drilling/DrillingDailyDataPage'
-import ApproverMappingPage from '@/routes/admin/ApproverMappingPage'
-import ActivityMonitorPage from '@/routes/qhse/ActivityMonitorPage'
-import ActivityClosureAnalysisPage from '@/routes/qhse/ActivityClosureAnalysisPage'
-import IncidentDetailsListPage from '@/routes/qhse/IncidentDetailsListPage'
-import IncidentDetailsFormPage from '@/routes/qhse/IncidentDetailsFormPage'
-import HazardIdCardListPage from '@/routes/qhse/HazardIdCardListPage'
-import HazardIdCardFormPage from '@/routes/qhse/HazardIdCardFormPage'
-import IncidentRootCausePage from '@/routes/qhse/IncidentRootCausePage'
-import IncidentActionsPage from '@/routes/qhse/IncidentActionsPage'
-import IncidentRegisterPage from '@/routes/qhse/IncidentRegisterPage'
-import MisHseReturnPage from '@/routes/qhse/MisHseReturnPage'
-import MisHseReviewPage from '@/routes/qhse/MisHseReviewPage'
-import HseDrillRecordListPage from '@/routes/qhse/HseDrillRecordListPage'
-import HseDrillRecordFormPage from '@/routes/qhse/HseDrillRecordFormPage'
-import HseDrillRecordDetailsPage from '@/routes/qhse/HseDrillRecordDetailsPage'
-import CertToRankMappingListPage from '@/routes/qhse/CertToRankMappingListPage'
-import CertToRankMappingFormPage from '@/routes/qhse/CertToRankMappingFormPage'
-import TrainingReportPage from '@/routes/qhse/TrainingReportPage'
-import TrainingLogListPage from '@/routes/qhse/TrainingLogListPage'
-import TrainingLogFormPage from '@/routes/qhse/TrainingLogFormPage'
-import TrainingOrgListPage from '@/routes/qhse/TrainingOrgListPage'
-import TrainingOrgFormPage from '@/routes/qhse/TrainingOrgFormPage'
-import TrainingGroupListPage from '@/routes/qhse/TrainingGroupListPage'
-import TrainingGroupFormPage from '@/routes/qhse/TrainingGroupFormPage'
-import CorrectiveActionListPage from '@/routes/qhse/CorrectiveActionListPage'
-import CorrectiveActionFormPage from '@/routes/qhse/CorrectiveActionFormPage'
-import HseWeeklyDrillListPage from '@/routes/qhse/HseWeeklyDrillListPage'
-import HseWeeklyDrillFormPage from '@/routes/qhse/HseWeeklyDrillFormPage'
-import HseDrillReportPage from '@/routes/qhse/HseDrillReportPage'
-import HseLeadingIndicatorsListPage from '@/routes/qhse/HseLeadingIndicatorsListPage'
-import HseLeadingIndicatorsFormPage from '@/routes/qhse/HseLeadingIndicatorsFormPage'
-import HseLaggingIndicatorsListPage from '@/routes/qhse/HseLaggingIndicatorsListPage'
-import HseLaggingIndicatorsFormPage from '@/routes/qhse/HseLaggingIndicatorsFormPage'
-import RigUtilisationDashboardPage from '@/routes/dashboards/RigUtilisationDashboardPage'
-import DrillingPerformanceDashboardPage from '@/routes/dashboards/DrillingPerformanceDashboardPage'
-import FleetOperatingPicturePage from '@/routes/dashboards/FleetOperatingPicturePage'
-import ContractExposureDashboardPage from '@/routes/dashboards/ContractExposureDashboardPage'
-import ItAssetDashboardPage from '@/routes/dashboards/ItAssetDashboardPage'
-import NptAnalysisDashboardPage from '@/routes/dashboards/NptAnalysisDashboardPage'
-import IncidentDashboardPage from '@/routes/dashboards/IncidentDashboardPage'
+const UserRights = lazy(() => import('@/routes/admin/UserRights'))
+const UserManagement = lazy(() => import('@/routes/admin/UserManagement'))
+const AuditTrail = lazy(() => import('@/routes/admin/AuditTrail'))
+const EmailLog = lazy(() => import('@/routes/admin/EmailLog'))
+const MastersHub = lazy(() => import('@/routes/masters/MastersHub'))
+const MasterCrudPage = lazy(() => import('@/routes/masters/MasterCrudPage'))
+const JobDescriptionsPage = lazy(() => import('@/routes/masters/JobDescriptionsPage'))
+const ProjectContractPage = lazy(() => import('@/routes/masters/ProjectContractPage'))
+const ProjectDrillingRatesPage = lazy(() => import('@/routes/masters/ProjectDrillingRatesPage'))
+const DrillingWorkShiftPage = lazy(() => import('@/routes/masters/DrillingWorkShiftPage'))
+const FsCatgToRigTypeMappingPage = lazy(() => import('@/routes/masters/FsCatgToRigTypeMappingPage'))
+const IncidentsPage = lazy(() => import('@/routes/reports/IncidentsPage'))
+const HazardCardsPage = lazy(() => import('@/routes/reports/HazardCardsPage'))
+const ItAssetsPage = lazy(() => import('@/routes/itasset/ItAssetsPage'))
+const ItAssetFormPage = lazy(() => import('@/routes/itasset/ItAssetFormPage'))
+const ItAssetHoldersPage = lazy(() => import('@/routes/itasset/ItAssetHoldersPage'))
+const ItAssetHolderFormPage = lazy(() => import('@/routes/itasset/ItAssetHolderFormPage'))
+const ItAccessoriesPage = lazy(() => import('@/routes/itasset/ItAccessoriesPage'))
+const ItAccessoryFormPage = lazy(() => import('@/routes/itasset/ItAccessoryFormPage'))
+const ItAccessoryHoldersPage = lazy(() => import('@/routes/itasset/ItAccessoryHoldersPage'))
+const ItAccessoryHolderFormPage = lazy(() => import('@/routes/itasset/ItAccessoryHolderFormPage'))
+const ItAssetReportPage = lazy(() => import('@/routes/itasset/ItAssetReportPage'))
+const DrillingInformationPage = lazy(() => import('@/routes/drilling/DrillingInformationPage'))
+const DrillingReportListPage = lazy(() => import('@/routes/drilling/DrillingReportListPage'))
+const DrillingReportFormPage = lazy(() => import('@/routes/drilling/DrillingReportFormPage'))
+const PerformanceDashboardPage = lazy(() => import('@/routes/drilling/PerformanceDashboardPage'))
+const OperationsAnalyticsPage = lazy(() => import('@/routes/drilling/OperationsAnalyticsPage'))
+const DrillingTrippingAnalysisPage = lazy(() => import('@/routes/drilling/DrillingTrippingAnalysisPage'))
+const DrillingDailyDataPage = lazy(() => import('@/routes/drilling/DrillingDailyDataPage'))
+const ApproverMappingPage = lazy(() => import('@/routes/admin/ApproverMappingPage'))
+const ActivityMonitorPage = lazy(() => import('@/routes/qhse/ActivityMonitorPage'))
+const ActivityClosureAnalysisPage = lazy(() => import('@/routes/qhse/ActivityClosureAnalysisPage'))
+const IncidentDetailsListPage = lazy(() => import('@/routes/qhse/IncidentDetailsListPage'))
+const IncidentDetailsFormPage = lazy(() => import('@/routes/qhse/IncidentDetailsFormPage'))
+const HazardIdCardListPage = lazy(() => import('@/routes/qhse/HazardIdCardListPage'))
+const HazardIdCardFormPage = lazy(() => import('@/routes/qhse/HazardIdCardFormPage'))
+const IncidentRootCausePage = lazy(() => import('@/routes/qhse/IncidentRootCausePage'))
+const IncidentActionsPage = lazy(() => import('@/routes/qhse/IncidentActionsPage'))
+const IncidentRegisterPage = lazy(() => import('@/routes/qhse/IncidentRegisterPage'))
+const MisHseReturnPage = lazy(() => import('@/routes/qhse/MisHseReturnPage'))
+const MisHseReviewPage = lazy(() => import('@/routes/qhse/MisHseReviewPage'))
+const HseDrillRecordListPage = lazy(() => import('@/routes/qhse/HseDrillRecordListPage'))
+const HseDrillRecordFormPage = lazy(() => import('@/routes/qhse/HseDrillRecordFormPage'))
+const HseDrillRecordDetailsPage = lazy(() => import('@/routes/qhse/HseDrillRecordDetailsPage'))
+const CertToRankMappingListPage = lazy(() => import('@/routes/qhse/CertToRankMappingListPage'))
+const CertToRankMappingFormPage = lazy(() => import('@/routes/qhse/CertToRankMappingFormPage'))
+const TrainingReportPage = lazy(() => import('@/routes/qhse/TrainingReportPage'))
+const TrainingLogListPage = lazy(() => import('@/routes/qhse/TrainingLogListPage'))
+const TrainingLogFormPage = lazy(() => import('@/routes/qhse/TrainingLogFormPage'))
+const TrainingOrgListPage = lazy(() => import('@/routes/qhse/TrainingOrgListPage'))
+const TrainingOrgFormPage = lazy(() => import('@/routes/qhse/TrainingOrgFormPage'))
+const TrainingGroupListPage = lazy(() => import('@/routes/qhse/TrainingGroupListPage'))
+const TrainingGroupFormPage = lazy(() => import('@/routes/qhse/TrainingGroupFormPage'))
+const CorrectiveActionListPage = lazy(() => import('@/routes/qhse/CorrectiveActionListPage'))
+const CorrectiveActionFormPage = lazy(() => import('@/routes/qhse/CorrectiveActionFormPage'))
+const HseWeeklyDrillListPage = lazy(() => import('@/routes/qhse/HseWeeklyDrillListPage'))
+const HseWeeklyDrillFormPage = lazy(() => import('@/routes/qhse/HseWeeklyDrillFormPage'))
+const HseDrillReportPage = lazy(() => import('@/routes/qhse/HseDrillReportPage'))
+const HseLeadingIndicatorsListPage = lazy(() => import('@/routes/qhse/HseLeadingIndicatorsListPage'))
+const HseLeadingIndicatorsFormPage = lazy(() => import('@/routes/qhse/HseLeadingIndicatorsFormPage'))
+const HseLaggingIndicatorsListPage = lazy(() => import('@/routes/qhse/HseLaggingIndicatorsListPage'))
+const HseLaggingIndicatorsFormPage = lazy(() => import('@/routes/qhse/HseLaggingIndicatorsFormPage'))
+const RigUtilisationDashboardPage = lazy(() => import('@/routes/dashboards/RigUtilisationDashboardPage'))
+const DrillingPerformanceDashboardPage = lazy(() => import('@/routes/dashboards/DrillingPerformanceDashboardPage'))
+const FleetOperatingPicturePage = lazy(() => import('@/routes/dashboards/FleetOperatingPicturePage'))
+const ContractExposureDashboardPage = lazy(() => import('@/routes/dashboards/ContractExposureDashboardPage'))
+const ItAssetDashboardPage = lazy(() => import('@/routes/dashboards/ItAssetDashboardPage'))
+const NptAnalysisDashboardPage = lazy(() => import('@/routes/dashboards/NptAnalysisDashboardPage'))
+const IncidentDashboardPage = lazy(() => import('@/routes/dashboards/IncidentDashboardPage'))
 // Rig Health Index pulled from the app for now — page and its backend
 // view (rig_health_dashboard.py) are kept, just not wired up here.
 // import RigHealthDashboardPage from '@/routes/dashboards/RigHealthDashboardPage'

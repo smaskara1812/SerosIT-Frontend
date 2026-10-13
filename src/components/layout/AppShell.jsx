@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import SecondarySidebar from './SecondarySidebar'
@@ -19,7 +20,9 @@ export default function AppShell() {
         <TopbarProvider>
           <Topbar />
           <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6 outline-none">
-            <Outlet />
+            <Suspense fallback={<p className="p-6 text-sm text-muted-foreground">Loading…</p>}>
+              <Outlet />
+            </Suspense>
           </main>
         </TopbarProvider>
       </div>
