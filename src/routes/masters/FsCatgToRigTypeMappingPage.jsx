@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -205,11 +206,19 @@ export default function FsCatgToRigTypeMappingPage() {
                           className={`flex items-center justify-between px-4 py-3 ${isDraft ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
                         >
                           <span className="text-sm font-medium text-foreground">{rt.rig_type_name}</span>
-                          <ToggleSwitch
-                            checked={checked}
-                            disabled={!canEdit || saving}
-                            onChange={(next) => setDraftChecked(rt.rig_type_id, next)}
-                          />
+                          <div className="flex items-center gap-3">
+                            <HistoryButton
+                              menuKey={MENU_KEY}
+                              recordId={existing?.fs_catg_to_rig_type_mapping_id}
+                              title={rt.rig_type_name}
+                              onChanged={() => loadMappings(categoryId)}
+                            />
+                            <ToggleSwitch
+                              checked={checked}
+                              disabled={!canEdit || saving}
+                              onChange={(next) => setDraftChecked(rt.rig_type_id, next)}
+                            />
+                          </div>
                         </div>
                       )
                     })}

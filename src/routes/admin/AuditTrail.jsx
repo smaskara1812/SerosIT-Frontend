@@ -2,20 +2,9 @@ import { Fragment, useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { IconSearch, IconChevronDown } from '@/components/icons'
-
-const ACTION_COLORS = {
-  create: 'bg-emerald-100 text-emerald-700',
-  update: 'bg-blue-100 text-blue-700',
-  permission_change: 'bg-blue-100 text-blue-700',
-  password_change: 'bg-blue-100 text-blue-700',
-  delete: 'bg-red-100 text-red-700',
-  deactivate: 'bg-amber-100 text-amber-700',
-  export: 'bg-purple-100 text-purple-700',
-  login: 'bg-gray-100 text-gray-600',
-  login_failed: 'bg-red-100 text-red-700',
-  logout: 'bg-gray-100 text-gray-600',
-}
+import { IconSearch, IconChevronDown, IconHistory } from '@/components/icons'
+import { ACTION_COLORS, ACTION_LABELS, formatDiffValue } from '@/lib/auditFormat'
+import RecordHistory from '@/components/audit/RecordHistory'
 
 // Entities whose "record" IS a user account — for these, the generic
 // Record column already holds the affected user's login/name, so surface
@@ -23,27 +12,17 @@ const ACTION_COLORS = {
 // infer that "Modified By" and "the user this changed" are different people.
 const USER_ENTITIES = new Set(['admin.user_rights', 'admin.user_management'])
 
-// Every diff value used to be a plain scalar (string/number/date), where
-// String(v) reads fine — Approver Mapping's `details` was the first field
-// to carry an array of objects, and String() on that gives Array's default
-// join-via-toString, i.e. a useless "[object Object],[object Object]".
-// JSON.stringify for anything non-scalar keeps this generic for whatever
-// nested-detail master audits this next (Drilling Report's Ops grid).
-function formatDiffValue(value) {
-  if (value === null || value === undefined || value === '') return '—'
-  if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
-}
-
 export default function AuditTrail() {
   const [facets, setFacets] = useState({ actions: [], users: [], entities: [] })
-  const [filters, setFilters] = useState({ action: '', entity: '', user: '', q: '' })
+  const [filters, setFilters] = useState({ action: '', entity: '', user: '', q: '', kind: '' })
   const [rows, setRows] = useState([])
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState(null)
+  const [historyFor, setHistoryFor] = useState(null)
+  const [refresh, setRefresh] = useState(0)
 
   useEffect(() => {
     apiFetch('/api/admin/audit/facets/')
@@ -68,7 +47,7 @@ export default function AuditTrail() {
     return () => {
       cancelled = true
     }
-  }, [filters, page])
+  }, [filters, page, refresh])
 
   function updateFilter(key, value) {
     setPage(1)
@@ -110,6 +89,15 @@ export default function AuditTrail() {
               {e.label}
             </option>
           ))}
+        </select>
+        <select
+          value={filters.kind}
+          onChange={(e) => updateFilter('kind', e.target.value)}
+          className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm"
+        >
+          <option value="">Changes and events</option>
+          <option value="change">Data changes only</option>
+          <option value="event">Exports and sign-ins only</option>
         </select>
         <select
           value={filters.user}
@@ -183,12 +171,28 @@ export default function AuditTrail() {
                           ACTION_COLORS[r.action] || 'bg-gray-100 text-gray-600'
                         }`}
                       >
-                        {r.action}
+                        {ACTION_LABELS[r.action] || r.action}
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-foreground">{r.entity_label || r.entity}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">
-                      {r.record_label || '—'}
+                      <div className="flex items-center gap-2">
+                        <span>{r.record_label || '—'}</span>
+                        {r.has_history && (
+                          <button
+                            type="button"
+                            title="Show this record's history"
+                            onClick={(ev) => {
+                              ev.stopPropagation()
+                              setHistoryFor({ entity: r.entity, recordId: r.target_pk || r.record_id, title: r.record_label })
+                            }}
+                            className="flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[11px] text-foreground hover:bg-accent"
+                          >
+                            <IconHistory className="h-3 w-3" /> History
+                          </button>
+                        )}
+                        {r.note && <span className="text-[11px] italic">“{r.note}”</span>}
+                      </div>
                     </td>
                   </tr>
                   {expanded && hasChanges && (
@@ -248,6 +252,17 @@ export default function AuditTrail() {
           Next
         </Button>
       </div>
+
+      {historyFor && (
+        <RecordHistory
+          open
+          entity={historyFor.entity}
+          recordId={historyFor.recordId}
+          title={historyFor.title}
+          onClose={() => setHistoryFor(null)}
+          onChanged={() => setRefresh((n) => n + 1)}
+        />
+      )}
     </div>
   )
 }

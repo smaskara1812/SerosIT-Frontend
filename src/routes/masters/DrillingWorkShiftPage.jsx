@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -145,7 +146,7 @@ function ShiftFields({
   )
 }
 
-function ShiftRow({ row, usedShifts, canEdit, canDelete, onSave, onDelete }) {
+function ShiftRow({ row, usedShifts, canEdit, canDelete, onSave, onDelete, onRestored }) {
   const [editing, setEditing] = useState(false)
   const [shift, setShift] = useState(row.work_shift)
   const [startTime, setStartTime] = useState(row.work_shift_start_time?.slice(0, 5) || '')
@@ -225,11 +226,19 @@ function ShiftRow({ row, usedShifts, canEdit, canDelete, onSave, onDelete }) {
         />
       </td>
       <td className="px-3 py-2 text-right">
-        {canEdit && (
-          <button type="button" onClick={() => setEditing(true)} className="text-xs font-medium text-[#2563eb] hover:underline">
-            Edit
-          </button>
-        )}
+        <div className="flex items-center justify-end gap-2">
+          {canEdit && (
+            <button type="button" onClick={() => setEditing(true)} className="text-xs font-medium text-[#2563eb] hover:underline">
+              Edit
+            </button>
+          )}
+          <HistoryButton
+            menuKey={MENU_KEY}
+            recordId={row.drilling_work_shift_id}
+            title={`Shift ${row.work_shift}`}
+            onChanged={onRestored}
+          />
+        </div>
       </td>
       <td className="px-3 py-2 text-right">
         {canDelete && (
@@ -525,6 +534,7 @@ export default function DrillingWorkShiftPage() {
                           canDelete={canDelete}
                           onSave={saveRow}
                           onDelete={deleteRow}
+                          onRestored={() => loadShifts(projectId, rigId)}
                         />
                       ))}
                       {canAdd && <InsertRow remainingShifts={remainingShifts} onInsert={insertRow} />}

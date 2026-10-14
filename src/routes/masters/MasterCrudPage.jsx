@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import RecordHistory from '@/components/audit/RecordHistory'
+import { useCanViewHistory } from '@/lib/revertible'
 import {
   Combobox,
   ComboboxContent,
@@ -34,6 +36,7 @@ import {
 import {
   IconSearch,
   IconTrash,
+  IconHistory,
   IconChevronLeft,
   IconCheck,
   IconAlertCircle,
@@ -660,6 +663,8 @@ export default function MasterCrudPage() {
   const canEdit = can(user, schema?.menuKey, 'edit')
   const canDelete = can(user, schema?.menuKey, 'delete') && !schema?.noDelete
   const canExport = can(user, schema?.menuKey, 'export')
+  const canViewHistory = useCanViewHistory(user, schema?.menuKey)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
@@ -896,23 +901,47 @@ export default function MasterCrudPage() {
     (pinned && pinned[schema.idField] === selectedId ? pinned : undefined)
   const canWrite = creating ? canAdd : canEdit
 
-  useEffect(() => {
-    if (!selected) return
+  function formFromRecord(rec) {
     const loaded = {}
     for (const f of schema.fields) {
-      loaded[f.name] = selected[f.name]
+      loaded[f.name] = rec[f.name]
       // Shadow fields (a resolved display label / media URL alongside an id
       // or path) aren't part of the schema's own field list but ride along
       // in the API response — carry them into form state too so a
       // search-remote combobox or file preview doesn't need a refetch.
-      if (f.labelField) loaded[f.labelField] = selected[f.labelField]
-      if (f.urlField) loaded[f.urlField] = selected[f.urlField]
+      if (f.labelField) loaded[f.labelField] = rec[f.labelField]
+      if (f.urlField) loaded[f.urlField] = rec[f.urlField]
     }
+    return loaded
+  }
+
+  useEffect(() => {
+    if (!selected) return
+    const loaded = formFromRecord(selected)
     setForm(loaded)
     setSnapshot(JSON.stringify(loaded))
     setError('')
     setFieldErrors({})
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After an App Admin restores this record from its history: pull the row again so the list and the
+  // form show what is in the database now (or drop it if the restore removed it).
+  async function refreshAfterRestore() {
+    const id = selectedId
+    if (id == null) return
+    const res = await apiFetch(`${schema.apiBase}${id}/`)
+    if (!res.ok) {
+      setRows((prev) => prev.filter((r) => r[schema.idField] !== id))
+      setTotalCount((c) => Math.max(0, c - 1))
+      setSelectedId(null)
+      return
+    }
+    const data = await res.json()
+    setRows((prev) => prev.map((r) => (r[schema.idField] === id ? data : r)))
+    const loaded = formFromRecord(data)
+    setForm(loaded)
+    setSnapshot(JSON.stringify(loaded))
+  }
 
   const isDirty = creating
     ? schema.fields.filter((f) => f.required).every((f) => String(form[f.name] ?? '').trim())
@@ -1247,11 +1276,18 @@ export default function MasterCrudPage() {
               <h2 className="text-base font-semibold text-foreground">
                 {creating ? `New ${singularize(schema.title)}` : selected[schema.nameField]}
               </h2>
-              {selected && canDelete && (
-                <Button variant="destructive" size="sm" onClick={handleDeleteClick} aria-label={`Delete ${selected[schema.nameField]}`}>
-                  <IconTrash className="h-4 w-4" />
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {selected && canViewHistory && (
+                  <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)} aria-label="Show history">
+                    <IconHistory className="h-4 w-4" /> History
+                  </Button>
+                )}
+                {selected && canDelete && (
+                  <Button variant="destructive" size="sm" onClick={handleDeleteClick} aria-label={`Delete ${selected[schema.nameField]}`}>
+                    <IconTrash className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
@@ -1391,6 +1427,17 @@ export default function MasterCrudPage() {
       </Dialog>
 
       {leaveDialog}
+
+      {historyOpen && selected && (
+        <RecordHistory
+          open
+          entity={schema.menuKey}
+          recordId={selected[schema.idField]}
+          title={selected[schema.nameField]}
+          onClose={() => setHistoryOpen(false)}
+          onChanged={refreshAfterRestore}
+        />
+      )}
     </div>
   )
 }

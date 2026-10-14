@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -123,7 +124,7 @@ function RateFields({ rateTypeOptions, currencies, rateTypeId, onRateTypeChange,
   )
 }
 
-function RateRow({ row, rateTypes, usedIds, currencies, canEdit, canDelete, onSave, onDelete }) {
+function RateRow({ row, rateTypes, usedIds, currencies, canEdit, canDelete, onSave, onDelete, onRestored }) {
   const [editing, setEditing] = useState(false)
   const [rateTypeId, setRateTypeId] = useState(row.drilling_rate)
   const [currencyId, setCurrencyId] = useState(row.currency)
@@ -191,15 +192,23 @@ function RateRow({ row, rateTypes, usedIds, currencies, canEdit, canDelete, onSa
         {row.rate != null ? Number(row.rate).toFixed(2) : '—'}
       </td>
       <td className="px-3 py-2 text-right">
-        {canEdit && (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="text-xs font-medium text-[#2563eb] hover:underline"
-          >
-            Edit
-          </button>
-        )}
+        <div className="flex items-center justify-end gap-2">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-xs font-medium text-[#2563eb] hover:underline"
+            >
+              Edit
+            </button>
+          )}
+          <HistoryButton
+            menuKey={MENU_KEY}
+            recordId={row.prj_drilling_rate_id}
+            title={row.rate_code}
+            onChanged={onRestored}
+          />
+        </div>
       </td>
       <td className="px-3 py-2 text-right">
         {canDelete && (
@@ -513,6 +522,7 @@ export default function ProjectDrillingRatesPage() {
                           canDelete={canDelete}
                           onSave={saveRow}
                           onDelete={deleteRow}
+                          onRestored={() => loadRates(projectId, rigId)}
                         />
                       ))}
                       {canAdd && (
