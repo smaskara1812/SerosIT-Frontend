@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { navSections } from '@/config/nav'
 import { useTopbarSubtitle } from '@/context/TopbarContext'
 import { IconChevronLeft } from '@/components/icons'
+import DisplaySize from '@/components/layout/DisplaySize'
 
 // New/edit form routes (e.g. /it-asset/it-assets/12/edit,
 // /drilling/drilling-report/new) live one or two segments below their list
@@ -35,7 +36,7 @@ export default function Topbar() {
         {active?.label ?? 'Dashboard'}
       </span>
       {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-3">
         {isSubPage && (
           <Link
             to={active.path}
@@ -45,6 +46,7 @@ export default function Topbar() {
             Back to {active.label}
           </Link>
         )}
+        <DisplaySize />
       </div>
     </header>
   )

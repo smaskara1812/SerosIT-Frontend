@@ -56,7 +56,6 @@ import {
   Landmark,
   MailWarning,
   Drill,
-  Gauge,
   HardDrive,
   Grid3x3,
   Radar,
@@ -74,11 +73,11 @@ import {
 // items with one only show for users who can view that key (see
 // lib/permissions.js `can()`).
 export const navTree = [
-  { key: 'home', label: 'Home', path: '/', icon: IconDashboard },
+  { key: 'home', label: 'Home', path: '/', icon: IconHome },
   {
     key: 'dashboards',
     label: 'Dashboards',
-    icon: Gauge,
+    icon: IconDashboard,
     sections: [
       {
         items: [

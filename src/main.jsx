@@ -1,4 +1,5 @@
 import { StrictMode } from 'react'
+import { applyScale } from '@/lib/uiScale'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
@@ -34,6 +35,8 @@ function Root() {
 }
 
 const router = createBrowserRouter([{ path: '*', element: <Root /> }])
+
+applyScale() // before the first paint, so the page never flashes at the wrong size
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

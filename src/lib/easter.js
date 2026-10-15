@@ -49,5 +49,6 @@ export function makeMultiClick(onFive, count = 5, windowMs = 2000) {
 // A rubber stamp thumps onto the screen ('approved' or 'rejected'); played by the StampLayer in the app shell.
 export function triggerStamp(kind) {
   if (!EASTER_EGGS.approvalStamp) return
+  if (Math.random() >= EASTER_EGGS.approvalStampChance) return // only now and then, so it stays a treat
   window.dispatchEvent(new CustomEvent('seros:stamp', { detail: { kind } }))
 }
