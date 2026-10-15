@@ -27,6 +27,7 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { IconTrash, IconPlus } from '@/components/icons'
 import { Download, Check, X, ShieldCheck } from 'lucide-react'
 import AccessDenied from '@/components/AccessDenied'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'drilling.drilling_report'
 const API = '/api/drilling/drilling-report/'
@@ -660,7 +661,7 @@ export default function DrillingReportFormPage() {
       </div>
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <FieldErrorScope errors={fieldErrors} className="flex w-full flex-col gap-4">
           {selectedRecord?.cr_status === 'N' && selectedRecord?.revision_note && (

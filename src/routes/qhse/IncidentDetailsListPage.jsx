@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
 import { Pencil, Printer } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 // The list only reads these; the full record (74 fields, long text) is loaded when one is opened.
 const LIST_FIELDS = [
@@ -299,7 +300,7 @@ export default function IncidentDetailsListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
@@ -396,7 +397,7 @@ export default function IncidentDetailsListPage() {
             })}
             {loadingMore && (
               <tr>
-                <td colSpan={7} className="p-3 text-center text-xs text-muted-foreground">Loading more…</td>
+                <td colSpan={7} className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></td>
               </tr>
             )}
           </tbody>

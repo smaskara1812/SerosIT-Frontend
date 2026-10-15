@@ -31,6 +31,7 @@ import { DrillingMiniMap, DrillingWellsMap } from './DrillingMap'
 import { IconSearch, IconTrash } from '@/components/icons'
 import { Download, Map as MapIcon, List as ListIcon } from 'lucide-react'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'drilling.drilling_information'
 const API = '/api/drilling/drilling-information/'
@@ -717,7 +718,7 @@ export default function DrillingInformationPage() {
           </div>
           {viewMode === 'list' && (
             <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-y-auto border-t border-border">
-              {loading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+              {loading && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
               {!loading && rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">No records found.</p>}
               {rows.map((r) => (
                 <button
@@ -734,7 +735,7 @@ export default function DrillingInformationPage() {
                   </div>
                 </button>
               ))}
-              {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>}
+              {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>}
             </div>
           )}
         </div>

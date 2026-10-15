@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { IconTrash } from '@/components/icons'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.incident_root_cause'
 
@@ -337,7 +338,7 @@ export default function IncidentRootCausePage() {
             )}
             {form.incident && loadingRows && (
               <tr>
-                <td colSpan={4} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={4} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {form.incident && !loadingRows && rows.length === 0 && (

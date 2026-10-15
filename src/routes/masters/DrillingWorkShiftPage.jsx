@@ -20,6 +20,7 @@ import {
 import { RemoteCombobox, TilePicker } from './MasterCrudPage'
 import { IconChevronLeft, IconTrash } from '@/components/icons'
 import { Download } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'masters.drilling_work_shift'
 const API = '/api/masters/drilling-work-shifts/'
@@ -509,7 +510,7 @@ export default function DrillingWorkShiftPage() {
           {Boolean(rigId) && (
             <div className="mt-6">
               <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Work Shifts</p>
-              {loadingShifts && <p className="text-sm text-muted-foreground">Loading…</p>}
+              {loadingShifts && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
               {!loadingShifts && shifts && (
                 <div className="overflow-hidden rounded-xl border border-border">
                   <table className="w-full text-sm">

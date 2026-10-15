@@ -4,6 +4,8 @@ import Sidebar from './Sidebar'
 import SecondarySidebar from './SecondarySidebar'
 import Topbar from './Topbar'
 import { TopbarProvider } from '@/context/TopbarContext'
+import RigLoading from '@/components/RigLoading'
+import GusherLayer from '@/components/GusherLayer'
 
 export default function AppShell() {
   return (
@@ -14,13 +16,14 @@ export default function AppShell() {
       >
         Skip to main content
       </a>
+      <GusherLayer />
       <Sidebar />
       <SecondarySidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopbarProvider>
           <Topbar />
           <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6 outline-none">
-            <Suspense fallback={<p className="p-6 text-sm text-muted-foreground">Loading…</p>}>
+            <Suspense fallback={<p className="p-6 text-sm text-muted-foreground"><RigLoading /></p>}>
               <Outlet />
             </Suspense>
           </main>

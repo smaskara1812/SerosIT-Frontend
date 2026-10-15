@@ -18,6 +18,7 @@ import {
   QuickActions,
 } from './DashboardUI'
 import { useUrlIdSet } from './dashboardUrlState'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'dashboards.it_asset_overview'
 
@@ -140,7 +141,7 @@ export default function ItAssetDashboardPage() {
       </DashboardToolbar>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-      {loading && !data && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+      {loading && !data && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
 
       {data && (
         <>

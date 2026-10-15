@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
 import { can } from '@/lib/permissions'
+import { makeMultiClick, triggerGusher } from '@/lib/easter'
+import { pickSpudMessage } from '@/lib/rigLines'
 import { IconChevronLeft, IconChevronRight, IconLogout } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,6 +43,9 @@ export default function Sidebar() {
   const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const shownName = user?.display_name || user?.username
   const { pathname } = useLocation()
+  // Five quick clicks on the logo: a small surprise.
+  const firstName = (user?.display_name || user?.username || '').split(' ')[0]
+  const logoClicks = useMemo(() => makeMultiClick(() => triggerGusher(pickSpudMessage(firstName))), [firstName])
 
   function toggle() {
     setCollapsed((prev) => {
@@ -67,7 +72,7 @@ export default function Sidebar() {
     >
       {/* Brand — full wordmark when expanded; cropped to just the mark when
           the rail is too narrow for the wordmark to fit uncropped. */}
-      <div className="flex h-16 items-center justify-center px-3">
+      <div className="flex h-16 items-center justify-center px-3" onClick={logoClicks}>
         {collapsed ? (
           <img
             src="/android-chrome-192x192.png"

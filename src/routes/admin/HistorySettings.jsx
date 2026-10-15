@@ -5,6 +5,7 @@ import { resetRevertible } from '@/lib/revertible'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { IconSearch } from '@/components/icons'
+import RigLoading from '@/components/RigLoading'
 
 function Switch({ checked, onChange, disabled, label }) {
   return (
@@ -140,7 +141,7 @@ export default function HistorySettings() {
 
       <div className="flex-1 overflow-y-auto p-4">
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-        {!pages && !error && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {!pages && !error && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
         {pages && groups.length === 0 && <p className="text-sm text-muted-foreground">No pages match.</p>}
 
         <div className="space-y-5">

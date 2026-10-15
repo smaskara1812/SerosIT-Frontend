@@ -5,6 +5,7 @@ import { ACTION_COLORS, ACTION_LABELS, formatDiffValue } from '@/lib/auditFormat
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import RigLoading from '@/components/RigLoading'
 
 // Each row of the history is a version of the record: how it looked right after that change. One
 // action per row: restore that version. A row that records a deletion has no version of its own, so
@@ -228,7 +229,7 @@ export default function RecordHistory({ open, onClose, entity, table, recordId, 
           </div>
         )}
 
-        {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {loading && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         {!loading && !error && entries.length === 0 && (
           <p className="text-sm text-muted-foreground">No changes have been logged for this record yet.</p>

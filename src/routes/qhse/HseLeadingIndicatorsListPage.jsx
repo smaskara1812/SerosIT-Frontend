@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconSearch, IconTrash } from '@/components/icons'
 import { Pencil } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 function SelectField({ label, value, onChange, options, width }) {
   return (
@@ -202,7 +203,7 @@ export default function HseLeadingIndicatorsListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={5} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
@@ -242,7 +243,7 @@ export default function HseLeadingIndicatorsListPage() {
             ))}
             {loadingMore && (
               <tr>
-                <td colSpan={5} className="p-3 text-center text-xs text-muted-foreground">Loading more…</td>
+                <td colSpan={5} className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></td>
               </tr>
             )}
           </tbody>

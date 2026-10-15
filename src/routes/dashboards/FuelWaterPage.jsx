@@ -9,6 +9,7 @@ import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { ChartCard, DashboardToolbar, EmptyChartState, KpiCard, MultiSelectPopover, YearSelect } from './DashboardUI'
 import { useUrlIdSet, useUrlYear } from './dashboardUrlState'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'dashboards.fuel_water'
 const TOOLTIP_STYLE = { background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }
@@ -117,7 +118,7 @@ export default function FuelWaterPage() {
       </DashboardToolbar>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-      {!data && !error && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+      {!data && !error && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
 
       {data && (
         <div className={`flex flex-col gap-4 transition-opacity ${refreshing ? 'pointer-events-none opacity-50' : ''}`} aria-busy={refreshing}>

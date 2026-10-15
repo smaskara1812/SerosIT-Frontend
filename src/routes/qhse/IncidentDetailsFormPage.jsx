@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { X } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const FIELD_LABELS = {
   rig: 'Rig', rig_incident_no: 'Rig Incident No.', unit_name: 'Unit', incident_party: 'Incident Belongs To',
@@ -473,7 +474,7 @@ export default function IncidentDetailsFormPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <SectionCard title="Incident">

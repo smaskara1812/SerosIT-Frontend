@@ -7,6 +7,7 @@ import { can } from '@/lib/permissions'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { ChartCard, DashboardToolbar, EmptyChartState, KpiCard, MultiSelectPopover } from './DashboardUI'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'dashboards.rig_health'
 
@@ -79,7 +80,7 @@ export default function RigHealthDashboardPage() {
       </DashboardToolbar>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-      {loading && !data && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+      {loading && !data && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
 
       {data && (
         <>

@@ -7,6 +7,7 @@ import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { DashboardToolbar, KpiCard, MultiSelectPopover } from './DashboardUI'
 import { useUrlIdSet, useUrlString } from './dashboardUrlState'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'dashboards.fleet_operating_picture'
 
@@ -79,7 +80,7 @@ export default function FleetOperatingPicturePage() {
       </DashboardToolbar>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-      {loading && !data && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+      {loading && !data && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
 
       {data && (
         <>

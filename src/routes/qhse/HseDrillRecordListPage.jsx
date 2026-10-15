@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
 import { Pencil, Printer, ClipboardList } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.hse_drill_record'
 
@@ -250,7 +251,7 @@ export default function HseDrillRecordListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
@@ -316,7 +317,7 @@ export default function HseDrillRecordListPage() {
             })}
             {loadingMore && (
               <tr>
-                <td colSpan={7} className="p-3 text-center text-xs text-muted-foreground">Loading more…</td>
+                <td colSpan={7} className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></td>
               </tr>
             )}
           </tbody>

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.corrective_actions'
 const API = '/api/qhse/corrective-actions/'
@@ -237,7 +238,7 @@ export default function CorrectiveActionFormPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-2">

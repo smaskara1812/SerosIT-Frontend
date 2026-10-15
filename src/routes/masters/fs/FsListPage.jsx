@@ -15,6 +15,7 @@ import { IconSearch, IconTrash, IconChevronDown } from '@/components/icons'
 import { Pencil, UserCheck, UserRound } from 'lucide-react'
 import { FS_KINDS } from './fsKinds'
 import { openEmployeeStatus } from './openStatus'
+import RigLoading from '@/components/RigLoading'
 
 const ACTIVE_OPTIONS = [
   { value: '', label: 'All' },
@@ -227,7 +228,7 @@ export default function FsListPage({ kind: kindKey }) {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={kind.columns.length + 2} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={kind.columns.length + 2} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
@@ -321,7 +322,7 @@ export default function FsListPage({ kind: kindKey }) {
             })}
             {loadingMore && (
               <tr>
-                <td colSpan={kind.columns.length + 2} className="p-3 text-center text-xs text-muted-foreground">Loading more…</td>
+                <td colSpan={kind.columns.length + 2} className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></td>
               </tr>
             )}
           </tbody>

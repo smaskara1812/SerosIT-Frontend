@@ -20,6 +20,7 @@ import {
 import { RemoteCombobox } from './MasterCrudPage'
 import { IconChevronLeft, IconTrash } from '@/components/icons'
 import { Download } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'masters.project_drilling_rates'
 const API = '/api/masters/project-drilling-rates/'
@@ -497,7 +498,7 @@ export default function ProjectDrillingRatesPage() {
               <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                 Drilling Rates
               </p>
-              {loadingRates && <p className="text-sm text-muted-foreground">Loading…</p>}
+              {loadingRates && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
               {!loadingRates && rates && (
                 <div className="overflow-hidden rounded-xl border border-border">
                   <table className="w-full text-sm">

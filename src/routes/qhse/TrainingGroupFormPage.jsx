@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.training_group'
 const API = '/api/qhse/training-group/'
@@ -335,7 +336,7 @@ export default function TrainingGroupFormPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <div className="rounded-2xl border border-border bg-card p-7">

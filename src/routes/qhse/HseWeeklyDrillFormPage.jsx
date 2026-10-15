@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
 import { Pencil } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const FIELD_LABELS = { rig: 'Rig', year: 'Year', drill_week: 'Week' }
 
@@ -249,7 +250,7 @@ function DrillsPanel({ hdrId, week, weekStart, weekEnd, canAdd, canEdit, canDele
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="p-5 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={5} className="p-5 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
@@ -422,7 +423,7 @@ export default function HseWeeklyDrillFormPage() {
       {error && <p ref={bannerRef} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm whitespace-pre-line text-destructive">{error}</p>}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <div className="rounded-2xl border border-border bg-card p-7">

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
 import { Pencil, Upload, X } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 // The four legacy tabs that are a plain description grid (Event also
 // carries a per-line time) — Photo Upload is handled separately below
@@ -273,7 +274,7 @@ export default function HseDrillRecordChildPanel({ hdrId, drillDate, canAdd, can
             </div>
           )}
 
-          {photosLoading && <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>}
+          {photosLoading && <p className="py-8 text-center text-sm text-muted-foreground"><RigLoading /></p>}
           {!photosLoading && photos.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">No photos uploaded yet.</p>
           )}
@@ -372,7 +373,7 @@ export default function HseDrillRecordChildPanel({ hdrId, drillDate, canAdd, can
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={tab.hasTime ? 3 : 2} className="p-5 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={tab.hasTime ? 3 : 2} className="p-5 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (

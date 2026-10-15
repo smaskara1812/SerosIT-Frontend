@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
@@ -9,6 +9,7 @@ import { navLeavesByPath, isLeafAccessible } from '@/lib/shortcuts'
 import { ArrowUpRight } from 'lucide-react'
 import { IconPlus } from '@/components/icons'
 import ShortcutsPicker from '@/routes/ShortcutsPicker'
+import { useKonami } from '@/lib/easter'
 import HomeHero from '@/components/home/HomeHero'
 import AttentionDigest from '@/components/home/AttentionDigest'
 
@@ -82,6 +83,7 @@ function ShortcutCard({ to, icon: Icon, label, sub, onRemove }) {
   return (
     <NavLink
       to={to}
+      data-shelf
       className="group relative flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -114,6 +116,7 @@ function ModuleCard({ to, icon: Icon, label, sub }) {
   return (
     <NavLink
       to={to}
+      data-shelf
       className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
     >
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -230,12 +233,22 @@ export default function Home() {
     saveShortcuts(customPaths.filter((p) => p !== path))
   }
 
+  // The hidden code puts the welcome banner into "drill-down" for a few seconds.
+  const [drilling, setDrilling] = useState(false)
+  const drillTimer = useRef(0)
+  useKonami(() => {
+    setDrilling(true)
+    clearTimeout(drillTimer.current)
+    drillTimer.current = setTimeout(() => setDrilling(false), 12500)
+  })
+  useEffect(() => () => clearTimeout(drillTimer.current), [])
+
   const hasDigest = digest && digest.length > 0
 
   return (
     <div className="space-y-8 pb-6">
       <Reveal className="relative z-20">
-        <HomeHero firstName={firstName} info={info} />
+        <HomeHero firstName={firstName} info={info} drilling={drilling} />
       </Reveal>
 
       <Reveal delay={80}>

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { IconSearch } from '@/components/icons'
 import { Pencil } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.cert_to_rank_mapping'
 const API = '/api/qhse/cert-to-rank-mapping/'
@@ -96,7 +97,7 @@ export default function CertToRankMappingListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={4} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={4} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (

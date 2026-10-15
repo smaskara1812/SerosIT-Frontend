@@ -10,6 +10,7 @@ import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
 import { IconSearch } from '@/components/icons'
 import { Download } from 'lucide-react'
 import { formatDay } from '@/lib/text'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'drilling.drilling_report'
 const API = '/api/drilling/drilling-report/'
@@ -300,7 +301,7 @@ export default function DrillingReportListPage() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground"><RigLoading /></td></tr>
             )}
             {!loading && rows.length === 0 && (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No records found.</td></tr>
@@ -328,7 +329,7 @@ export default function DrillingReportListPage() {
             })}
           </tbody>
         </table>
-        {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>}
+        {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>}
       </div>
     </div>
   )

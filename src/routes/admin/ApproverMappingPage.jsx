@@ -20,6 +20,7 @@ import {
 import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { IconSearch, IconTrash, IconPlus } from '@/components/icons'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import RigLoading from '@/components/RigLoading'
 
 const REQUIRED = 'This field is required.'
 const FIELD_LABELS = { approval_code: 'Approval Code', approver_user: 'User', approver_level: 'Level', approver_active: 'Active', details: 'Rig / Department Scope' }
@@ -490,7 +491,7 @@ export default function ApproverMappingPage() {
             )}
           </div>
           <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-y-auto border-t border-border">
-            {loading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+            {loading && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
             {!loading && rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">No records found.</p>}
             {rows.map((r) => (
               <button
@@ -516,13 +517,13 @@ export default function ApproverMappingPage() {
                 </span>
               </button>
             ))}
-            {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>}
+            {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card p-5">
           {!showForm && <p className="text-sm text-muted-foreground">Select a record, or create a new one.</p>}
-          {showForm && loadingDetail && <p className="text-sm text-muted-foreground">Loading…</p>}
+          {showForm && loadingDetail && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
           {showForm && !loadingDetail && (
             <div className="mx-auto flex max-w-3xl flex-col gap-4">
               <div className="flex items-center justify-between">

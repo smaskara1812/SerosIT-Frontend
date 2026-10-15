@@ -13,6 +13,7 @@ import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import RigLoading from '@/components/RigLoading'
 
 const FIELD_LABELS = {
   rig: 'Rig', drill_dt: 'Drill Date and Time', drill_date: 'Drill Date', drill_time: 'Drill Time', drill_location: 'Drill Location',
@@ -382,7 +383,7 @@ export default function HseDrillRecordFormPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <SectionCard title="Drill">

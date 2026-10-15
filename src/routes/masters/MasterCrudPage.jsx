@@ -44,6 +44,7 @@ import {
 import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, X } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
 import { nextDay } from '@/lib/mastersChecks'
+import RigLoading from '@/components/RigLoading'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
@@ -279,7 +280,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
           )}
         </ComboboxList>
         {mode === 'search' && loadingMore && (
-          <div className="py-1.5 text-center text-xs text-muted-foreground">Loading more…</div>
+          <div className="py-1.5 text-center text-xs text-muted-foreground"><RigLoading more /></div>
         )}
       </ComboboxContent>
     </Combobox>
@@ -1192,7 +1193,7 @@ export default function MasterCrudPage() {
           onScroll={handleListScroll}
           className="flex-1 overflow-y-auto border-t border-border"
         >
-          {loading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+          {loading && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
           {!loading && rows.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">No records found.</p>
           )}
@@ -1258,7 +1259,7 @@ export default function MasterCrudPage() {
             </button>
           ))}
           {loadingMore && (
-            <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>
+            <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>
           )}
         </div>
       </div>

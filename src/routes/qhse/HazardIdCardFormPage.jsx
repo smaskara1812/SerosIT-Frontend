@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import RigLoading from '@/components/RigLoading'
 
 const FIELD_LABELS = {
   rig: 'Rig', event_dt: 'Event Date and Time', event_time: 'Event Time', close_out_time: 'Close Out Time', reported_by_party: 'Reported By Party', reported_by_fs_emp: 'Reported By',
@@ -393,7 +394,7 @@ export default function HazardIdCardFormPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <SectionCard title="Card">

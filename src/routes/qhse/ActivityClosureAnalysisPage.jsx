@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Download } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.activity_closure_analysis'
 
@@ -173,7 +174,7 @@ export default function ActivityClosureAnalysisPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-border bg-card">
-        {loading && <p className="p-6 text-sm text-muted-foreground">Loading…</p>}
+        {loading && <p className="p-6 text-sm text-muted-foreground"><RigLoading /></p>}
         {!loading && result && result.rows.length === 0 && (
           <p className="p-6 text-sm text-muted-foreground">No completed activities for this selection.</p>
         )}
@@ -268,7 +269,7 @@ export default function ActivityClosureAnalysisPage() {
             className="max-h-[60vh] overflow-auto rounded-lg border border-border"
           >
             {drilldownLoading ? (
-              <p className="p-4 text-sm text-muted-foreground">Loading…</p>
+              <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>
             ) : (
               <table className="w-full border-collapse text-sm">
                 <thead>
@@ -296,7 +297,7 @@ export default function ActivityClosureAnalysisPage() {
               </table>
             )}
             {drilldownLoadingMore && (
-              <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>
+              <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>
             )}
           </div>
         </DialogContent>

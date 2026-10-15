@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { MultiSelectPopover } from '@/components/MultiSelectPopover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { ChartCard, DashboardToolbar, KpiCard } from './DashboardUI'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'dashboards.incident_dashboard'
 
@@ -398,7 +399,7 @@ export default function IncidentDashboardPage() {
       </DashboardToolbar>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-      {loading && !data && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+      {loading && !data && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
 
       {data && (
         <>

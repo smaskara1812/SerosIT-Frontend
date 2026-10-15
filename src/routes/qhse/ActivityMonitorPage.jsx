@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { IconSearch, IconAlertCircle } from '@/components/icons'
 import { Download } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.activity_monitor'
 
@@ -469,7 +470,7 @@ export default function ActivityMonitorPage() {
             </div>
           </div>
           <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-y-auto border-t border-border">
-            {loading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+            {loading && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
             {!loading && rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">No records found.</p>}
             {rows.map((r) => (
               <button
@@ -494,7 +495,7 @@ export default function ActivityMonitorPage() {
                 />
               </button>
             ))}
-            {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>}
+            {loadingMore && <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>}
           </div>
         </div>
 
@@ -603,7 +604,7 @@ export default function ActivityMonitorPage() {
                 </h2>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
-                {loadingDetail && <p className="text-sm text-muted-foreground">Loading…</p>}
+                {loadingDetail && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
                 {!loadingDetail && detail && editForm && (
                   <>
                     {error && (

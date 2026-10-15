@@ -11,6 +11,7 @@ import AccessDenied from '@/components/AccessDenied'
 import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
 import { FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import RigLoading from '@/components/RigLoading'
 
 const API = '/api/masters/it-accessories/'
 const MENU_KEY = 'masters.it_accessories'
@@ -117,7 +118,7 @@ export default function ItAccessoryFormPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <div className="rounded-2xl border border-border bg-card p-5">
           <h2 className="mb-4 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">

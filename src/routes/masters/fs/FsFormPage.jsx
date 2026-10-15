@@ -15,6 +15,7 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { UserCheck, UserRound } from 'lucide-react'
 import { FS_KINDS } from './fsKinds'
 import { openEmployeeStatus } from './openStatus'
+import RigLoading from '@/components/RigLoading'
 
 // Fields in the order the schema declares them, grouped by their `section`.
 function groupBySection(fields) {
@@ -177,7 +178,7 @@ export default function FsFormPage({ kind: kindKey }) {
       {!canWrite && <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">You have view-only access to this page.</p>}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         sections.map((section) => (
           <div key={section.title} className="rounded-2xl border border-border bg-card p-5">

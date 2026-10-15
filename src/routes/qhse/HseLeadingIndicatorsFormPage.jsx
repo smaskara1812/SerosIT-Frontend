@@ -14,6 +14,7 @@ import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import RigLoading from '@/components/RigLoading'
 
 const RIG_FIELD = { type: 'select-remote', remote: '/api/masters/rigs/', optionLabel: 'rig_name', optionValue: 'rig_id', labelField: 'rig_name' }
 const COMPANY_FIELD = { type: 'search-remote', remote: '/api/masters/companies/', optionLabel: 'company_name', optionValue: 'company_id', labelField: 'company_name' }
@@ -313,7 +314,7 @@ export default function HseLeadingIndicatorsFormPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <div className="rounded-2xl border border-border bg-card p-7">

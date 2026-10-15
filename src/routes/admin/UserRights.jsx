@@ -15,6 +15,7 @@ import {
 import UserFilterTabs from '@/components/admin/UserFilterTabs'
 import { IconSearch, IconCheck, IconChevronDown } from '@/components/icons'
 import { BookmarkPlus, X } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const ACTIONS = ['view', 'add', 'edit', 'delete', 'export']
 
@@ -409,7 +410,7 @@ export default function UserRights() {
           className="flex-1 overflow-y-auto border-t border-border"
           onScroll={(e) => onListScroll(e, hasMore, loadMore)}
         >
-          {loadingUsers && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+          {loadingUsers && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
           {!loadingUsers && users.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">No users found.</p>
           )}
@@ -447,7 +448,7 @@ export default function UserRights() {
             </button>
           ))}
           {loadingMore && (
-            <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>
+            <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>
           )}
         </div>
       </div>
@@ -575,7 +576,7 @@ export default function UserRights() {
             )}
 
             <div className="flex-1 overflow-y-auto p-4">
-              {loadingDetail && <p className="text-sm text-muted-foreground">Loading…</p>}
+              {loadingDetail && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
 
               {isAppAdmin && !loadingDetail && (
                 <p className="mb-4 rounded-lg bg-[#eef3fb] px-3 py-2 text-xs text-[#1a3f7a]">

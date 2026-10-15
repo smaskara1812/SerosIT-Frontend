@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconSearch, IconTrash } from '@/components/icons'
 import { Pencil } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.training_log'
 const API = '/api/qhse/training-log/'
@@ -201,7 +202,7 @@ export default function TrainingLogListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={8} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
@@ -239,7 +240,7 @@ export default function TrainingLogListPage() {
             ))}
             {loadingMore && (
               <tr>
-                <td colSpan={8} className="p-3 text-center text-xs text-muted-foreground">Loading more…</td>
+                <td colSpan={8} className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></td>
               </tr>
             )}
           </tbody>

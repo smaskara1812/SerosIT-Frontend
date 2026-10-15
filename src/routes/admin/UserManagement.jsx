@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import UserFilterTabs from '@/components/admin/UserFilterTabs'
 import { IconSearch } from '@/components/icons'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import RigLoading from '@/components/RigLoading'
 
 function onListScroll(e, hasMore, loadMore) {
   const el = e.currentTarget
@@ -228,7 +229,7 @@ export default function UserManagement() {
           className="flex-1 overflow-y-auto border-t border-border"
           onScroll={(e) => onListScroll(e, hasMore, loadMore)}
         >
-          {loadingUsers && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+          {loadingUsers && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
           {!loadingUsers && users.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">No users found.</p>
           )}
@@ -264,7 +265,7 @@ export default function UserManagement() {
             </button>
           ))}
           {loadingMore && (
-            <p className="p-3 text-center text-xs text-muted-foreground">Loading more…</p>
+            <p className="p-3 text-center text-xs text-muted-foreground"><RigLoading more /></p>
           )}
         </div>
       </div>

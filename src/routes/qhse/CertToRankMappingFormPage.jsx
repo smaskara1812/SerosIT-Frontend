@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.cert_to_rank_mapping'
 const API = '/api/qhse/cert-to-rank-mapping/'
@@ -236,7 +237,7 @@ export default function CertToRankMappingFormPage() {
       {!writable && !loading && <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">You have view-only access to this page.</p>}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           {writable && (

@@ -27,6 +27,7 @@ import {
 } from '@/components/icons'
 import { Download } from 'lucide-react'
 import { formatApiError } from '@/lib/errors'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'masters.job_descriptions'
 const LABELS = { jd_dtl_description: 'Description', jd_dtl_order: 'Order', jd_hdr_description: 'Section', jd_hdr_order: 'Order' }
@@ -518,7 +519,7 @@ export default function JobDescriptionsPage() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto border-t border-border">
-            {loadingRanks && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+            {loadingRanks && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
             {filtered.map((r) => (
               <button
                 key={r.rank_id}
@@ -590,7 +591,7 @@ export default function JobDescriptionsPage() {
                 </div>
               )}
 
-              {loadingSections && <p className="text-sm text-muted-foreground">Loading…</p>}
+              {loadingSections && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
               {!loadingSections && sections.length === 0 && !addingSection && (
                 <p className="mb-3 text-sm text-muted-foreground">
                   No sections yet for this rank.

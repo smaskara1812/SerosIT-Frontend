@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { localDateStr } from '@/lib/naiveDateTime'
+import RigLoading from '@/components/RigLoading'
 
 const FIELD_LABELS = { cost_centre: 'Cost Centre', rig: 'Rig', report_no: 'Report No.', report_month: 'Period' }
 
@@ -648,7 +649,7 @@ export default function MisHseReturnPage() {
           </div>
 
           {loadingDetail || !detail ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+            <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
           ) : (
             <div className="rounded-2xl border border-border bg-card p-5">
               {activeTab === 'manhours' && (

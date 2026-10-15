@@ -22,6 +22,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.incident_actions'
 
@@ -403,7 +404,7 @@ export default function IncidentActionsPage() {
             )}
             {form.incident && loadingRows && (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">Loading…</td>
+                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground"><RigLoading /></td>
               </tr>
             )}
             {form.incident && !loadingRows && rows.length === 0 && (

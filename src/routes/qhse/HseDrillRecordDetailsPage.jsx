@@ -8,6 +8,7 @@ import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import HseDrillRecordChildPanel from './HseDrillRecordChildPanel'
 import { Button } from '@/components/ui/button'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.hse_drill_record'
 
@@ -99,7 +100,7 @@ export default function HseDrillRecordDetailsPage() {
       </div>
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           {/* Read-only header context — the fields themselves are owned by

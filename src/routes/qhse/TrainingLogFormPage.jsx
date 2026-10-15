@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.training_log'
 const API = '/api/qhse/training-log/'
@@ -473,7 +474,7 @@ export default function TrainingLogFormPage() {
       {!writable && !loading && <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">You have view-only access to Training Log.</p>}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">Loading…</p>
+        <p className="py-16 text-center text-sm text-muted-foreground"><RigLoading /></p>
       ) : (
         <>
           <div className="rounded-2xl border border-border bg-card p-6">

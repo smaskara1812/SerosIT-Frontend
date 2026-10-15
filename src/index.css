@@ -149,3 +149,39 @@
     @apply font-sans;
     }
 }
+/* Home banner "drill-down" (hidden Konami surprise): the contours sway like a seismic read-out and the sonar rings ping outward. */
+@keyframes contour-sway {
+  from { transform: translateY(-7px); }
+  to { transform: translateY(9px); }
+}
+@keyframes ring-ping {
+  0% { transform: scale(0.82); opacity: 0.9; }
+  100% { transform: scale(1.5); opacity: 0.1; }
+}
+.hero-drill .contour-line { animation: contour-sway 0.9s ease-in-out infinite alternate; }
+.hero-drill .sonar-ring { transform-box: fill-box; transform-origin: center; animation: ring-ping 1.5s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-drill .contour-line, .hero-drill .sonar-ring { animation: none; }
+}
+
+/* Offshore scene (same hidden surprise): the rig jacks up out of the sea, the boat crosses, the swell rolls. */
+@keyframes boat-sail { from { transform: translateX(-210px); } to { transform: translateX(1300px); } }
+@keyframes boat-bob { from { transform: translateY(-3px) rotate(-0.5deg); } to { transform: translateY(4px) rotate(0.6deg); } }
+@keyframes swell-roll { from { transform: translateX(0); } to { transform: translateX(-600px); } }
+@keyframes rig-rise { from { transform: translateY(60px); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(0); opacity: 1; } }
+@keyframes flare-flicker { 0%, 100% { transform: scaleY(1) scaleX(1); } 30% { transform: scaleY(1.25) scaleX(0.85); } 60% { transform: scaleY(0.85) scaleX(1.1); } }
+@keyframes light-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0.15; } }
+.hero-drill .boat-sail { animation: boat-sail 11.5s linear 0.4s both; }
+.hero-drill .boat-bob { transform-box: fill-box; transform-origin: center; animation: boat-bob 2s ease-in-out infinite alternate; }
+.hero-drill .swell-a { animation: swell-roll 6s linear infinite; }
+.hero-drill .swell-b { animation: swell-roll 4s linear infinite; }
+.hero-drill .rig-rise { animation: rig-rise 1.4s ease-out both; }
+.hero-drill .rig-flare { transform-box: fill-box; transform-origin: 50% 100%; animation: flare-flicker 0.45s ease-in-out infinite; }
+.hero-drill .rig-flare-b { animation-duration: 0.3s; }
+.hero-drill .rig-light { animation: light-blink 1.2s steps(1) infinite; }
+.hero-drill .rig-light-b { animation-delay: 0.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-drill .boat-sail { animation: none; transform: translateX(480px); }
+  .hero-drill .boat-bob, .hero-drill .swell-a, .hero-drill .swell-b, .hero-drill .rig-rise,
+  .hero-drill .rig-flare, .hero-drill .rig-light { animation: none; }
+}

@@ -15,6 +15,7 @@ function AttentionCard({ tile }) {
   return (
     <NavLink
       to={tile.path}
+      data-shelf
       className={`group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 ${tone.ring}`}
     >
       <p className={`w-14 shrink-0 text-3xl font-bold leading-none tabular-nums tracking-tight ${tone.num}`}>{tile.count.toLocaleString()}</p>

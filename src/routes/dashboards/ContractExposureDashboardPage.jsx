@@ -8,6 +8,7 @@ import { usePageSubtitle } from '@/context/TopbarContext'
 import AccessDenied from '@/components/AccessDenied'
 import { ChartCard, DashboardToolbar, EmptyChartState, KpiCard, MultiSelectPopover, YearSelect } from './DashboardUI'
 import { useUrlIdSet, useUrlString, useUrlYear } from './dashboardUrlState'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'dashboards.contract_exposure'
 
@@ -99,7 +100,7 @@ export default function ContractExposureDashboardPage() {
       </DashboardToolbar>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-      {loading && !data && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+      {loading && !data && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
 
       {data && (
         <>

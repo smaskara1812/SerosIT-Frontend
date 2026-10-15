@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { RemoteCombobox } from './MasterCrudPage'
 import { IconChevronLeft } from '@/components/icons'
 import { Download } from 'lucide-react'
+import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'masters.fs_catg_to_rig_type_mapping'
 const API = '/api/masters/fs-catg-to-rig-type-mapping/'
@@ -191,7 +192,7 @@ export default function FsCatgToRigTypeMappingPage() {
                 )}
               </div>
               {loading || mappings === null ? (
-                <p className="text-sm text-muted-foreground">Loading…</p>
+                <p className="text-sm text-muted-foreground"><RigLoading /></p>
               ) : (
                 <>
                   <div className="divide-y divide-border rounded-xl border border-border">

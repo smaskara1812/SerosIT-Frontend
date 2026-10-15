@@ -23,6 +23,7 @@ import { RemoteCombobox, NullableDateField, isDateActive } from './MasterCrudPag
 import { IconSearch, IconChevronLeft, IconPlus, IconTrash } from '@/components/icons'
 import { ArrowDownAZ, ArrowUpZA, Download } from 'lucide-react'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import RigLoading from '@/components/RigLoading'
 
 const CONTRACT_LABELS = {
   location: 'Location', operator: 'Operator', prj_contract_no: 'Contract No.', prj_short_name: 'Short Name',
@@ -526,7 +527,7 @@ export default function ProjectContractPage() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto border-t border-border">
-            {loading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+            {loading && <p className="p-4 text-sm text-muted-foreground"><RigLoading /></p>}
             {!loading && rows.length === 0 && (
               <p className="p-4 text-sm text-muted-foreground">No contracts found.</p>
             )}
@@ -608,7 +609,7 @@ export default function ProjectContractPage() {
               </div>
 
               <div className="p-4">
-                {loadingDetail && <p className="text-sm text-muted-foreground">Loading…</p>}
+                {loadingDetail && <p className="text-sm text-muted-foreground"><RigLoading /></p>}
 
                 {!loadingDetail && (
                   <>
