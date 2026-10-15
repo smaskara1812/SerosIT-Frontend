@@ -156,22 +156,43 @@ export const pickMoreLine = () => pick(MORE, 'more')
 
 // What the logo easter egg says. Every line is used once before any repeats. Always starts "Spud in, <name>." (spudding in is the first day of a well).
 const SPUD = [
-  'Today’s forecast: gushers.',
   'The hole will not drill itself.',
   'Hard hat on, spirits up.',
-  'Mind the wet floor.',
   'We just struck oil. Probably.',
   'Let’s make some hole.',
-  'May all your connections be quick.',
-  'Zero days without a good idea.',
-  'Slick work. Very slick.',
-  'Your data is in good hands, and slightly oily ones.',
-  'First one to TD buys the coffee.',
-  'Tripping out of the ordinary.',
   'Ahead of schedule. Nobody check.',
   'The derrick says hello.',
   'Don’t forget to log it.',
+  'Your data is in good hands, and slightly oily ones.',
 ]
 export function pickSpudMessage(name) {
   return `Spud in${name ? `, ${name}` : ''}. ${pick(SPUD, 'spud')}`
 }
+
+// One-in-five sub-lines under the home greeting. Separate from the Spud-in list so the two never echo each other.
+const QUIPS = [
+  'Today’s forecast: gushers.',
+  'May all your connections be quick.',
+  'Zero days without a good idea.',
+  'Tripping out of the ordinary.',
+  'Mind the wet floor.',
+  'Drilling ahead, one report at a time.',
+  'First one to TD buys the coffee.',
+  'Slick work. Very slick.',
+]
+export const pickGreetingQuip = () => pick(QUIPS, 'quip')
+
+// Login: a rig-floor line under the plain "Invalid username or password" message. Each says what to do next.
+const LOGIN_QUIPS = [
+  'Dry hole. Check your username and password and try again.',
+  'No pressure on the line. Check your details and try again.',
+  'Stuck pipe. Give your username and password another look.',
+  'Lost circulation. Re-check your details and try once more.',
+  'That connection did not hold. Try your details again.',
+  'The BOP held. Check your username and password.',
+  'Wrong tool for the job. Check your details and try again.',
+  'Fishing job: we could not catch that username and password. Try again.',
+  'Missed the rig floor. Check your details and try once more.',
+  'Kick detected. Re-check your username and password.',
+]
+export const pickLoginQuip = () => pick(LOGIN_QUIPS, 'login')

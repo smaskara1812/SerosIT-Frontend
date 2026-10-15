@@ -1,7 +1,8 @@
 import { lazy } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Login from '@/routes/Login'
 import Home from '@/routes/Home'
+import NotFound from '@/routes/NotFound'
 import ProtectedRoute from '@/routes/ProtectedRoute'
 import AdminRoute from '@/routes/AdminRoute'
 import MastersRoute from '@/routes/MastersRoute'
@@ -197,9 +198,9 @@ function App() {
           <Route path="/dashboards/rig-moves" element={<RigMovesPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { triggerStamp } from '@/lib/easter'
 import HistoryButton from '@/components/audit/HistoryButton'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -540,6 +541,8 @@ export default function DrillingReportFormPage() {
     const res = await apiFetch(`${API}${id}/${path}/`, { method: 'POST', body: body ? JSON.stringify(body) : undefined })
     if (res.ok) {
       toast.success(successMsg)
+      if (path === 'approve') triggerStamp('approved')
+      else if (path === 'reject') triggerStamp('rejected')
       const data = await res.json()
       loadFromRecord(data)
     } else {

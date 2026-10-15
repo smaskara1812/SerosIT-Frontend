@@ -1,12 +1,6 @@
 import { useMemo } from 'react'
+import { pickGreeting } from '@/lib/greeting'
 import PageSearch from '@/components/PageSearch'
-
-function greeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
-}
 
 // Quiet contour lines and sonar rings, drawn once from a formula: a nod to charts and offshore survey work
 // without competing with the greeting. Pure decoration, hidden from assistive technology.
@@ -129,6 +123,8 @@ function OffshoreScene() {
 
 // The welcome: who and when, and a search that can take you anywhere.
 export default function HomeHero({ firstName, info, drilling = false }) {
+  // Chosen once per visit (re-chosen only if the name arrives late), so it does not change while the page is open.
+  const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
   return (
     <section data-shelf className={`relative rounded-3xl ${drilling ? 'hero-drill' : ''}`} style={{ background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }}>
@@ -141,11 +137,10 @@ export default function HomeHero({ firstName, info, drilling = false }) {
           <div>
             <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[#8fe6da]">{today}</p>
             <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-              {greeting()}
-              {firstName ? `, ${firstName}` : ''}
+              {greeting.title}
             </h1>
             <p className="mt-2 max-w-md text-[15px] leading-relaxed text-white/70">
-              {drilling ? 'Seros vessel inbound… permission to come aboard?' : 'Here is what needs you today, and a quick way to everything else.'}
+              {drilling ? 'Seros vessel inbound… permission to come aboard?' : greeting.sub}
             </p>
           </div>
         </div>

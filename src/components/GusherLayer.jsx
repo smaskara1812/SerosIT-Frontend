@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 // "Spud in": oil gushes up from the bottom centre in a tall plume, arcs over and rains back down. Any element
 // marked `data-shelf` (the cards and the banner) catches it: drops land on the top edge, pool into glossy blobs,
@@ -38,22 +38,16 @@ const DURATION = 6200
 const FADE = 1100
 const SPOUT = 3000 // how long the plume keeps feeding
 
-export default function GusherLayer() {
+// Mounted only while it plays, so nothing sits over the page the rest of the time.
+function Gusher({ message, onDone }) {
   const canvas = useRef(null)
-  const [message, setMessage] = useState(null)
   const raf = useRef(0)
-  const timer = useRef(0)
 
   useEffect(() => {
-    const play = (e) => {
-      cancelAnimationFrame(raf.current)
-      clearTimeout(timer.current)
-      setMessage(e.detail?.message || 'Spud in!')
-      timer.current = setTimeout(() => setMessage(null), DURATION)
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
+    const done = setTimeout(onDone, DURATION)
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const c = canvas.current
-      if (!c) return
+      if (!c) return undefined
       const dpr = window.devicePixelRatio || 1
       const W = (c.width = Math.round(window.innerWidth * dpr))
       const H = (c.height = Math.round(window.innerHeight * dpr))
@@ -150,24 +144,31 @@ export default function GusherLayer() {
       }
       raf.current = requestAnimationFrame(frame)
     }
-    window.addEventListener('seros:gusher', play)
     return () => {
-      window.removeEventListener('seros:gusher', play)
       cancelAnimationFrame(raf.current)
-      clearTimeout(timer.current)
+      clearTimeout(done)
     }
-  }, [])
+  }, [onDone])
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[90]" aria-hidden={!message}>
+    <div className="pointer-events-none fixed inset-0 z-[90]">
       <canvas ref={canvas} className="h-full w-full" />
-      {message && (
-        <div className="absolute inset-x-0 bottom-10 flex justify-center px-4" role="status">
-          <p className="animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 rounded-2xl bg-[#0f2650] px-6 py-3.5 text-center text-lg font-bold tracking-tight text-white shadow-2xl shadow-black/30 duration-500 motion-reduce:animate-none">
-            {message}
-          </p>
-        </div>
-      )}
+      <div className="absolute inset-x-0 bottom-10 flex justify-center px-4" role="status">
+        <p className="animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 rounded-2xl bg-[#0f2650] px-6 py-3.5 text-center text-lg font-bold tracking-tight text-white shadow-2xl shadow-black/30 duration-500 motion-reduce:animate-none">
+          {message}
+        </p>
+      </div>
     </div>
   )
+}
+
+export default function GusherLayer() {
+  const [run, setRun] = useState(null)
+  useEffect(() => {
+    const play = (e) => setRun({ id: performance.now(), message: e.detail?.message || 'Spud in!' })
+    window.addEventListener('seros:gusher', play)
+    return () => window.removeEventListener('seros:gusher', play)
+  }, [])
+  const done = useCallback(() => setRun(null), [])
+  return run ? <Gusher key={run.id} message={run.message} onDone={done} /> : null
 }

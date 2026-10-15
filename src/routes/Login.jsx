@@ -4,6 +4,8 @@ import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { IconEye, IconEyeOff, IconAlertCircle } from '@/components/icons'
+import { pickLoginQuip } from '@/lib/rigLines'
+import { EASTER_EGGS } from '@/config/easterEggs'
 
 const SEEN_KEY = 'serosit.has_signed_in'
 
@@ -12,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [quip, setQuip] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { login, isAuthenticated, isLoading } = useAuth()
   const navigate = useNavigate()
@@ -24,6 +27,7 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setQuip('')
     setSubmitting(true)
     try {
       await login(username, password)
@@ -31,6 +35,7 @@ export default function Login() {
       navigate('/', { replace: true })
     } catch {
       setError('Invalid username or password')
+      if (EASTER_EGGS.loginQuips) setQuip(pickLoginQuip())
     } finally {
       setSubmitting(false)
     }
@@ -76,9 +81,12 @@ export default function Login() {
           </p>
 
           {error && (
-            <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2.5 text-sm text-red-300">
+            <div className="mb-5 flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2.5 text-sm text-red-300">
               <IconAlertCircle className="h-3.5 w-3.5 shrink-0" />
-              {error}
+              <span>
+                {error}
+                {quip && <span className="mt-0.5 block text-xs text-red-200/80">{quip}</span>}
+              </span>
             </div>
           )}
 
