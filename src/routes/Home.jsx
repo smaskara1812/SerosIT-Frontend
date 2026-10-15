@@ -6,9 +6,10 @@ import { apiFetch } from '@/lib/api'
 import { navTree } from '@/config/nav'
 import { can } from '@/lib/permissions'
 import { navLeavesByPath, isLeafAccessible } from '@/lib/shortcuts'
+import { ArrowUpRight } from 'lucide-react'
 import { IconPlus } from '@/components/icons'
 import ShortcutsPicker from '@/routes/ShortcutsPicker'
-import PageSearch from '@/components/PageSearch'
+import HomeHero from '@/components/home/HomeHero'
 import AttentionDigest from '@/components/home/AttentionDigest'
 
 // One tile per top-level nav group (Masters, IT Asset, Reports, Admin) —
@@ -56,81 +57,81 @@ function quickShortcuts(user) {
   return SHORTCUTS.filter((sc) => can(user, sc.menuKey, sc.action))
 }
 
-const TILE_ACCENTS = [
-  { chip: '#1a3f7a', ring: 'rgba(26,63,122,0.16)' },
-  { chip: '#2563eb', ring: 'rgba(37,99,235,0.16)' },
-  { chip: '#0f766e', ring: 'rgba(15,118,110,0.16)' },
-  { chip: '#7c3aed', ring: 'rgba(124,58,237,0.16)' },
-]
+// Sections rise into place one after another on load. Respects reduced-motion (animation switched off).
+function Reveal({ delay = 0, children, className = '' }) {
+  return (
+    <div
+      className={`animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both min-w-0 duration-500 motion-reduce:animate-none ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  )
+}
 
-function Tile({ to, icon: Icon, label, sub, accent, onRemove }) {
+function SectionTitle({ children, hint }) {
+  return (
+    <div className="mb-3 flex items-baseline justify-between gap-3">
+      <h2 className="text-base font-bold tracking-tight text-foreground">{children}</h2>
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  )
+}
+
+function ShortcutCard({ to, icon: Icon, label, sub, onRemove }) {
   return (
     <NavLink
       to={to}
-      className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+      className="group relative flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
     >
-      <div
-        className="absolute inset-x-0 top-0 h-1 scale-x-0 transition-transform duration-200 group-hover:scale-x-100"
-        style={{ backgroundColor: accent.chip }}
-      />
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-foreground">{label}</span>
+        {sub && <span className="block truncate text-xs text-muted-foreground">{sub}</span>}
+      </span>
       {onRemove && (
         <button
           type="button"
           title="Remove shortcut"
+          aria-label={`Remove ${label} from your shortcuts`}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             onRemove()
           }}
-          className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
+          className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
         >
           ×
         </button>
       )}
-      <div
-        className="flex h-11 w-11 items-center justify-center rounded-xl"
-        style={{ backgroundColor: accent.ring, color: accent.chip }}
-      >
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <p className="text-base font-semibold text-foreground">{label}</p>
-        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
-      </div>
     </NavLink>
   )
 }
 
-function AddShortcutTile({ onClick }) {
+function ModuleCard({ to, icon: Icon, label, sub }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-transparent p-5 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/40 hover:text-foreground"
+    <NavLink
+      to={to}
+      className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted">
-        <IconPlus className="h-5 w-5" />
-      </div>
-      <p className="text-sm font-semibold">Add Shortcut</p>
-    </button>
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-semibold text-foreground">{label}</span>
+        {sub && <span className="block truncate text-xs text-muted-foreground">{sub}</span>}
+      </span>
+      <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+    </NavLink>
   )
-}
-
-function greeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
-}
-
-function formatTime(iso) {
-  if (!iso) return null
-  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 export default function Home() {
   const { user } = useAuth()
   const [info, setInfo] = useState(null)
+  const [digest, setDigest] = useState(null)
   const [customPaths, setCustomPaths] = useState([])
   const [maxShortcuts, setMaxShortcuts] = useState(24)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -143,6 +144,19 @@ export default function Home() {
       .then((data) => {
         if (!cancelled && data) setInfo(data)
       })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    apiFetch('/api/dashboard/digest/')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setDigest(data.tiles || [])
+      })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
@@ -216,81 +230,65 @@ export default function Home() {
     saveShortcuts(customPaths.filter((p) => p !== path))
   }
 
+  const hasDigest = digest && digest.length > 0
+
   return (
-    <div className="space-y-6">
-      <div
-        className="relative overflow-hidden rounded-2xl px-7 py-8 text-white shadow-sm"
-        style={{
-          background: 'linear-gradient(135deg, #1e478c 0%, #16345f 60%, #10254a 100%)',
-        }}
-      >
-        <div
-          className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.35), transparent 70%)' }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-24 right-24 h-56 w-56 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)' }}
-        />
-        <p className="relative text-sm font-medium text-white/60">{greeting()}</p>
-        <h1 className="relative mt-1 text-2xl font-bold tracking-tight">{firstName}</h1>
-        <p className="relative mt-2 max-w-md text-sm text-white/70">
-          Here's where you can pick up your day. Use the shortcuts below to get to your work.
-        </p>
-        {info && (
-          <div className="relative mt-5 flex flex-wrap gap-4 text-xs text-white/50">
-            <span>{formatTime(info.server_time)}</span>
-            {info.last_login && <span>Signed in {formatTime(info.last_login)}</span>}
-          </div>
-        )}
-      </div>
+    <div className="space-y-8 pb-6">
+      <Reveal className="relative z-20">
+        <HomeHero firstName={firstName} info={info} />
+      </Reveal>
 
-      <PageSearch />
-
-      <AttentionDigest />
-
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-foreground">Jump back in</h2>
-        {links.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No modules have been assigned to your account yet.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {links.map(({ key, label, path, icon, count }, i) => (
-              <Tile
-                key={key}
-                to={path}
-                icon={icon}
-                label={label}
-                sub={count > 0 ? `${count} ${count === 1 ? 'section' : 'sections'} available to you` : null}
-                accent={TILE_ACCENTS[i % TILE_ACCENTS.length]}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-foreground">Shortcuts</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {shortcuts.map(({ key, label, hint, path, icon }, i) => (
-            <Tile key={key} to={path} icon={icon} label={label} sub={hint} accent={TILE_ACCENTS[i % TILE_ACCENTS.length]} />
+      <Reveal delay={80}>
+        <SectionTitle hint={`${customShortcuts.length}/${maxShortcuts} added by you`}>Your shortcuts</SectionTitle>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {shortcuts.map(({ key, label, hint, path, icon }) => (
+            <ShortcutCard key={key} to={path} icon={icon} label={label} sub={hint} />
           ))}
-          {customShortcuts.map((leaf, i) => (
-            <Tile
+          {customShortcuts.map((leaf) => (
+            <ShortcutCard
               key={leaf.path}
               to={leaf.path}
               icon={leaf.icon}
               label={leaf.label}
               sub={leaf.groupLabel}
-              accent={TILE_ACCENTS[(shortcuts.length + i) % TILE_ACCENTS.length]}
               onRemove={() => removeShortcut(leaf.path)}
             />
           ))}
-          <AddShortcutTile onClick={() => setPickerOpen(true)} />
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="flex min-h-[4.25rem] items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/50 hover:text-foreground"
+          >
+            <IconPlus className="h-4 w-4" />
+            Add a shortcut
+          </button>
         </div>
-      </div>
+      </Reveal>
+
+      {hasDigest && (
+        <Reveal delay={150}>
+          <AttentionDigest tiles={digest} />
+        </Reveal>
+      )}
+
+      <Reveal delay={210}>
+        <SectionTitle hint={links.length > 0 ? `${links.length} ${links.length === 1 ? 'area' : 'areas'}` : null}>Your workspace</SectionTitle>
+        {links.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No modules have been assigned to your account yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {links.map(({ key, label, path, icon, count }) => (
+              <ModuleCard
+                key={key}
+                to={path}
+                icon={icon}
+                label={label}
+                sub={count > 0 ? `${count} ${count === 1 ? 'section' : 'sections'} for you` : null}
+              />
+            ))}
+          </div>
+        )}
+      </Reveal>
 
       <ShortcutsPicker
         open={pickerOpen}

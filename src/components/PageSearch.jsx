@@ -20,7 +20,7 @@ function rank(leaf, words) {
 
 // Jump-to-page search. Only offers pages the signed-in user can actually
 // open — the same access check the sidebar and the shortcuts picker use.
-export default function PageSearch() {
+export default function PageSearch({ variant = 'default', autoFocus = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
@@ -70,10 +70,15 @@ export default function PageSearch() {
   }
 
   const showList = open && query.trim().length > 0
+  const hero = variant === 'hero'
 
   return (
     <div ref={boxRef} className="relative">
-      <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <IconSearch
+        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${
+          hero ? 'left-4 h-5 w-5 text-slate-500' : 'left-3.5 h-4 w-4 text-muted-foreground'
+        }`}
+      />
       <input
         value={query}
         onChange={(e) => {
@@ -83,9 +88,14 @@ export default function PageSearch() {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        placeholder="Search for a page…"
+        placeholder={hero ? 'Where would you like to go?  Try “drilling report” or “hazard”' : 'Search for a page…'}
         aria-label="Search for a page"
-        className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/40"
+        autoFocus={autoFocus}
+        className={
+          hero
+            ? 'h-13 w-full rounded-2xl border-0 bg-white pl-12 pr-4 text-[15px] text-slate-900 shadow-lg shadow-black/15 outline-none placeholder:text-slate-500 focus:ring-4 focus:ring-white/30'
+            : 'h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/40'
+        }
       />
       {showList && (
         <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-border bg-card shadow-lg">
