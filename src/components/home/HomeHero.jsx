@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { pickGreeting } from '@/lib/greeting'
+import { lowPowerDevice } from '@/lib/perf'
 import PageSearch from '@/components/PageSearch'
 
 // Quiet contour lines and sonar rings, drawn once from a formula: a nod to charts and offshore survey work
@@ -127,7 +128,7 @@ export default function HomeHero({ firstName, info, drilling = false }) {
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
   return (
-    <section data-shelf className={`relative rounded-3xl ${drilling ? 'hero-drill' : ''}`} style={{ background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }}>
+    <section data-shelf className={`relative rounded-3xl ${drilling ? `hero-drill ${lowPowerDevice() ? 'hero-drill-lite' : ''}` : ''}`} style={{ background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }}>
       <div className="absolute inset-0 overflow-hidden rounded-3xl">
         <Contours />
         {drilling && <OffshoreScene />}

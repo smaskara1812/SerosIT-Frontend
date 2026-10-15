@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { lowPowerDevice } from '@/lib/perf'
 
 // APPROVED / REJECTED, stamped onto the page: it drops in large, lands with a thump (a brief shake of the
 // screen and an ink ring), stays a moment, then lifts away. The edges are roughened with an SVG filter so it
@@ -23,7 +24,7 @@ export default function StampLayer() {
       timer.current = setTimeout(() => setKind(null), SHOW_MS)
       // the thump: a short shake of the page as the stamp lands
       const main = document.getElementById('main-content')
-      if (main && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (main && !lowPowerDevice() && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         main.animate(
           [{ transform: 'translate(0,0)' }, { transform: 'translate(-3px,2px)' }, { transform: 'translate(3px,-2px)' }, { transform: 'translate(-2px,-1px)' }, { transform: 'translate(0,0)' }],
           { duration: 260, delay: 230, easing: 'ease-out' },
@@ -52,7 +53,7 @@ export default function StampLayer() {
           <span className="stamp-ring absolute inset-0 rounded-[1.25rem] border-4" style={{ borderColor: k.colour }} />
           <div
             className="rounded-[1.25rem] border-[7px] px-10 py-4 text-center"
-            style={{ borderColor: k.colour, filter: 'url(#stamp-ink)', background: 'rgba(255,255,255,0.0)' }}
+            style={{ borderColor: k.colour, filter: lowPowerDevice() ? undefined : 'url(#stamp-ink)', background: 'rgba(255,255,255,0.0)' }}
           >
             <p className="text-6xl font-black leading-none tracking-[0.12em] sm:text-7xl">{k.word}</p>
             {k.sub && <p className="mt-2 text-sm font-bold uppercase tracking-[0.4em] opacity-80">{k.sub}</p>}

@@ -7,6 +7,7 @@ import { TopbarProvider } from '@/context/TopbarContext'
 import RigLoading from '@/components/RigLoading'
 import GusherLayer from '@/components/GusherLayer'
 import StampLayer from '@/components/StampLayer'
+import EggBoundary from '@/components/EggBoundary'
 
 export default function AppShell() {
   return (
@@ -17,8 +18,10 @@ export default function AppShell() {
       >
         Skip to main content
       </a>
-      <GusherLayer />
-      <StampLayer />
+      <EggBoundary>
+        <GusherLayer />
+        <StampLayer />
+      </EggBoundary>
       <Sidebar />
       <SecondarySidebar />
       <div className="flex flex-1 flex-col overflow-hidden">

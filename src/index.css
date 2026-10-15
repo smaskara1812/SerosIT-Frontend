@@ -244,3 +244,6 @@
 .bucket-drop { animation: bucket-drop 3.6s ease-in both; }
 .bucket-caption { animation: caption-flicker 3.6s linear both; }
 @media (prefers-reduced-motion: reduce) { .bucket-tip, .bucket-drop { animation: none; } .bucket-caption { animation: none; } }
+
+/* Konami banner on slower machines: keep the boat, rig and swell, skip the 20 animated contour lines and rings. */
+.hero-drill-lite .contour-line, .hero-drill-lite .sonar-ring { animation: none; }

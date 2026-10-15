@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { canvasScale, lowPowerDevice, makeFrameGuard } from '@/lib/perf'
 
 // "Spud in": oil gushes up from the bottom centre in a tall plume, arcs over and rains back down. Any element
 // marked `data-shelf` (the cards and the banner) catches it: drops land on the top edge, pool into glossy blobs,
@@ -48,7 +49,7 @@ function Gusher({ message, onDone }) {
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const c = canvas.current
       if (!c) return undefined
-      const dpr = window.devicePixelRatio || 1
+      const dpr = canvasScale()
       const W = (c.width = Math.round(window.innerWidth * dpr))
       const H = (c.height = Math.round(window.innerHeight * dpr))
       const ctx = c.getContext('2d')
@@ -73,16 +74,23 @@ function Gusher({ message, onDone }) {
         })
       }
 
+      const guard = makeFrameGuard()
+      const perFrame = lowPowerDevice() ? 2 : 4 // how many drops the plume feeds per frame
       let last = performance.now()
       const start = last
       const frame = (now) => {
+        const mode = guard(now)
+        if (mode === 'stop') {
+          ctx.clearRect(0, 0, W, H)
+          return
+        }
         const t = now - start
         const k = Math.min(3, (now - last) / 16.67)
         last = now
         ctx.clearRect(0, 0, W, H)
         const fade = t > DURATION - FADE ? Math.max(0, (DURATION - t) / FADE) : 1
 
-        if (t < SPOUT) for (let i = 0; i < 4; i++) spawn(t)
+        if (t < SPOUT && mode === 'full' && drops.length < 700) for (let i = 0; i < perFrame; i++) spawn(t)
 
         // falling drops
         for (let i = drops.length - 1; i >= 0; i--) {
@@ -94,7 +102,7 @@ function Gusher({ message, onDone }) {
           if (d.vy > 0) {
             const s = shelves.find((sh) => d.x > sh.l && d.x < sh.r && prevY + d.r <= sh.top && d.y + d.r >= sh.top)
             if (s) {
-              blobs.push({ s, x: d.x, w: d.r * (1.5 + Math.random()), h: d.r * 0.55, c: d.c, landed: t, hold: 500 + Math.random() * 1400, vx: 0 })
+              if (blobs.length < 300) blobs.push({ s, x: d.x, w: d.r * (1.5 + Math.random()), h: d.r * 0.55, c: d.c, landed: t, hold: 500 + Math.random() * 1400, vx: 0 })
               if (d.r > 3.5 * dpr) for (let n = 0; n < 2; n++) {
                 drops.push({ x: d.x, y: s.top - 2, vx: (Math.random() - 0.5) * 2.6 * dpr, vy: -(1.5 + Math.random() * 2.2) * dpr, r: d.r * 0.32, c: d.c, born: t })
               }
@@ -139,10 +147,18 @@ function Gusher({ message, onDone }) {
         }
 
         ctx.globalAlpha = 1
-        if (t < DURATION) raf.current = requestAnimationFrame(frame)
+        if (t < DURATION) raf.current = requestAnimationFrame(safe)
         else ctx.clearRect(0, 0, W, H)
       }
-      raf.current = requestAnimationFrame(frame)
+      const safe = (now) => {
+        try {
+          frame(now)
+        } catch (err) {
+          console.warn('The gusher stopped early:', err)
+          onDone()
+        }
+      }
+      raf.current = requestAnimationFrame(safe)
     }
     return () => {
       cancelAnimationFrame(raf.current)
