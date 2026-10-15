@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -449,7 +450,12 @@ export default function IncidentDetailsFormPage() {
   return (
     <FieldErrorScope errors={fieldErrors} className="mx-auto flex max-w-4xl flex-col gap-4 pb-16">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-foreground">{heading}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold text-foreground">{heading}</h1>
+          {isEdit && (
+            <HistoryButton menuKey={MENU_KEY} recordId={id} title={heading} onChanged={() => window.location.reload()} />
+          )}
+        </div>
         {canWrite && !loading && (
           <Button onClick={handleSave} disabled={saving || (isEdit && !hasChanges)}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}

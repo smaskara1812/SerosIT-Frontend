@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -459,7 +460,12 @@ export default function TrainingLogFormPage() {
   return (
     <FieldErrorScope errors={fieldErrors} className="mx-auto flex max-w-6xl flex-col gap-6 pb-16">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-foreground">{heading}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold text-foreground">{heading}</h1>
+          {isEdit && (
+            <HistoryButton menuKey={MENU_KEY} table="hse_training_log_hdr" recordId={id} title={heading} onChanged={() => window.location.reload()} />
+          )}
+        </div>
         {writable && !loading && saveButton}
       </div>
 

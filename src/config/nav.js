@@ -1203,6 +1203,7 @@ export const navTree = [
             key: 'user_management', label: 'User Management', path: '/admin/user-management', icon: IconUsers, 
             menuKey: 'admin.user_management'},
           { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
+          { key: 'history_revert', label: 'History and Revert', path: '/admin/history-revert', icon: IconHistory },
           { key: 'email_log', label: 'Email Log', path: '/admin/email-log', icon: IconMail },
           {
             key: 'approval_codes',

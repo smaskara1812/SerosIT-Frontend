@@ -4,6 +4,7 @@ import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -528,11 +529,21 @@ export default function ApproverMappingPage() {
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                   {creating ? 'New Approver Mapping' : `${form.approval_code_label} — L${form.approver_level}`}
                 </p>
-                {!creating && canDelete && (
-                  <Button variant="destructive" size="sm" onClick={() => setConfirmingDelete(true)}>
-                    <IconTrash className="h-4 w-4" />
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {!creating && selectedId && (
+                    <HistoryButton
+                      menuKey={MENU_KEY}
+                      recordId={selectedId}
+                      title={`${form.approval_code_label} L${form.approver_level}`}
+                      onChanged={() => window.location.reload()}
+                    />
+                  )}
+                  {!creating && canDelete && (
+                    <Button variant="destructive" size="sm" onClick={() => setConfirmingDelete(true)}>
+                      <IconTrash className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <FieldErrorScope errors={fieldErrors} className="grid grid-cols-2 gap-4">

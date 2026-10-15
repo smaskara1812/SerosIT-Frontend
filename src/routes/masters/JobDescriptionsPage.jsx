@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -61,7 +62,7 @@ function IconPencil(props) {
 }
 
 /** A single detail line: plain text by default, becomes a textarea + Save/Cancel on Edit. */
-function DetailLine({ line, canEdit, canDelete, onSave, onDelete }) {
+function DetailLine({ line, canEdit, canDelete, onSave, onDelete, onRestored }) {
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(line.jd_dtl_description)
   const [saving, setSaving] = useState(false)
@@ -103,6 +104,13 @@ function DetailLine({ line, canEdit, canDelete, onSave, onDelete }) {
               <IconPencil className="h-3.5 w-3.5" />
             </button>
           )}
+          <HistoryButton
+            menuKey="masters.job_descriptions"
+            table="job_description_dtl"
+            recordId={line.jd_dtl_id}
+            title={line.jd_dtl_description}
+            onChanged={onRestored}
+          />
           {canDelete && (
             <button
               type="button"
@@ -281,6 +289,15 @@ function SectionCard({ index, section, canAdd, canEdit, canDelete, onRefresh }) 
           </>
         )}
 
+        {!editingTitle && (
+          <HistoryButton
+            menuKey="masters.job_descriptions"
+            table="job_description_hdr"
+            recordId={section.jd_hdr_id}
+            title={section.jd_hdr_description}
+            onChanged={onRefresh}
+          />
+        )}
         {canDelete && !editingTitle && (
           <button
             type="button"
@@ -305,6 +322,7 @@ function SectionCard({ index, section, canAdd, canEdit, canDelete, onRefresh }) 
             canDelete={canDelete}
             onSave={saveLine}
             onDelete={deleteLine}
+            onRestored={onRefresh}
           />
         ))}
 

@@ -7,7 +7,7 @@ import RecordHistory from './RecordHistory'
 // A small History icon for one record, for screens that have their own layout instead of the shared
 // master page (grids of rows). Shows only to App Admins, and only on pages that support revert.
 // onChanged runs after a version was restored, so the screen can reload its rows.
-export default function HistoryButton({ menuKey, recordId, title, onChanged }) {
+export default function HistoryButton({ menuKey, table, recordId, title, onChanged }) {
   const { user } = useAuth()
   const allowed = useCanViewHistory(user, menuKey)
   const [open, setOpen] = useState(false)
@@ -27,6 +27,7 @@ export default function HistoryButton({ menuKey, recordId, title, onChanged }) {
         <RecordHistory
           open
           entity={menuKey}
+          table={table}
           recordId={recordId}
           title={title}
           onClose={() => setOpen(false)}

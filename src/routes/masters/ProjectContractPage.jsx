@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -94,7 +95,7 @@ function emptyHeader() {
 /** One rig-assignment row: Rig and Active From are fixed once created —
  * only Active To is ever edited in place, matching the legacy page's own
  * UX (add a new row instead of re-picking the rig for an existing one). */
-function RigLineRow({ line, canEdit, canDelete, onUpdateDateTo, onDelete }) {
+function RigLineRow({ line, canEdit, canDelete, onUpdateDateTo, onDelete, onRestored }) {
   const [dateTo, setDateTo] = useState(line.rig_active_to)
   const [saving, setSaving] = useState(false)
 
@@ -120,6 +121,13 @@ function RigLineRow({ line, canEdit, canDelete, onUpdateDateTo, onDelete }) {
         />
       </td>
       <td className="px-3 py-2 text-right">
+        <HistoryButton
+          menuKey="masters.project_contract"
+          table="project_contract_dtl"
+          recordId={line.prj_contract_dtl_id}
+          title={line.rig_name}
+          onChanged={onRestored}
+        />
         {canDelete && (
           <button
             type="button"
@@ -578,11 +586,25 @@ export default function ProjectContractPage() {
                 <h2 className="text-base font-semibold text-foreground">
                   {creating ? 'New Project Contract' : form.prj_contract_no}
                 </h2>
-                {selectedId && canDelete && (
-                  <Button variant="destructive" size="sm" onClick={handleDeleteClick}>
-                    <IconTrash className="h-4 w-4" />
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {selectedId && (
+                    <HistoryButton
+                      menuKey="masters.project_contract"
+                      table="project_contract"
+                      recordId={selectedId}
+                      title={form.prj_contract_no}
+                      onChanged={() => {
+                        loadDetail(selectedId)
+                        loadContracts(page, query)
+                      }}
+                    />
+                  )}
+                  {selectedId && canDelete && (
+                    <Button variant="destructive" size="sm" onClick={handleDeleteClick}>
+                      <IconTrash className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="p-4">
@@ -708,6 +730,7 @@ export default function ProjectContractPage() {
                                   canDelete={canDelete}
                                   onUpdateDateTo={updateLineDateTo}
                                   onDelete={deleteLine}
+                                  onRestored={() => loadDetail(selectedId)}
                                 />
                               ))}
                             </tbody>

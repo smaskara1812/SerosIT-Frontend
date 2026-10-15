@@ -14,6 +14,7 @@ export const ACTION_COLORS = {
   revert: 'bg-amber-100 text-amber-800',
   revert_delete: 'bg-amber-100 text-amber-800',
   revert_restore: 'bg-amber-100 text-amber-800',
+  history_setting: 'bg-blue-100 text-blue-700',
 }
 
 // What each action is called where a person reads the history.
@@ -24,6 +25,7 @@ export const ACTION_LABELS = {
   revert: 'Reverted',
   revert_delete: 'Creation undone',
   revert_restore: 'Deleted record restored',
+  history_setting: 'History setting changed',
 }
 
 // Every diff value used to be a plain scalar (string/number/date), where String(v) reads fine. Some

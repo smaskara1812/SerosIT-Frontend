@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -585,7 +586,12 @@ export default function DrillingReportFormPage() {
           without scrolling past a long form to find Save/Finalize. */}
       <div className="sticky top-0 z-20 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-sm backdrop-blur">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-base font-bold text-foreground">{heading}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-bold text-foreground">{heading}</h1>
+            {isEdit && (
+              <HistoryButton menuKey={MENU_KEY} recordId={id} title={heading} onChanged={() => window.location.reload()} />
+            )}
+          </div>
           {isEdit && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${status.className}`}>{status.label}</span>
           )}

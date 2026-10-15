@@ -11,9 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 // its action brings back the version the record had before it was deleted.
 const GONE = new Set(['delete', 'revert_delete'])
 
-function restoreAction(entry) {
+function restoreAction(entry, exists) {
   if (GONE.has(entry.action)) return { mode: 'before', label: 'Bring the record back' }
   if (entry.is_latest) return null // this is the current version
+  // While the record is deleted the only way back is the deletion itself: an older version would have to be
+  // mixed with whatever lines the record had when it was deleted.
+  if (!exists) return null
   return { mode: 'after', label: 'Restore this version' }
 }
 
@@ -44,7 +47,7 @@ function ChangeTable({ rows }) {
 // The history of one record: every logged change, newest first, with who, when, and before/after.
 // App Admins can restore the record to how it was before or after any entry. Nothing changes until
 // they confirm a preview, and a revert is itself added to the history.
-export default function RecordHistory({ open, onClose, entity, recordId, title, onChanged }) {
+export default function RecordHistory({ open, onClose, entity, table, recordId, title, onChanged }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -56,7 +59,7 @@ export default function RecordHistory({ open, onClose, entity, recordId, title, 
   // The parent mounts this fresh for each record it opens, so the state above starts clean.
   useEffect(() => {
     let live = true
-    apiFetch(`/api/admin/audit/history/?entity=${encodeURIComponent(entity)}&record_id=${encodeURIComponent(recordId)}`)
+    apiFetch(`/api/admin/audit/history/?entity=${encodeURIComponent(entity)}&record_id=${encodeURIComponent(recordId)}${table ? `&table=${encodeURIComponent(table)}` : ''}`)
       .then(async (res) => {
         const body = await res.json()
         if (!live) return
@@ -69,7 +72,7 @@ export default function RecordHistory({ open, onClose, entity, recordId, title, 
     return () => {
       live = false
     }
-  }, [entity, recordId, tick])
+  }, [entity, table, recordId, tick])
 
   async function startRestore(entry, btn, version) {
     setBusy(true)
@@ -164,6 +167,30 @@ export default function RecordHistory({ open, onClose, entity, recordId, title, 
                     ))}
                   </tbody>
                 </table>
+                {p.also?.length > 0 && (
+                  <div className="mt-3 rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                    <p className="font-semibold">This will also</p>
+                    <ul className="mt-1 list-disc pl-4">
+                      {p.also.map((t) => (
+                        <li key={t}>{t}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {p.child_summary?.length > 0 && (
+                  <div className="mt-3 rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                    <p className="font-semibold">
+                      {p.action === 'insert' ? 'These rows will be put back with it' : 'These rows will be deleted with it'}
+                    </p>
+                    <ul className="mt-1 list-disc pl-4">
+                      {p.child_summary.map((c) => (
+                        <li key={c.label}>
+                          {c.count} {c.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {p.warnings?.length > 0 && (
                   <div className="mt-3 rounded-md border border-amber-400 bg-amber-100/70 px-3 py-2 text-xs text-amber-900">
                     <p className="font-semibold">Other records already use this one</p>
@@ -227,15 +254,15 @@ export default function RecordHistory({ open, onClose, entity, recordId, title, 
               {e.note && <p className="mt-1 text-xs italic text-muted-foreground">Reason: {e.note}</p>}
               <ChangeTable rows={e.changes} />
               <div className="mt-2 flex flex-wrap gap-2">
-                {restoreAction(e) && (
-                  <Button variant="outline" size="sm" disabled={busy || Boolean(plan)} onClick={() => startRestore(e, restoreAction(e), versionOf[e.id])}>
-                    {restoreAction(e).label}
+                {restoreAction(e, data?.exists) && (
+                  <Button variant="outline" size="sm" disabled={busy || Boolean(plan)} onClick={() => startRestore(e, restoreAction(e, data?.exists), versionOf[e.id])}>
+                    {restoreAction(e, data?.exists).label}
                   </Button>
                 )}
               </div>
             </li>
           ))}
-          {baseline && (
+          {baseline && data?.exists && (
             <li className="rounded-lg border border-border p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">Version 1</span>

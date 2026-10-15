@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { apiFetch, asList, cachedGet } from '@/lib/api'
 import { usePageSubtitle } from '@/context/TopbarContext'
 import { useAuth } from '@/context/AuthContext'
+import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
@@ -112,6 +113,7 @@ export default function ItAssetHoldersPage() {
   const [pageSize, setPageSize] = useState(50)
 
   const [rows, setRows] = useState([])
+  const [reloadTick, setReloadTick] = useState(0) // bumped after a version is restored from History
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const requestIdRef = useRef(0)
@@ -170,7 +172,7 @@ export default function ItAssetHoldersPage() {
         })
     }, 300)
     return () => clearTimeout(timer)
-  }, [assetFilter, status, itAssetType, itAssetSubtype, ownCompany, search, ordering, page, pageSize])
+  }, [assetFilter, status, itAssetType, itAssetSubtype, ownCompany, search, ordering, page, pageSize, reloadTick])
 
   function clearAssetFilter() {
     setSearchParams((prev) => {
@@ -457,6 +459,12 @@ export default function ItAssetHoldersPage() {
                                 Edit
                               </Button>
                             )}
+                            <HistoryButton
+                              menuKey="it_asset.it_asset_holders"
+                              recordId={r.it_asset_holder_id}
+                              title={r.it_asset_sr_no}
+                              onChanged={() => setReloadTick((n) => n + 1)}
+                            />
                             {canDelete && (
                               <Button size="sm" variant="destructive" onClick={() => handleDeleteClick(r)}>
                                 <IconTrash className="h-3.5 w-3.5" />

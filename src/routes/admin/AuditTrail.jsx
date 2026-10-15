@@ -184,7 +184,7 @@ export default function AuditTrail() {
                             title="Show this record's history"
                             onClick={(ev) => {
                               ev.stopPropagation()
-                              setHistoryFor({ entity: r.entity, recordId: r.target_pk || r.record_id, title: r.record_label })
+                              setHistoryFor({ entity: r.entity, table: r.target_table, recordId: r.target_pk || r.record_id, title: r.record_label })
                             }}
                             className="flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[11px] text-foreground hover:bg-accent"
                           >
@@ -257,6 +257,7 @@ export default function AuditTrail() {
         <RecordHistory
           open
           entity={historyFor.entity}
+          table={historyFor.table}
           recordId={historyFor.recordId}
           title={historyFor.title}
           onClose={() => setHistoryFor(null)}

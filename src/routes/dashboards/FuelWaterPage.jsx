@@ -102,7 +102,7 @@ export default function FuelWaterPage() {
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto pb-6">
-      <DashboardToolbar note="Read from the daily drilling reports; nothing is entered here. Per operating hour = diesel ÷ operating hours; per metre = diesel ÷ metres drilled, over all reported days. Per day divides by the days that carry a figure. A rig's diesel balance (received − consumed) is shown only if it recorded at least one receipt in the year, because several rigs never do. Days using is the share of a rig's reports with a figure above zero; the report requires the figure, so a zero is a real entry (none used), not a missing one. The current year is compared with the same stretch of last year.">
+      <DashboardToolbar note="Read from the daily drilling reports; nothing is entered here. Per operating hour = diesel ÷ operating hours; per metre = diesel ÷ metres drilled, over all reported days. Per rig per day divides by the rig-days that carry a figure; a rig-day is one rig's report for one day, so five rigs working the same day count as five. A rig's diesel balance (received − consumed) is shown only if it recorded at least one receipt in the year, because several rigs never do. Days using is the share of a rig's reports with a figure above zero; the report requires the figure, so a zero is a real entry (none used), not a missing one. The current year is compared with the same stretch of last year.">
         <YearSelect value={year} options={data?.years} onChange={setYear} />
         <MultiSelectPopover
           label="Rigs"
@@ -125,15 +125,15 @@ export default function FuelWaterPage() {
             <KpiCard icon={Fuel} label="Diesel" value={`${compact(s.diesel)} L`} sub={change(s.diesel, s.diesel_prev, data.compare_label)} accent="var(--chart-4)" />
             <KpiCard icon={Timer} label="Per hour" value={`${fmt1(s.diesel_per_hour)} L`} sub="diesel per operating hour" accent="var(--chart-1)" />
             <KpiCard icon={Ruler} label="Per metre" value={`${fmt1(s.diesel_per_metre)} L`} sub="diesel per metre drilled" accent="var(--chart-5)" />
-            <KpiCard icon={Gauge} label="Per day" value={`${fmt(s.diesel_per_day)} L`} sub={`${s.diesel_days.toLocaleString()} days with diesel use`} accent="var(--chart-2)" />
+            <KpiCard icon={Gauge} label="Per rig per day" value={`${fmt(s.diesel_per_day)} L`} sub={`${s.diesel_days.toLocaleString()} rig-days with diesel use`} accent="var(--chart-2)" />
             <KpiCard icon={Droplets} label="Water" value={`${compact(s.water)} L`} sub={change(s.water, s.water_prev, data.compare_label)} accent="var(--chart-3)" />
-            <KpiCard icon={Waves} label="Water per day" value={s.water_per_day == null ? '—' : `${compact(s.water_per_day)} L`} sub={`${s.water_days.toLocaleString()} days with water use`} accent="var(--chart-2)" />
+            <KpiCard icon={Waves} label="Water per rig per day" value={s.water_per_day == null ? '—' : `${compact(s.water_per_day)} L`} sub={`${s.water_days.toLocaleString()} rig-days with water use`} accent="var(--chart-2)" />
             <KpiCard icon={Fuel} label="Diesel received" value={`${compact(s.diesel_received)} L`} sub="as recorded in reports" accent="var(--chart-1)" />
             <KpiCard
               icon={TriangleAlert}
               label="To check"
               value={s.outlier_days}
-              sub={`days with a figure at ${data.outlier_factor}×+ the rig's usual`}
+              sub={`rig-days with a figure at ${data.outlier_factor}×+ that rig's usual`}
               warning={s.outlier_days > 0}
             />
           </div>

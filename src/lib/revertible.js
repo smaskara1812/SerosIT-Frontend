@@ -15,6 +15,11 @@ function load() {
   return pending
 }
 
+// After an admin switches pages on or off, the next screen has to ask again.
+export function resetRevertible() {
+  pending = null
+}
+
 // True when this user is an App Admin and the page identified by `menuKey` supports revert.
 export function useCanViewHistory(user, menuKey) {
   const [set, setSet] = useState(null)
