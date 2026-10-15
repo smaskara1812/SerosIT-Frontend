@@ -54,7 +54,9 @@ const LOADING = [
   'Jarring it loose…',
   'Taking a survey…',
   'Flowing back the well…',
-  'Killing the well (gently)…',
+  'Running a flow check…',
+  'Circulating bottoms up…',
+  'Making a wiper trip…',
   'Squeezing the cement…',
   'Perforating politely…',
   'Setting the packer…',
@@ -104,8 +106,8 @@ const LOADING = [
   'Sounding the depths…',
   'Charting the seabed…',
   'Rolling out the red carpet (a very oily one)…',
-  'This will be a gusher of a page…',
-  'Oil be right with you…',
+  'Nippling up the BOP…',
+  'Slipping the drilling line…',
   'Just a moment, we are drilling for it…',
 ]
 
@@ -131,6 +133,12 @@ const MORE = [
   'Spooling out more line…',
   'Next stand coming up…',
   'Dropping another joint in…',
+  'Next joint…',
+  'Another stand…',
+  'Still on bottom…',
+  'Slips are set…',
+  'One more stand…',
+  'A bit more hole…',
 ]
 
 // A shuffled bag per list: every line is used once before any line comes round again, and the first line of a
@@ -164,6 +172,14 @@ const SPUD = [
   'The derrick says hello.',
   'Don’t forget to log it.',
   'Your data is in good hands, and slightly oily ones.',
+  'Log it before you forget it.',
+  'Coffee is on the doghouse.',
+  'The mud is mixed. The rest is up to you.',
+  'If it isn’t written down, it didn’t happen.',
+  'Eyes on the pit level.',
+  'Make it a clean trip.',
+  'Today’s hole, today’s report.',
+  'Keep your hands clear of the rotary.',
 ]
 export function pickSpudMessage(name) {
   return `Spud in${name ? `, ${name}` : ''}. ${pick(SPUD, 'spud')}`
@@ -179,6 +195,14 @@ const QUIPS = [
   'Drilling ahead, one report at a time.',
   'First one to TD buys the coffee.',
   'Slick work. Very slick.',
+  'The pits are steady, and so is the day.',
+  'A short connection and a long coffee.',
+  'One clean report is a good shift.',
+  'Fair weather for a fair day’s hole.',
+  'Write it down while the mud is still on your boots.',
+  'The tour sheet is kinder if you fill it as you go.',
+  'May the bit find what the plan promised.',
+  'The helicopter can wait. This report cannot.',
 ]
 export const pickGreetingQuip = () => pick(QUIPS, 'quip')
 
@@ -189,10 +213,14 @@ const LOGIN_QUIPS = [
   'Stuck pipe. Give your username and password another look.',
   'Lost circulation. Re-check your details and try once more.',
   'That connection did not hold. Try your details again.',
-  'The BOP held. Check your username and password.',
   'Wrong tool for the job. Check your details and try again.',
   'Fishing job: we could not catch that username and password. Try again.',
   'Missed the rig floor. Check your details and try once more.',
-  'Kick detected. Re-check your username and password.',
+  'That joint would not make up. Check your username and password and try again.',
+  'The slips didn’t catch. Look at your username and password again.',
+  'Off bottom, no rotation. Check your details and try again.',
+  'Not on the tour sheet. Check your username and password.',
+  'Wrong elevator. Check your details and try once more.',
+  'Nothing on the shakers. Check your username and password and try again.',
 ]
 export const pickLoginQuip = () => pick(LOGIN_QUIPS, 'login')

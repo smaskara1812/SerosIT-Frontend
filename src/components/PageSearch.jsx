@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { accessibleNavLeaves } from '@/lib/shortcuts'
 import { IconSearch } from '@/components/icons'
+import { isSunsetPhrase, triggerSunset } from '@/lib/easter'
 
 const MAX_RESULTS = 8
 
@@ -56,6 +57,15 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
 
   function onKeyDown(e) {
     if (e.key === 'Escape') return setOpen(false)
+    // The home page's secret phrase: checked first, because it matches no page and would otherwise do nothing.
+    if (e.key === 'Enter' && variant === 'hero' && isSunsetPhrase(query)) {
+      e.preventDefault()
+      setOpen(false)
+      setQuery('')
+      e.currentTarget.blur()
+      triggerSunset((user?.display_name || user?.username || '').split(' ')[0])
+      return undefined
+    }
     if (!results.length) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()

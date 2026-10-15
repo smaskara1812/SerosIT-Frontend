@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import { can } from '@/lib/permissions'
 import { mastersSchemas } from '@/config/mastersSchemas'
 import AccessDenied from '@/components/AccessDenied'
+import NotFound from '@/routes/NotFound'
 import { buildFieldErrors, formatApiError, scrollToFirstFieldError, showFormError } from '@/lib/errors'
 import { FieldFrame } from '@/components/FieldFrame'
 import { singularize } from '@/lib/text'
@@ -654,7 +655,15 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
   )
 }
 
+// /masters/:slug and /qhse/:slug both land here, so an address with a slug that is not a known master (a typo,
+// an old bookmark) must show the "page not found" screen, not crash while reading the schema.
 export default function MasterCrudPage() {
+  const { slug } = useParams()
+  if (!mastersSchemas[slug]) return <NotFound />
+  return <MasterCrudPageInner />
+}
+
+function MasterCrudPageInner() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()

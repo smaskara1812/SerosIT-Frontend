@@ -8,6 +8,7 @@ import RigLoading from '@/components/RigLoading'
 import GusherLayer from '@/components/GusherLayer'
 import StampLayer from '@/components/StampLayer'
 import EggBoundary from '@/components/EggBoundary'
+import SunsetLoader from '@/components/SunsetLoader'
 
 export default function AppShell() {
   return (
@@ -21,6 +22,7 @@ export default function AppShell() {
       <EggBoundary>
         <GusherLayer />
         <StampLayer />
+        <SunsetLoader />
       </EggBoundary>
       <Sidebar />
       <SecondarySidebar />

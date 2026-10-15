@@ -6,5 +6,7 @@ export const EASTER_EGGS = {
   logoGusher: true, // five quick clicks on the Seros logo
   konami: true, // the Konami code on the home page (the offshore scene in the banner)
   loginQuips: true, // a rig-floor line under the "Invalid username or password" message
+  sunset: true, // the secret phrase typed into the home page search and confirmed with Enter
+  sunsetPhrases: ['end of tour', 'golden hour'], // any of these (ignoring capitals and extra spaces) starts the sunset scene
   rigLoadingLines: true, // rig-floor wording instead of plain "Loading…"
 }

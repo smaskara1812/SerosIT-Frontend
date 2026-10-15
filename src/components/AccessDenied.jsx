@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { LockKeyhole } from 'lucide-react'
 
 // Rendered in place of a page's real content when the signed-in user lacks
 // view rights on it — used instead of silently redirecting to "/", which
@@ -7,8 +8,20 @@ import { Link } from 'react-router-dom'
 // URL: whoever typed/bookmarked the link can see plainly why nothing loaded
 // rather than landing back on the Dashboard wondering what happened.
 //
-// The picture is a lease-gate sign with the gate under it. Hidden: click the Seros gate-box and the barrier
-// lifts, strains, and drops back. The gate stays closed.
+// The picture is a lease-gate sign with the gate under it. Press "Unlock access" (or click the Seros gate-box in the picture) and the barrier lifts, strains, and drops back, with a line of rig-floor humour. It never unlocks
+// anything: access is only ever granted by an admin under User Rights.
+const JOKES = [
+  'Nice try. The gate stays shut.',
+  'Locked. The key is with an admin, not with us.',
+  'Tried the lock, tried the barrier. Still shut.',
+  'Wrong crew badge. An admin can sort you the right one.',
+  'The barrier went up. The lock did not.',
+  'Badge didn’t scan. An admin can grant this page.',
+  'The gate knows you. It still will not open.',
+  'Stop-work on this door. An admin lifts it.',
+  'Right uniform, wrong permit. Ask an admin.',
+  'We checked the lock twice. Still an admin’s key.',
+]
 const RED = '#d9221c'
 const INK = '#17181d'
 const FONT = "'Plus Jakarta Sans', system-ui, sans-serif"
@@ -85,10 +98,16 @@ function Gate({ trying, onTry }) {
 
 export default function AccessDenied() {
   const [trying, setTrying] = useState(false)
+  const [joke, setJoke] = useState(JOKES[0])
   const timer = useRef(0)
+  const lastJoke = useRef(-1)
   useEffect(() => () => clearTimeout(timer.current), [])
   function tryGate() {
     if (trying) return
+    let i = Math.floor(Math.random() * JOKES.length)
+    if (i === lastJoke.current) i = (i + 1) % JOKES.length // never the same line twice running
+    lastJoke.current = i
+    setJoke(JOKES[i])
     setTrying(true)
     timer.current = setTimeout(() => setTrying(false), 3000)
   }
@@ -98,8 +117,8 @@ export default function AccessDenied() {
         <div className="relative">
           <Gate trying={trying} onTry={tryGate} />
           {trying && (
-            <p role="status" className="animate-in fade-in-0 slide-in-from-bottom-2 absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#17203d]/90 px-4 py-1.5 text-sm font-semibold text-white shadow-lg duration-300 motion-reduce:animate-none">
-              Nice try. The gate stays shut.
+            <p role="status" className="animate-in fade-in-0 slide-in-from-bottom-2 absolute bottom-3 left-1/2 w-max max-w-[92%] -translate-x-1/2 rounded-full bg-[#17203d]/90 px-4 py-1.5 text-center text-sm font-semibold text-white shadow-lg duration-300 motion-reduce:animate-none">
+              {joke}
             </p>
           )}
         </div>
@@ -112,12 +131,21 @@ export default function AccessDenied() {
               grant you access under User Rights.
             </p>
           </div>
-          <Link
-            to="/"
-            className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            Back to the home page
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={tryGate}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <LockKeyhole className="h-4 w-4" aria-hidden="true" /> Unlock access
+            </button>
+            <Link
+              to="/"
+              className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              Back to the home page
+            </Link>
+          </div>
         </div>
       </div>
     </div>

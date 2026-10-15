@@ -52,3 +52,16 @@ export function triggerStamp(kind) {
   if (Math.random() >= EASTER_EGGS.approvalStampChance) return // only now and then, so it stays a treat
   window.dispatchEvent(new CustomEvent('seros:stamp', { detail: { kind } }))
 }
+
+// True when what was typed into the home search is the secret phrase.
+export function isSunsetPhrase(text) {
+  if (!EASTER_EGGS.sunset) return false
+  const t = text.trim().toLowerCase().replace(/\s+/g, ' ')
+  return EASTER_EGGS.sunsetPhrases.some((p) => p === t)
+}
+
+// The sunset scene plays full-page; its code is only fetched the first time this runs (see SunsetLoader).
+export function triggerSunset(name) {
+  if (!EASTER_EGGS.sunset) return
+  window.dispatchEvent(new CustomEvent('seros:sunset', { detail: { name } }))
+}
