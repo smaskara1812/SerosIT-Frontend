@@ -7,6 +7,7 @@ import { TopbarProvider } from '@/context/TopbarContext'
 import RigLoading from '@/components/RigLoading'
 import GusherLayer from '@/components/GusherLayer'
 import StampLayer from '@/components/StampLayer'
+import SpudLayer from '@/components/SpudLayer'
 import EggBoundary from '@/components/EggBoundary'
 import SunsetLoader from '@/components/SunsetLoader'
 
@@ -22,6 +23,7 @@ export default function AppShell() {
       <EggBoundary>
         <GusherLayer />
         <StampLayer />
+        <SpudLayer />
         <SunsetLoader />
       </EggBoundary>
       <Sidebar />

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { canvasScale, lowPowerDevice, makeFrameGuard } from '@/lib/perf'
 
-// "Spud in": oil gushes up from the bottom centre in a tall plume, arcs over and rains back down. Any element
+// The gusher: oil gushes up from the bottom centre in a tall plume, arcs over and rains back down. Any element
 // marked `data-shelf` (the cards and the banner) catches it: drops land on the top edge, pool into glossy blobs,
 // then creep to the nearest corner and drip off onto whatever is below. Plays on the `seros:gusher` event; with
 // reduced motion only the message shows.
@@ -181,7 +181,7 @@ function Gusher({ message, onDone }) {
 export default function GusherLayer() {
   const [run, setRun] = useState(null)
   useEffect(() => {
-    const play = (e) => setRun({ id: performance.now(), message: e.detail?.message || 'Spud in!' })
+    const play = (e) => setRun({ id: performance.now(), message: e.detail?.message || 'We struck oil!' })
     window.addEventListener('seros:gusher', play)
     return () => window.removeEventListener('seros:gusher', play)
   }, [])

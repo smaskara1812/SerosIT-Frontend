@@ -2,7 +2,7 @@ import { pickGreetingQuip } from '@/lib/rigLines'
 
 const DEFAULT_SUB = 'Here is what needs you today, and a quick way to everything else.'
 
-// The home greeting: time of day sets the base; Monday, Friday and the weekend get their own line (crews rotate
+// The home greeting: time of day sets the base (night shift 10pm to 4am, early start 4am to 6am); Monday, Friday and the weekend get their own line (crews rotate
 // and work through the week, so nothing here treats a day as "the end of the week"); and about one visit in five
 // swaps the sub-line for a rig-floor quip. Chosen once per visit so it does not change while the page is open.
 export function pickGreeting(firstName, now = new Date(), random = Math.random) {
@@ -10,8 +10,9 @@ export function pickGreeting(firstName, now = new Date(), random = Math.random) 
   const h = now.getHours()
   const day = now.getDay() // 0 Sunday … 6 Saturday
 
+  // 10pm to 4am is night shift; the early start begins at 4am
+  if (h >= 22 || h < 4) return { title: `Night shift${n}?`, sub: 'The rigs never sleep. You should, eventually.' }
   if (h < 6) return { title: `Early start${n}`, sub: 'Coffee first, reports second.' }
-  if (h >= 22) return { title: `Night shift${n}?`, sub: 'The rigs never sleep. You should, eventually.' }
 
   if (day === 1) return { title: `New week${n}`, sub: 'Clean page in the log.' }
   if (day === 5) return { title: `Friday${n}`, sub: 'The rigs don’t count days, but we’re glad you’re here.' }

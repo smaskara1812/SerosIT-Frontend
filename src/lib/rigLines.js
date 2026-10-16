@@ -162,11 +162,12 @@ function pick(list, key) {
 export const pickLoadingLine = () => pick(LOADING, 'loading')
 export const pickMoreLine = () => pick(MORE, 'more')
 
-// What the logo easter egg says. Every line is used once before any repeats. Always starts "Spud in, <name>." (spudding in is the first day of a well).
+// What the logo easter egg says (the oil fountain). Every line is used once before any repeats.
+// Always starts "We struck oil, <name>!"
 const SPUD = [
   'The hole will not drill itself.',
   'Hard hat on, spirits up.',
-  'We just struck oil. Probably.',
+  'Slick work. Very slick.',
   'Let’s make some hole.',
   'Ahead of schedule. Nobody check.',
   'The derrick says hello.',
@@ -182,10 +183,10 @@ const SPUD = [
   'Keep your hands clear of the rotary.',
 ]
 export function pickSpudMessage(name) {
-  return `Spud in${name ? `, ${name}` : ''}. ${pick(SPUD, 'spud')}`
+  return `We struck oil${name ? `, ${name}` : ''}! ${pick(SPUD, 'spud')}`
 }
 
-// One-in-five sub-lines under the home greeting. Separate from the Spud-in list so the two never echo each other.
+// One-in-five sub-lines under the home greeting. Separate from the logo-click list so the two never echo each other.
 const QUIPS = [
   'Today’s forecast: gushers.',
   'May all your connections be quick.',

@@ -8,5 +8,7 @@ export const EASTER_EGGS = {
   loginQuips: true, // a rig-floor line under the "Invalid username or password" message
   sunset: true, // the secret phrase typed into the home page search and confirmed with Enter
   sunsetPhrases: ['end of tour', 'golden hour'], // any of these (ignoring capitals and extra spaces) starts the sunset scene
+  spudIn: true, // the spud-in animation, started by a secret phrase typed into the home page search
+  spudPhrases: ['spud in', 'spud date'], // any of these (ignoring capitals and extra spaces) starts it
   rigLoadingLines: true, // rig-floor wording instead of plain "Loading…"
 }

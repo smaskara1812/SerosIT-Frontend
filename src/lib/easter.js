@@ -65,3 +65,16 @@ export function triggerSunset(name) {
   if (!EASTER_EGGS.sunset) return
   window.dispatchEvent(new CustomEvent('seros:sunset', { detail: { name } }))
 }
+
+// True when what was typed into the home search is the spud-in phrase.
+export function isSpudPhrase(text) {
+  if (!EASTER_EGGS.spudIn) return false
+  const t = text.trim().toLowerCase().replace(/\s+/g, ' ')
+  return EASTER_EGGS.spudPhrases.some((p) => p === t)
+}
+
+// The spud-in: a drill bit drops in from the top of the screen and breaks ground at the bottom (see SpudLayer).
+export function triggerSpud(name) {
+  if (!EASTER_EGGS.spudIn) return
+  window.dispatchEvent(new CustomEvent('seros:spud', { detail: { message: `Spud in${name ? `, ${name}` : ''}. The first hole is made.` } }))
+}
