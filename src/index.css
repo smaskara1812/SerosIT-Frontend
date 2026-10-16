@@ -165,7 +165,7 @@
 }
 
 /* Offshore scene (same hidden surprise): the rig jacks up out of the sea, the boat crosses, the swell rolls. */
-@keyframes boat-sail { from { transform: translateX(-210px); } to { transform: translateX(1300px); } }
+@keyframes boat-sail { 0% { transform: translateX(-210px); } 40% { transform: translateX(520px); } 84% { transform: translateX(900px); } 100% { transform: translateX(1320px); } }
 @keyframes boat-bob { from { transform: translateY(-3px) rotate(-0.5deg); } to { transform: translateY(4px) rotate(0.6deg); } }
 @keyframes swell-roll { from { transform: translateX(0); } to { transform: translateX(-600px); } }
 @keyframes rig-rise { from { transform: translateY(60px); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(0); opacity: 1; } }

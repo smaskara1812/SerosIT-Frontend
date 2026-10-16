@@ -2,6 +2,16 @@
 // same screen rarely says the same thing twice. Keep them short, harmless and true to the trade.
 const LOADING = [
   'Circulating mud…',
+  'Ballasting down…',
+  'Deballasting…',
+  'Tensioning the mooring lines…',
+  'Running the riser…',
+  'Latching the BOP stack…',
+  'Checking the heave compensator…',
+  'Waiting on weather at the Wildcat…',
+  'Pulling the anchors…',
+  'Standing by the Wildcat…',
+  'Holding station…',
   'Running casing…',
   'Tripping out…',
   'Tripping in…',
