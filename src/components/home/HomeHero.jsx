@@ -10,7 +10,7 @@ import PageSearch from '@/components/PageSearch'
 // field, and never stop the page from scrolling.)
 const ARROWS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const PING_MS = 1300
-const PING_GAP = 600 // a press within this long of the last ping is ignored, so tapping or holding a key stays calm
+const PING_GAP = 20 // a press within this long of the last ping is ignored, so tapping or holding a key stays calm
 const SONAR = { x: 1040, y: 60 }
 
 function Contours() {

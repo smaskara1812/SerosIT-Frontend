@@ -491,13 +491,13 @@ export default function IncidentDetailsFormPage() {
               <BelongsToSelect value={form.incident_party} onChange={(v) => set({ incident_party: v })} disabled={!canWrite} />
             </Field>
             <Field name="incident_date" label="Incident Date" required>
-              <Input type="date" max={todayString()} value={form.incident_date} onChange={(e) => set({ incident_date: e.target.value })} disabled={!canWrite} />
+              <Input type="date" max={todayString()} value={form.incident_date} onChange={(e) => { const d = e.target.value; set(d && form.incident_reported_dt && form.incident_reported_dt < d ? { incident_date: d, incident_reported_dt: '' } : { incident_date: d }) }} disabled={!canWrite} />
             </Field>
             <Field name="incident_time" label="Incident Time" required>
               <Input type="time" value={form.incident_time} onChange={(e) => set({ incident_time: e.target.value })} disabled={!canWrite} />
             </Field>
             <Field name="incident_reported_dt" label="Incident Reported Date" required>
-              <Input type="date" value={form.incident_reported_dt} onChange={(e) => set({ incident_reported_dt: e.target.value })} disabled={!canWrite} />
+              <Input type="date" min={form.incident_date || undefined} value={form.incident_reported_dt} onChange={(e) => set({ incident_reported_dt: e.target.value })} disabled={!canWrite} />
             </Field>
             <Field name="incident_reported_time" label="Incident Reported Time" required>
               <Input type="time" value={form.incident_reported_time} onChange={(e) => set({ incident_reported_time: e.target.value })} disabled={!canWrite} />

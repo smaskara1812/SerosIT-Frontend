@@ -95,6 +95,8 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   const [options, setOptions] = useState([])
   const [mode, setMode] = useState(forceSearch ? 'search' : 'probing')
   const [query, setQuery] = useState('')
+  // True when the server refused or failed the list request (so the dropdown can say so instead of looking empty).
+  const [loadError, setLoadError] = useState(false)
   // Server-search results are paginated (page_size=20) — hasMore/loadingMore
   // back the "load next page on scroll" behavior below so a long list (e.g.
   // ~700 Locations) never just gets cut off after the first page.
@@ -128,6 +130,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
     cachedGet(`${field.remote}${sep}page_size=${INSTANT_LIST_THRESHOLD}${fieldsParam}`)
       .then((data) => {
         if (cancelled) return
+        setLoadError(!Array.isArray(data) && !Array.isArray(data?.results))
         if (Array.isArray(data)) {
           // Endpoint isn't paginated — whatever it returns is the full set.
           setOptions(data)
@@ -165,6 +168,7 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
       cachedGet(`${field.remote}${sep}search=${encodeURIComponent(query)}&page_size=20&page=1${remoteFilterParam}`)
         .then((data) => {
           if (thisRequest !== requestIdRef.current) return
+          setLoadError(!Array.isArray(data) && !Array.isArray(data?.results))
           pageRef.current = 1
           if (Array.isArray(data)) {
             setOptions(data)
@@ -263,7 +267,9 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
         className="w-full"
       />
       <ComboboxContent>
-        <ComboboxEmpty>{mode === 'search' && !query ? 'Type to search…' : 'No results'}</ComboboxEmpty>
+        <ComboboxEmpty>
+          {loadError ? 'Could not load this list. Please tell your administrator.' : mode === 'search' && !query ? 'Type to search…' : 'No results'}
+        </ComboboxEmpty>
         <ComboboxList
           onScroll={
             mode === 'search'
