@@ -257,3 +257,10 @@ html[data-ui-zoom] .min-h-screen { min-height: calc(100vh / var(--ui-zoom, 1)); 
 .logo-glow { animation: logo-glow 4.2s ease-in-out; }
 @keyframes logo-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } 50% { box-shadow: 0 0 18px 5px rgba(255,255,255,.55); } }
 @media (prefers-reduced-motion: reduce) { .logo-glow { animation: none; } }
+
+/* The home banner's sonar answers an arrow key with a ping: a ring sweeps out from its centre (a second one just behind
+   it) and the centre blips. The ring is drawn full size and scaled up from nothing, so it needs no script. */
+.sonar-ping { transform-box: fill-box; transform-origin: center; opacity: 0; animation: sonar-ping 1.3s cubic-bezier(.15, .6, .3, 1) both; }
+@keyframes sonar-ping { 0% { opacity: .38; transform: scale(.03); } 70% { opacity: .1; } 100% { opacity: 0; transform: scale(1); } }
+.sonar-blip { transform-box: fill-box; transform-origin: center; opacity: 0; animation: sonar-blip .9s ease-out both; }
+@keyframes sonar-blip { 0% { opacity: .3; transform: scale(.2); } 100% { opacity: 0; transform: scale(1.5); } }

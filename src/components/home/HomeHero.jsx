@@ -1,12 +1,46 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { pickGreeting } from '@/lib/greeting'
 import OffshoreScene from '@/components/home/OffshoreScene'
 import { lowPowerDevice } from '@/lib/perf'
 import PageSearch from '@/components/PageSearch'
 
 // Quiet contour lines and sonar rings, drawn once from a formula: a nod to charts and offshore survey work
-// without competing with the greeting. Pure decoration, hidden from assistive technology.
+// without competing with the greeting. Pure decoration, hidden from assistive technology. The arrow keys make the
+// sonar ping: a ring sweeps out from its centre, the way a sonar answers a pulse. (They are ignored while typing in a
+// field, and never stop the page from scrolling.)
+const ARROWS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
+const PING_MS = 1300
+const PING_GAP = 600 // a press within this long of the last ping is ignored, so tapping or holding a key stays calm
+const SONAR = { x: 1040, y: 60 }
+
 function Contours() {
+  const [pings, setPings] = useState([])
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+    const timers = new Set()
+    let n = 0
+    let lastAt = 0
+    const onKey = (e) => {
+      const t = e.target
+      if (!ARROWS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
+      if (t && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return
+      const now = performance.now()
+      if (now - lastAt < PING_GAP) return
+      lastAt = now
+      const id = ++n
+      setPings((p) => [...p.slice(-1), id]) // at most two at once
+      const timer = setTimeout(() => {
+        timers.delete(timer)
+        setPings((p) => p.filter((x) => x !== id))
+      }, PING_MS)
+      timers.add(timer)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      timers.forEach(clearTimeout)
+    }
+  }, [])
   const { lines, rings } = useMemo(() => {
     const W = 1200
     const lines = Array.from({ length: 13 }, (_, i) => {
@@ -31,7 +65,13 @@ function Contours() {
       </defs>
       <rect width="1200" height="360" fill="url(#home-glow)" />
       {rings.map((r) => (
-        <circle key={r.r} className="sonar-ring" style={{ animationDelay: `${r.r * 3}ms` }} cx="1040" cy="60" r={r.r} fill="none" stroke="#7fe3d6" strokeOpacity={Math.max(r.o, 0.03)} strokeWidth="1" />
+        <circle key={r.r} className="sonar-ring" style={{ animationDelay: `${r.r * 3}ms` }} cx={SONAR.x} cy={SONAR.y} r={r.r} fill="none" stroke="#7fe3d6" strokeOpacity={Math.max(r.o, 0.03)} strokeWidth="1" />
+      ))}
+      {pings.map((id) => (
+        <g key={id}>
+          <circle className="sonar-ping" cx={SONAR.x} cy={SONAR.y} r="350" fill="none" stroke="#9ff0e4" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
+          <circle className="sonar-blip" cx={SONAR.x} cy={SONAR.y} r="16" fill="#8fe6da" />
+        </g>
       ))}
       {lines.map((l, i) => (
         <path key={i} className="contour-line" style={{ animationDelay: `${i * 70}ms` }} d={l.d} fill="none" stroke="#ffffff" strokeOpacity={Math.max(l.o, 0.03)} strokeWidth="1" />
