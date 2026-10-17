@@ -186,6 +186,80 @@
   .hero-drill .rig-flare, .hero-drill .rig-light { animation: none; }
 }
 
+/* Crew change (hidden Konami surprise): an 18 second flight. 0-6 s the helicopter flies in, flares and settles; 6-12.1 s the
+   door is open and three people swap places each way; 11.8-18 it spools up, lifts, then flies off the
+   right edge in front of the rig. Times in the percentages below are seconds / 18. */
+@keyframes heli-x {
+  0% { transform: translateX(-717px); animation-timing-function: cubic-bezier(.3, .3, .45, 1); }
+  25.6% { transform: translateX(-25px); animation-timing-function: ease-in-out; }
+  33.3%, 76% { transform: translateX(0); animation-timing-function: cubic-bezier(.45, 0, .85, .75); }
+  100% { transform: translateX(640px); }
+}
+@keyframes heli-y {
+  0% { transform: translateY(-170px); animation-timing-function: ease-out; }
+  16.7% { transform: translateY(-105px); animation-timing-function: ease-out; }
+  25.6% { transform: translateY(-45px); animation-timing-function: ease-in-out; }
+  33.3%, 69.4% { transform: translateY(0); animation-timing-function: ease-in-out; }
+  80% { transform: translateY(-55px); animation-timing-function: ease-in; }
+  100% { transform: translateY(-150px); }
+}
+@keyframes heli-pitch {
+  0% { transform: rotate(5deg); animation-timing-function: ease-in-out; }
+  14% { transform: rotate(4deg); animation-timing-function: ease-in-out; }
+  22% { transform: rotate(-9deg); animation-timing-function: ease-in-out; }
+  29% { transform: rotate(-3deg); animation-timing-function: ease-in-out; }
+  33.3%, 74% { transform: rotate(0deg); animation-timing-function: ease-in-out; }
+  80% { transform: rotate(3deg); animation-timing-function: ease-in; }
+  90% { transform: rotate(8deg); }
+  100% { transform: rotate(10deg); }
+}
+@keyframes rotor-fast { 0%, 28.9% { opacity: 1; } 33.3%, 65.6% { opacity: 0; } 70%, 100% { opacity: 1; } }
+@keyframes rotor-slow { 0%, 28.9% { opacity: 0; } 33.3%, 65.6% { opacity: 1; } 70%, 100% { opacity: 0; } }
+@keyframes blade-spin { from { transform: scaleX(1); } to { transform: scaleX(-1); } }
+@keyframes blade-shimmer { from { transform: scaleX(1); } to { transform: scaleX(0.55); } }
+@keyframes heli-door { 0%, 33.3% { transform: translateX(0); } 36.1%, 64.4% { transform: translateX(-10px); } 67.2%, 100% { transform: translateX(0); } }
+@keyframes heli-shadow { 0%, 20% { opacity: 0; } 33.3%, 69% { opacity: .32; } 77%, 100% { opacity: 0; } }
+@keyframes pad-rise { from { transform: translateY(var(--rise)); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(0); opacity: 1; } }
+@keyframes crew-walk { 0% { transform: translateX(0); opacity: 0; } 5% { opacity: 1; } 92% { opacity: 1; } 100% { transform: translateX(var(--dx)); opacity: 0; } }
+@keyframes crew-step { from { transform: translateY(0); } to { transform: translateY(-0.7px); } }
+@keyframes crew-leg { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+@keyframes sock-wag { from { transform: rotate(-4deg); } to { transform: rotate(5deg); } }
+.hero-crew .heli-x { animation: heli-x 18s linear both; }
+.hero-crew .heli-y { animation: heli-y 18s linear both; }
+.hero-crew .heli-pitch { transform-origin: -1px -10px; animation: heli-pitch 18s linear both; }
+.hero-crew .heli-rotor-fast { animation: rotor-fast 18s linear both; }
+.hero-crew .heli-rotor-slow { animation: rotor-slow 18s linear both; }
+.hero-crew .heli-blade { transform-box: fill-box; transform-origin: center; animation: blade-shimmer .09s linear infinite alternate; }
+.hero-crew .heli-blade-slow { transform-box: fill-box; transform-origin: center; animation: blade-spin .85s ease-in-out infinite alternate; }
+.hero-crew .heli-blade-slow-b { animation-delay: -.42s; }
+.hero-crew .heli-tail-rotor { transform-box: fill-box; transform-origin: center; animation: blade-shimmer .08s linear infinite alternate; }
+.hero-crew .heli-door, .hero-crew .heli-door-window { animation: heli-door 18s ease-in-out both; }
+.hero-crew .heli-shadow { opacity: 0; animation: heli-shadow 18s linear both; }
+.hero-crew .pad-rise { animation: pad-rise 1.4s ease-out both; }
+.hero-crew .heli-strobe { animation: light-blink 1.1s steps(1) infinite; }
+.hero-crew .heli-strobe-b { animation-delay: .5s; }
+.hero-crew .crew-walk { opacity: 0; animation: crew-walk 3.4s linear both; }
+.hero-crew .crew-step { animation: crew-step .36s ease-in-out infinite alternate; }
+.hero-crew .crew-leg { transform-box: fill-box; transform-origin: 50% 0; animation: crew-leg .36s ease-in-out infinite alternate; }
+.hero-crew .crew-leg-b { animation-direction: alternate-reverse; }
+.hero-crew .crew-sock { animation: sock-wag 1.6s ease-in-out infinite alternate; }
+.hero-crew .pad-light { animation: light-blink 1.6s steps(1) infinite; }
+.hero-crew .pad-light-b { animation-delay: .8s; }
+.hero-crew .swell-a { animation: swell-roll 6s linear infinite; }
+.hero-crew .swell-b { animation: swell-roll 4s linear infinite; }
+.hero-crew .rig-rise { animation: rig-rise 1.4s ease-out both; }
+.hero-crew .rig-flare { transform-box: fill-box; transform-origin: 50% 100%; animation: flare-flicker 0.45s ease-in-out infinite; }
+.hero-crew .rig-flare-b { animation-duration: 0.3s; }
+.hero-crew .rig-light { animation: light-blink 1.2s steps(1) infinite; }
+.hero-crew .rig-light-b { animation-delay: 0.4s; }
+/* With reduced motion the helicopter simply stands on its pad, rotors still, nobody walking. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-crew [class*="heli-"], .hero-crew .pad-rise, .hero-crew .crew-walk, .hero-crew .crew-step, .hero-crew .crew-leg, .hero-crew .crew-sock,
+  .hero-crew .pad-light, .hero-crew .swell-a, .hero-crew .swell-b, .hero-crew .rig-rise, .hero-crew .rig-flare, .hero-crew .rig-light { animation: none; }
+  .hero-crew .heli-rotor-slow { opacity: 1; }
+  .hero-crew .heli-rotor-fast { opacity: 0; }
+}
+
 /* Approval stamp: drops from large, lands hard, rests slightly crooked, then lifts away. */
 @keyframes stamp-thump {
   0% { transform: rotate(-9deg) scale(2.6); opacity: 0; }

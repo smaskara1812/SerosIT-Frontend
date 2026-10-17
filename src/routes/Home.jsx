@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
@@ -249,13 +249,20 @@ export default function Home() {
   const hintLines = EASTER_EGGS.idleHintLines
   const hint = idle && hintLines.length ? hintLines[hintAt % hintLines.length] : null
 
-  const [drilling, setDrilling] = useState(false)
+  const [scene, setScene] = useState(null) // 'ship' or 'crew' while a banner scene plays
   const drillTimer = useRef(0)
-  useKonami(() => {
-    setDrilling(true)
+  const playScene = useCallback((next) => {
+    setScene(next)
     clearTimeout(drillTimer.current)
-    drillTimer.current = setTimeout(() => setDrilling(false), 12500)
-  })
+    drillTimer.current = setTimeout(() => setScene(null), next === 'crew' ? 18600 : 12500)
+  }, [])
+  useKonami(() => playScene(EASTER_EGGS.konamiScene === 'crew' ? 'crew' : 'ship'))
+  // The helicopter scene is started by a secret phrase typed into the search box (see PageSearch).
+  useEffect(() => {
+    const onChopper = () => playScene('crew')
+    window.addEventListener('seros:chopper', onChopper)
+    return () => window.removeEventListener('seros:chopper', onChopper)
+  }, [playScene])
   useEffect(() => () => clearTimeout(drillTimer.current), [])
 
   const hasDigest = digest && digest.length > 0
@@ -263,7 +270,7 @@ export default function Home() {
   return (
     <div className="space-y-8 pb-6">
       <Reveal className="relative z-20">
-        <HomeHero firstName={firstName} info={info} drilling={drilling} hint={hint} />
+        <HomeHero firstName={firstName} info={info} scene={scene} hint={hint} />
       </Reveal>
 
       <Reveal delay={80}>

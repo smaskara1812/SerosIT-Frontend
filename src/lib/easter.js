@@ -64,6 +64,17 @@ export function triggerSunset(name) {
   window.dispatchEvent(new CustomEvent('seros:sunset', { detail: { name } }))
 }
 
+// True when what was typed into the home search is the helicopter phrase.
+export function isChopperPhrase(text) {
+  return EASTER_EGGS.chopper && matches(text, EASTER_EGGS.chopperPhrases)
+}
+
+// The helicopter scene plays in the home banner; the home page listens for this (see Home.jsx).
+export function triggerChopper() {
+  if (!EASTER_EGGS.chopper) return
+  window.dispatchEvent(new CustomEvent('seros:chopper'))
+}
+
 // True when what was typed into the home search is the spud-in phrase.
 export function isSpudPhrase(text) {
   return EASTER_EGGS.spudIn && matches(text, EASTER_EGGS.spudPhrases)
@@ -91,7 +102,7 @@ export function riddleForNow(now = Date.now()) {
   const slot = Math.floor(now / EASTER_EGGS.placeholderRotateMs)
   const h = Math.imul(slot ^ 0x9e3779b1, 0x85ebca6b) >>> 0
   if ((h >>> 3) % EASTER_EGGS.riddleEveryNthSlot !== 0) return null
-  const all = [...RIDDLES.sunset, ...RIDDLES.spud]
+  const all = [...RIDDLES.sunset, ...RIDDLES.spud, ...(EASTER_EGGS.chopper ? RIDDLES.chopper : [])]
   return all[(h >>> 11) % all.length]
 }
 

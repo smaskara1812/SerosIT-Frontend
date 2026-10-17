@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { accessibleNavLeaves } from '@/lib/shortcuts'
 import { IconSearch } from '@/components/icons'
-import { isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerSpud, triggerSunset } from '@/lib/easter'
+import { isChopperPhrase, isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerChopper, triggerSpud, triggerSunset } from '@/lib/easter'
 
 const MAX_RESULTS = 8
 
@@ -75,13 +75,15 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
     // never takes over a search for a page that really has that name.
     if (e.key === 'Enter' && variant === 'hero') {
       const spud = isSpudPhrase(query)
-      if ((spud || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
+      const chopper = isChopperPhrase(query)
+      if ((spud || chopper || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
         e.preventDefault()
         setOpen(false)
         setQuery('')
         e.currentTarget.blur()
         const first = (user?.display_name || user?.username || '').split(' ')[0]
         if (spud) triggerSpud(first)
+        else if (chopper) triggerChopper()
         else triggerSunset(first)
         return undefined
       }

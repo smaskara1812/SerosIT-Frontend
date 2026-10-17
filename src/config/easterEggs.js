@@ -4,7 +4,10 @@ export const EASTER_EGGS = {
   approvalStamp: true, // APPROVED / REJECTED stamp thumping onto the screen after a Drilling Report is approved or rejected
   approvalStampChance: 0.2, // how often the stamp shows when it is on: 0.2 is one approval or rejection in five; 1 is every time
   logoGusher: true, // five quick clicks on the Seros logo
-  konami: true, // the Konami code on the home page (the offshore scene in the banner)
+  konami: true, // the Konami code on the home page (plays one of the banner scenes below)
+  konamiScene: 'ship', // which banner scene the Konami code plays: 'ship' (the Seros ship passing the Wildcat) or 'crew' (the helicopter landing on the Wildcat)
+  chopper: true, // the helicopter scene in the banner, started by a secret phrase typed into the home page search
+  chopperPhrases: ['chopper', 'helicopter', 'helipad'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never "crew change", which is a real page name
   loginQuips: true, // a rig-floor line under the "Invalid username or password" message
   sunset: true, // the secret phrase typed into the home page search and confirmed with Enter
   sunsetPhrases: ['golden hour', 'magic hour', 'sunset', 'sundown', 'dusk','golden'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts the sunset scene
@@ -26,7 +29,7 @@ export const EASTER_EGGS = {
 }
 
 // Riddles for the home search box. Each answer is a secret phrase (typed into the search box and confirmed with
-// Enter): the "sunset" answers must be in sunsetPhrases above, and the "spud" answers in spudPhrases.
+// Enter): the "sunset" answers must be in sunsetPhrases above, the "spud" answers in spudPhrases, and the "chopper" answers in chopperPhrases.
 export const RIDDLES = {
   sunset: [
     'Photographers chase it, and the rig glows in it. Which hour?',
@@ -36,6 +39,14 @@ export const RIDDLES = {
     'As the sun sinks, the light looks like a medal. Which hour?',
     'The sun slips behind the ridge. What is that moment called?',
     'One word for the moment the sun drops out of sight.',
+  ],
+  chopper: [
+    'If Seros crews do not take the boat out to the rig, what do they ride?',
+    'Its blades never stop, but it lands on a pad the size of a tennis court. What is it?',
+    'What brings a fresh crew to the rig, and takes the tired one home?',
+    'A flying machine with no wings that sits on a deck above the waves. Which one?',
+    'The rig has a pad for it, painted with a single letter. What is that called?',
+    'Rotors on top, skids below, and the one way offshore crews commute. What is it?',
   ],
   spud: [
     'Two words mark the moment a bit first bites the ground.',

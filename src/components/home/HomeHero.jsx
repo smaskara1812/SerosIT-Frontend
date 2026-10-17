@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { pickGreeting } from '@/lib/greeting'
 import OffshoreScene from '@/components/home/OffshoreScene'
 import { lowPowerDevice } from '@/lib/perf'
 import PageSearch from '@/components/PageSearch'
+
+const CrewChangeScene = lazy(() => import('@/components/home/CrewChangeScene')) // fetched only when the code is typed
 
 // Quiet contour lines and sonar rings, drawn once from a formula: a nod to charts and offshore survey work
 // without competing with the greeting. Pure decoration, hidden from assistive technology. The arrow keys make the
@@ -86,15 +88,22 @@ function formatTime(iso) {
 }
 
 // The welcome: who and when, and a search that can take you anywhere.
-export default function HomeHero({ firstName, info, drilling = false, hint = null }) {
+export default function HomeHero({ firstName, info, scene = null, hint = null }) {
+  const drilling = scene === 'ship'
+  const crew = scene === 'crew'
   // Chosen once per visit (re-chosen only if the name arrives late), so it does not change while the page is open.
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
   return (
-    <section data-shelf className={`relative rounded-3xl ${drilling ? `hero-drill ${lowPowerDevice() ? 'hero-drill-lite' : ''}` : ''}`} style={{ background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }}>
+    <section data-shelf className={`relative rounded-3xl ${drilling ? `hero-drill ${lowPowerDevice() ? 'hero-drill-lite' : ''}` : ''} ${crew ? 'hero-crew' : ''}`} style={{ background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }}>
       <div className="absolute inset-0 overflow-hidden rounded-3xl">
         <Contours />
         {drilling && <OffshoreScene />}
+        {crew && (
+          <Suspense fallback={null}>
+            <CrewChangeScene />
+          </Suspense>
+        )}
       </div>
       <div className="relative z-10 px-8 pb-8 pt-9 text-white sm:px-10">
         <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
@@ -104,19 +113,19 @@ export default function HomeHero({ firstName, info, drilling = false, hint = nul
               {greeting.title}
             </h1>
             <p key={hint ?? 'sub'} style={{ minHeight: '3.05rem', textWrap: 'balance' }} className={`mt-2 max-w-md text-[15px] leading-relaxed text-white/70 ${hint ? 'animate-in fade-in-0 duration-1000 italic text-white/60' : ''}`}>
-              {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : hint ?? greeting.sub}
+              {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : crew ? 'Crew change on the Wildcat. Three on, three off.' : hint ?? greeting.sub}
             </p>
           </div>
         </div>
 
         <div
-          className={`mt-7 max-w-2xl transition-opacity duration-500 ${drilling ? 'pointer-events-none opacity-0' : ''}`}
-          inert={drilling}
+          className={`mt-7 max-w-2xl transition-opacity duration-500 ${drilling || crew ? 'pointer-events-none opacity-0' : ''}`}
+          inert={drilling || crew}
         >
           <PageSearch variant="hero" />
         </div>
 
-        {info?.last_login && <p className="mt-4 text-xs text-white/45">Last signed in {formatTime(info.last_login)}</p>}
+        {info?.last_login && <p className={`mt-4 text-xs text-white/45 transition-opacity duration-500 ${crew ? 'opacity-0' : ''}`}>Last signed in {formatTime(info.last_login)}</p>}
       </div>
     </section>
   )
