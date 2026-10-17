@@ -10,6 +10,8 @@ import { ArrowUpRight } from 'lucide-react'
 import { IconPlus } from '@/components/icons'
 import ShortcutsPicker from '@/routes/ShortcutsPicker'
 import { useKonami } from '@/lib/easter'
+import { useIdle } from '@/lib/useIdle'
+import { EASTER_EGGS } from '@/config/easterEggs'
 import HomeHero from '@/components/home/HomeHero'
 import AttentionDigest from '@/components/home/AttentionDigest'
 
@@ -234,6 +236,19 @@ export default function Home() {
   }
 
   // The hidden code puts the welcome banner into "drill-down" for a few seconds.
+  // After a few idle minutes the banner whispers a hint (and the sidebar logo glows now and then, see Sidebar).
+  const idle = useIdle(EASTER_EGGS.idleHints ? EASTER_EGGS.idleHintAfterMs : 0)
+  const [hintAt, setHintAt] = useState(0)
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('seros:idle-hint', { detail: { on: idle } }))
+    if (!idle) return undefined
+    const id = setInterval(() => setHintAt((i) => i + 1), 20000)
+    return () => clearInterval(id)
+  }, [idle])
+  useEffect(() => () => window.dispatchEvent(new CustomEvent('seros:idle-hint', { detail: { on: false } })), [])
+  const hintLines = EASTER_EGGS.idleHintLines
+  const hint = idle && hintLines.length ? hintLines[hintAt % hintLines.length] : null
+
   const [drilling, setDrilling] = useState(false)
   const drillTimer = useRef(0)
   useKonami(() => {
@@ -248,7 +263,7 @@ export default function Home() {
   return (
     <div className="space-y-8 pb-6">
       <Reveal className="relative z-20">
-        <HomeHero firstName={firstName} info={info} drilling={drilling} />
+        <HomeHero firstName={firstName} info={info} drilling={drilling} hint={hint} />
       </Reveal>
 
       <Reveal delay={80}>

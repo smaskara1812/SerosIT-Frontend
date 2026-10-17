@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
@@ -47,6 +47,36 @@ export default function Sidebar() {
   const firstName = (user?.display_name || user?.username || '').split(' ')[0]
   const logoClicks = useMemo(() => makeMultiClick(() => triggerGusher(pickSpudMessage(firstName))), [firstName])
 
+  // While the home page has been idle for a while, the logo now and then glows slowly toward white: a quiet clue.
+  const [glow, setGlow] = useState(false)
+  useEffect(() => {
+    let on = false
+    let wait = 0
+    let hold = 0
+    const loop = () => {
+      wait = setTimeout(() => {
+        setGlow(true)
+        hold = setTimeout(() => {
+          setGlow(false)
+          if (on) loop()
+        }, 4200)
+      }, 5000 + Math.random() * 8000)
+    }
+    const onHint = (e) => {
+      on = !!e.detail?.on
+      clearTimeout(wait)
+      clearTimeout(hold)
+      setGlow(false)
+      if (on) loop()
+    }
+    window.addEventListener('seros:idle-hint', onHint)
+    return () => {
+      window.removeEventListener('seros:idle-hint', onHint)
+      clearTimeout(wait)
+      clearTimeout(hold)
+    }
+  }, [])
+
   function toggle() {
     setCollapsed((prev) => {
       const next = !prev
@@ -77,10 +107,10 @@ export default function Sidebar() {
           <img
             src="/android-chrome-192x192.png"
             alt="Seros"
-            className="h-9 w-9 shrink-0 rounded-full object-contain shadow-sm"
+            className={`h-9 w-9 shrink-0 rounded-full object-contain shadow-sm ${glow ? 'logo-glow' : ''}`}
           />
         ) : (
-          <div className="flex h-9 items-center justify-center rounded-lg bg-white px-3 shadow-sm">
+          <div className={`flex h-9 items-center justify-center rounded-lg bg-white px-3 shadow-sm ${glow ? 'logo-glow' : ''}`}>
             <img
               src="/branding/seros-logo.png"
               alt="Seros"

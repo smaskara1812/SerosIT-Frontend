@@ -252,3 +252,8 @@
    stretched back to the real window height. */
 html[data-ui-zoom] .h-screen { height: calc(100vh / var(--ui-zoom, 1)); }
 html[data-ui-zoom] .min-h-screen { min-height: calc(100vh / var(--ui-zoom, 1)); }
+
+/* A quiet clue: the sidebar logo glows slowly toward white now and then while the home page sits idle. */
+.logo-glow { animation: logo-glow 4.2s ease-in-out; }
+@keyframes logo-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } 50% { box-shadow: 0 0 18px 5px rgba(255,255,255,.55); } }
+@media (prefers-reduced-motion: reduce) { .logo-glow { animation: none; } }

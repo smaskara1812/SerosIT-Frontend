@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { accessibleNavLeaves } from '@/lib/shortcuts'
 import { IconSearch } from '@/components/icons'
-import { isSpudPhrase, isSunsetPhrase, triggerSpud, triggerSunset } from '@/lib/easter'
+import { isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerSpud, triggerSunset } from '@/lib/easter'
 
 const MAX_RESULTS = 8
 
@@ -28,6 +28,20 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const boxRef = useRef(null)
+  // On the home page the example text is, for some stretches of the clock, a riddle whose answer is a secret phrase.
+  const [riddle, setRiddle] = useState(() => (variant === 'hero' ? riddleForNow() : null))
+  useEffect(() => {
+    if (variant !== 'hero') return undefined
+    let timer = 0
+    const next = () => {
+      timer = setTimeout(() => {
+        setRiddle(riddleForNow())
+        next()
+      }, msToNextSlot() + 500)
+    }
+    next()
+    return () => clearTimeout(timer)
+  }, [variant])
 
   const leaves = useMemo(() => accessibleNavLeaves(user), [user])
   const results = useMemo(() => {
@@ -57,17 +71,20 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
 
   function onKeyDown(e) {
     if (e.key === 'Escape') return setOpen(false)
-    // The home page's secret phrase: checked first, because it matches no page and would otherwise do nothing.
-    if (e.key === 'Enter' && variant === 'hero' && (isSunsetPhrase(query) || isSpudPhrase(query))) {
-      e.preventDefault()
+    // The home page's secret phrases: checked first, because they match no page and would otherwise do nothing. A phrase
+    // never takes over a search for a page that really has that name.
+    if (e.key === 'Enter' && variant === 'hero') {
       const spud = isSpudPhrase(query)
-      setOpen(false)
-      setQuery('')
-      e.currentTarget.blur()
-      const first = (user?.display_name || user?.username || '').split(' ')[0]
-      if (spud) triggerSpud(first)
-      else triggerSunset(first)
-      return undefined
+      if ((spud || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
+        e.preventDefault()
+        setOpen(false)
+        setQuery('')
+        e.currentTarget.blur()
+        const first = (user?.display_name || user?.username || '').split(' ')[0]
+        if (spud) triggerSpud(first)
+        else triggerSunset(first)
+        return undefined
+      }
     }
     if (!results.length) return
     if (e.key === 'ArrowDown') {
@@ -101,7 +118,7 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        placeholder={hero ? 'Where would you like to go?  Try “drilling report” or “hazard”' : 'Search for a page…'}
+        placeholder={hero ? (riddle ? `Riddle: ${riddle}` : 'Where would you like to go?  Try “drilling report” or “hazard”') : 'Search for a page…'}
         aria-label="Search for a page"
         autoFocus={autoFocus}
         className={

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { EASTER_EGGS } from '@/config/easterEggs'
+import { EASTER_EGGS, RIDDLES } from '@/config/easterEggs'
 
 // Small hidden delights. `triggerGusher` asks the GusherLayer (mounted once in the app shell) to play.
 export function triggerGusher(message) {
@@ -55,9 +55,7 @@ export function triggerStamp(kind) {
 
 // True when what was typed into the home search is the secret phrase.
 export function isSunsetPhrase(text) {
-  if (!EASTER_EGGS.sunset) return false
-  const t = text.trim().toLowerCase().replace(/\s+/g, ' ')
-  return EASTER_EGGS.sunsetPhrases.some((p) => p === t)
+  return EASTER_EGGS.sunset && matches(text, EASTER_EGGS.sunsetPhrases)
 }
 
 // The sunset scene plays full-page; its code is only fetched the first time this runs (see SunsetLoader).
@@ -68,9 +66,7 @@ export function triggerSunset(name) {
 
 // True when what was typed into the home search is the spud-in phrase.
 export function isSpudPhrase(text) {
-  if (!EASTER_EGGS.spudIn) return false
-  const t = text.trim().toLowerCase().replace(/\s+/g, ' ')
-  return EASTER_EGGS.spudPhrases.some((p) => p === t)
+  return EASTER_EGGS.spudIn && matches(text, EASTER_EGGS.spudPhrases)
 }
 
 // The spud-in: a drill bit drops in from the top of the screen and breaks ground at the bottom (see SpudLayer).
@@ -78,3 +74,26 @@ export function triggerSpud(name) {
   if (!EASTER_EGGS.spudIn) return
   window.dispatchEvent(new CustomEvent('seros:spud', { detail: { message: `Spud in${name ? `, ${name}` : ''}. The first hole is made.` } }))
 }
+
+// Capitals, hyphens, punctuation and extra spaces do not matter: "Spud-in!" is "spud in".
+export const norm = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+const matches = (text, phrases) => {
+  const t = norm(text)
+  return t.length > 0 && phrases.some((p) => norm(p) === t)
+}
+
+// The riddle the home search box shows right now (or null for its usual example). The clock is cut into stretches
+// (`placeholderRotateMs`, 90 minutes by default); each stretch is either the usual example or one riddle, chosen by a
+// fixed scramble of the stretch's number. So the words change slowly, stay put while someone is using the page, and
+// are the same for everybody at the same moment.
+export function riddleForNow(now = Date.now()) {
+  if (!EASTER_EGGS.searchRiddles) return null
+  const slot = Math.floor(now / EASTER_EGGS.placeholderRotateMs)
+  const h = Math.imul(slot ^ 0x9e3779b1, 0x85ebca6b) >>> 0
+  if ((h >>> 3) % EASTER_EGGS.riddleEveryNthSlot !== 0) return null
+  const all = [...RIDDLES.sunset, ...RIDDLES.spud]
+  return all[(h >>> 11) % all.length]
+}
+
+// How long until the search box's words may change.
+export const msToNextSlot = (now = Date.now()) => EASTER_EGGS.placeholderRotateMs - (now % EASTER_EGGS.placeholderRotateMs)

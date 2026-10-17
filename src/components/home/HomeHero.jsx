@@ -46,7 +46,7 @@ function formatTime(iso) {
 }
 
 // The welcome: who and when, and a search that can take you anywhere.
-export default function HomeHero({ firstName, info, drilling = false }) {
+export default function HomeHero({ firstName, info, drilling = false, hint = null }) {
   // Chosen once per visit (re-chosen only if the name arrives late), so it does not change while the page is open.
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
@@ -63,8 +63,8 @@ export default function HomeHero({ firstName, info, drilling = false }) {
             <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
               {greeting.title}
             </h1>
-            <p className="mt-2 max-w-md text-[15px] leading-relaxed text-white/70">
-              {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : greeting.sub}
+            <p key={hint ?? 'sub'} style={{ minHeight: '3.05rem', textWrap: 'balance' }} className={`mt-2 max-w-md text-[15px] leading-relaxed text-white/70 ${hint ? 'animate-in fade-in-0 duration-1000 italic text-white/60' : ''}`}>
+              {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : hint ?? greeting.sub}
             </p>
           </div>
         </div>
