@@ -102,7 +102,9 @@ export function riddleForNow(now = Date.now()) {
   const slot = Math.floor(now / EASTER_EGGS.placeholderRotateMs)
   const h = Math.imul(slot ^ 0x9e3779b1, 0x85ebca6b) >>> 0
   if ((h >>> 3) % EASTER_EGGS.riddleEveryNthSlot !== 0) return null
-  const all = [...RIDDLES.sunset, ...RIDDLES.spud, ...(EASTER_EGGS.chopper ? RIDDLES.chopper : [])]
+  // A riddle is only asked if the secret it leads to is switched on.
+  const all = [...(EASTER_EGGS.sunset ? RIDDLES.sunset : []), ...(EASTER_EGGS.spudIn ? RIDDLES.spud : []), ...(EASTER_EGGS.chopper ? RIDDLES.chopper : [])]
+  if (!all.length) return null
   return all[(h >>> 11) % all.length]
 }
 
