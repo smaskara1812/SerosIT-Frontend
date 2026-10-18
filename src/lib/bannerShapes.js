@@ -2,7 +2,7 @@
 // and one or two shape settings), never from uploaded artwork. The same drawing code draws the banner and the little
 // pictures in the editor's shape library.
 
-export const MAX_LAYERS = 60
+export const MAX_LAYERS = 120
 
 // w and h are the starting size on the 1200 x 360 canvas; n and p are the shape's own settings where it has them.
 export const CATEGORIES = [

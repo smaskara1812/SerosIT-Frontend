@@ -10,6 +10,8 @@ export const DEFAULT_DESIGN = {
   contours: { on: true, color: '#ffffff', opacity: 0.13, density: 2 },
   showLastSignIn: true,
   search: { tint: '#ffffff' },
+  notice: { x: null, y: 0 }, // across and down, 0 to 100 (null across = the side the layout puts it on)
+  edges: [], // border strips along the top or bottom: { edge, type, size, colors, opacity }
   layers: [],
 }
 
@@ -27,6 +29,8 @@ export function withDefaults(d) {
     pattern: { ...base.pattern, ...d.pattern },
     contours: { ...base.contours, ...d.contours },
     search: { ...base.search, ...d.search },
+    notice: legacyNotice({ ...base.notice, ...d.notice }),
+    edges: d.edges || [],
   }
 }
 
@@ -35,6 +39,12 @@ export const LAYOUTS = [
   { key: 'mirrored', label: 'Mirrored', hint: 'Greeting and search on the right, the notice on the left.' },
   { key: 'centred', label: 'Centred', hint: 'Everything in the middle, the notice underneath.' },
 ]
+
+// A saved design from before the notice had fine control used top / middle / bottom; read that as an up-and-down position.
+function legacyNotice(n) {
+  if (!n.at) return { x: n.x ?? null, y: n.y ?? 0 }
+  return { x: n.x ?? null, y: n.y ?? { top: 0, middle: 50, bottom: 100 }[n.at] ?? 0 }
+}
 
 export const PATTERNS = [
   { key: 'none', label: 'None' },
@@ -158,3 +168,19 @@ export function softenTint(hex) {
   }
   return c
 }
+
+export const EDGE_TYPES = [
+  { key: 'garland', label: 'Flower garland' },
+  { key: 'toran', label: 'Leaf toran' },
+  { key: 'bunting', label: 'Bunting flags' },
+  { key: 'lights', label: 'String lights' },
+  { key: 'lanterns', label: 'Hanging lanterns' },
+  { key: 'pearls', label: 'Pearl strand' },
+  { key: 'icicles', label: 'Icicles' },
+  { key: 'zigzag', label: 'Zigzag' },
+  { key: 'scallop', label: 'Scalloped edge' },
+  { key: 'waves', label: 'Waves' },
+  { key: 'stars', label: 'Row of stars' },
+  { key: 'diamonds', label: 'Diamond chain' },
+  { key: 'bands', label: 'Colour bands' },
+]

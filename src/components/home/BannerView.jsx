@@ -33,9 +33,12 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
   const centred = layout === 'centred'
   const mirrored = layout === 'mirrored'
   const blockCls = centred ? 'mx-auto text-center' : mirrored ? '@4xl:ml-auto @4xl:text-right' : ''
-  const noticePos = centred ? 'mx-auto mt-6 w-full max-w-sm' : mirrored ? 'w-full @4xl:absolute @4xl:left-10 @4xl:top-11 @4xl:w-[23rem]' : 'w-full @4xl:absolute @4xl:right-10 @4xl:top-11 @4xl:w-[23rem]'
+  // Across and down, as percentages of the room the card has (see .banner-notice in index.css); in the Centred layout it simply sits underneath.
+  const nx = design.notice.x ?? (mirrored ? 0 : 100)
+  const noticeStyle = centred ? undefined : { '--nx': nx, '--ny': design.notice.y, '--nh': `${noticeH}px` }
+  const noticePos = centred ? 'mx-auto mt-6 w-full max-w-sm' : 'banner-notice'
   const noticeNode = (
-    <div ref={noticeRef} className={`empty:hidden ${noticePos} ${zones ? 'rounded-2xl outline-dashed outline-2 outline-offset-2 outline-sky-400/80' : ''}`}>
+    <div ref={noticeRef} style={noticeStyle} className={`empty:hidden ${noticePos} ${zones ? 'rounded-2xl outline-dashed outline-2 outline-offset-2 outline-sky-400/80' : ''}`}>
       {notice}
       {zones && notice && <ZoneLabel>Notice</ZoneLabel>}
     </div>

@@ -186,6 +186,18 @@
   .hero-drill .rig-flare, .hero-drill .rig-light { animation: none; }
 }
 
+/* The home banner's notice card on a wide banner: --nx and --ny (0 to 100) say how far across and down the room it has the card sits,
+   whatever the banner's size; --nh is the card's own height. The margins match the banner's padding. Narrower banners stack it. */
+.banner-notice { width: 100%; }
+@container (min-width: 56rem) {
+  .banner-notice {
+    position: absolute;
+    width: 23rem;
+    left: calc(2.5rem + (100% - 5rem - 23rem) * var(--nx, 100) / 100);
+    top: calc(2.75rem + (100% - 5.25rem - var(--nh, 0px)) * var(--ny, 0) / 100);
+  }
+}
+
 /* Crew change (hidden Konami surprise): an 18 second flight. 0-6 s the helicopter flies in, flares and settles; 6-12.1 s the
    door is open and three people swap places each way; 11.8-18 it spools up, lifts, then flies off the
    right edge in front of the rig. Times in the percentages below are seconds / 18. */

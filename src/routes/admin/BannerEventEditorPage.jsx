@@ -19,6 +19,7 @@ import RigLoading from '@/components/RigLoading'
 import BannerView from '@/components/home/BannerView'
 import BannerArt from '@/components/home/BannerArt'
 import NoticeCard from '@/components/home/NoticeCard'
+import EdgesPanel from '@/components/admin/banner/EdgesPanel'
 import { ColorField, Choice, FitPreview, Section, SliderField } from '@/components/admin/banner/controls'
 import ShapeCanvas from '@/components/admin/banner/ShapeCanvas'
 import ShapesPanel from '@/components/admin/banner/ShapesPanel'
@@ -36,7 +37,7 @@ const TABS = [
   { key: 'words', label: 'Words', icon: Type },
   { key: 'colours', label: 'Colours', icon: Palette },
   { key: 'pattern', label: 'Pattern', icon: Grid3x3 },
-  { key: 'lines', label: 'Lines', icon: Spline },
+  { key: 'lines', label: 'Lines & edges', icon: Spline },
   { key: 'shapes', label: 'Shapes', icon: Shapes },
   { key: 'layout', label: 'Layout', icon: LayoutTemplate },
 ]
@@ -93,6 +94,36 @@ function PatternChip({ pattern, design, active, onPick }) {
       </div>
       <div className="px-2 py-1.5">{pattern.label}</div>
     </button>
+  )
+}
+
+// The notice's position: nine quick spots on a little banner, and two sliders for anything in between.
+function NoticePlacer({ design, edit }) {
+  const nx = design.notice.x ?? (design.layout === 'mirrored' ? 0 : 100)
+  const ny = design.notice.y
+  const word = (v, lo, mid, hi) => (v === 0 ? lo : v === 50 ? mid : hi)
+  return (
+    <fieldset disabled={design.layout === 'centred'} className="flex flex-col gap-3 disabled:opacity-40">
+      <div className="flex items-center gap-4">
+        <div className="grid w-32 grid-cols-3 gap-1 rounded-lg bg-[#1c448a] p-1.5" role="group" aria-label="Quick spots for the notice">
+          {[0, 50, 100].flatMap((yy) =>
+            [0, 50, 100].map((xx) => (
+              <button
+                key={`${xx},${yy}`}
+                type="button"
+                aria-label={`Notice ${word(yy, 'top', 'middle', 'bottom')} ${word(xx, 'left', 'centre', 'right')}`}
+                aria-pressed={nx === xx && ny === yy}
+                onClick={() => edit((d) => { d.notice.x = xx; d.notice.y = yy })}
+                className={`h-6 rounded outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white ${nx === xx && ny === yy ? 'bg-[#7fe3d6]' : 'bg-white/25 hover:bg-white/45'}`}
+              />
+            )),
+          )}
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => edit((d) => { d.notice.x = null; d.notice.y = 0 })}>Back to the usual spot</Button>
+      </div>
+      <SliderField label="Across" value={nx} min={0} max={100} step={1} onChange={(v) => edit((d) => { d.notice.x = v }, 'nx')} lo="Left" hi="Right" />
+      <SliderField label="Up and down" value={ny} min={0} max={100} step={1} onChange={(v) => edit((d) => { d.notice.y = v }, 'ny')} lo="Top" hi="Bottom" />
+    </fieldset>
   )
 }
 
@@ -279,7 +310,15 @@ export default function BannerEventEditorPage() {
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const read = readability(design)
   const tone = toneOf(design)
-  const width = SIZES.find((s) => s.key === size).width
+  // Wide screen shows the banner at the width the home page really gives it
+  // (the window minus the collapsed sidebar and the page margins), scaled to fit.
+  const [winW, setWinW] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const on = () => setWinW(window.innerWidth)
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  const width = size === 'wide' ? Math.max(1100, winW - 110) : SIZES.find((s) => s.key === size).width
   const setM = (patch) => setMeta((m) => ({ ...m, ...patch }))
 
   async function save() {
@@ -546,6 +585,8 @@ export default function BannerEventEditorPage() {
               </>
             )}
 
+            {tab === 'lines' && <EdgesPanel edges={design.edges} edit={edit} />}
+
             {tab === 'lines' && (
               <Section title="Contour lines" hint="The wavy chart-like lines behind the greeting.">
                 <label className="inline-flex items-center gap-2 text-sm">
@@ -595,6 +636,9 @@ export default function BannerEventEditorPage() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">{LAYOUTS.find((l) => l.key === design.layout)?.hint}</p>
+                </Section>
+                <Section title="Where the notice sits" hint={design.layout === 'centred' ? 'In the Centred layout the notice goes underneath, so this does not apply.' : 'Move the notice anywhere on the banner to keep it clear of the artwork. Pick a spot below, or fine-tune with the sliders.'}>
+                  <NoticePlacer design={design} edit={edit} />
                 </Section>
                 <Section title="Extras">
                   <label className="inline-flex items-center gap-2 text-sm">

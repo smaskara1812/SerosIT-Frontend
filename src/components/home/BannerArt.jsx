@@ -1,5 +1,6 @@
 import { useId, useMemo } from 'react'
 import { LayerShape } from '@/components/home/BannerShapes'
+import BannerEdges from '@/components/home/BannerEdges'
 import { shapesAlign } from '@/lib/bannerDesign'
 
 const W = 1200
@@ -87,6 +88,7 @@ export default function BannerArt({ design }) {
         {design.layers.map((l) => <LayerShape key={l.id} layer={l} uid={uid} />)}
       </svg>
     )}
+    <BannerEdges edges={design.edges} />
     </>
   )
 }
