@@ -15,6 +15,8 @@ const AuditTrail = lazy(() => import('@/routes/admin/AuditTrail'))
 const HistorySettings = lazy(() => import('@/routes/admin/HistorySettings'))
 const EmailLog = lazy(() => import('@/routes/admin/EmailLog'))
 const NoticeBoardPage = lazy(() => import('@/routes/admin/NoticeBoardPage'))
+const BannerEventsPage = lazy(() => import('@/routes/admin/BannerEventsPage'))
+const BannerEventEditorPage = lazy(() => import('@/routes/admin/BannerEventEditorPage'))
 const MastersHub = lazy(() => import('@/routes/masters/MastersHub'))
 const MasterCrudPage = lazy(() => import('@/routes/masters/MasterCrudPage'))
 const JobDescriptionsPage = lazy(() => import('@/routes/masters/JobDescriptionsPage'))
@@ -96,6 +98,8 @@ function App() {
         <Route element={<AppShell />}>
           <Route path="/" element={<Home />} />
           <Route path="/admin/notice-board" element={<NoticeBoardPage />} />
+          <Route path="/admin/banner-events" element={<BannerEventsPage />} />
+          <Route path="/admin/banner-events/:id" element={<BannerEventEditorPage />} />
           <Route path="/admin/approver-mapping" element={<ApproverMappingPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/user-rights" element={<UserRights />} />

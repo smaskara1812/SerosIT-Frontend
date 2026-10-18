@@ -125,7 +125,7 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
         autoFocus={autoFocus}
         className={
           hero
-            ? 'h-13 w-full rounded-2xl border-0 bg-white pl-12 pr-4 text-[15px] text-slate-900 shadow-lg shadow-black/15 outline-none placeholder:text-slate-500 focus:ring-4 focus:ring-white/30'
+            ? 'h-13 w-full rounded-2xl border-0 bg-[var(--search-tint,#ffffff)] pl-12 pr-4 text-[15px] text-slate-900 shadow-lg shadow-black/15 outline-none placeholder:text-slate-500 focus:ring-4 focus:ring-white/30'
             : 'h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/40'
         }
       />

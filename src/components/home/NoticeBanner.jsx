@@ -15,7 +15,7 @@ const REFRESH_MS = 5 * 60 * 1000
 // Every notice sits in the same grid cell inside one panel and only the current one is visible, so the card is always
 // as tall as the tallest notice and never changes size when it rotates. Its height is reported through `onHeight`, so the banner can
 // keep room for it (and only grows when it genuinely has none).
-export default function NoticeBanner({ onHeight }) {
+export default function NoticeBanner({ onHeight, tone = 'dark', widthClass = 'xl:w-[23rem] xl:shrink-0' }) {
   const navigate = useNavigate()
   const [notices, setNotices] = useState([])
   const [at, setAt] = useState(0)
@@ -67,6 +67,8 @@ export default function NoticeBanner({ onHeight }) {
 
   if (count === 0) return null
 
+  const light = tone === 'light'
+  const arrowCls = light ? 'text-[#0f2650]/60 hover:bg-[#0f2650]/10 hover:text-[#0f2650] focus-visible:ring-[#0f2650]/40' : 'text-white/55 hover:bg-white/10 hover:text-white focus-visible:ring-white/40'
   const go = (step) => setAt((index + step + count) % count)
   const current = notices[index]
   // An in-app link goes through the router so the page does not reload.
@@ -81,7 +83,7 @@ export default function NoticeBanner({ onHeight }) {
     <section
       ref={boxRef}
       aria-label="Notices"
-      className="w-full xl:w-[23rem] xl:shrink-0"
+      className={`w-full ${widthClass}`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -89,7 +91,7 @@ export default function NoticeBanner({ onHeight }) {
     >
       {/* One panel stays put; only the words inside it fade. The old words leave quickly, then the new ones come in, so
           the two are never on screen at once and the glass never goes see-through. */}
-      <NoticePanel kind={current.kind}>
+      <NoticePanel kind={current.kind} tone={tone}>
         <div className="grid">
           {notices.map((n, i) => (
             <div
@@ -98,7 +100,7 @@ export default function NoticeBanner({ onHeight }) {
               aria-hidden={i !== index}
               inert={i !== index}
             >
-              <NoticeContent notice={n} onOpen={open} />
+              <NoticeContent notice={n} onOpen={open} tone={tone} />
             </div>
           ))}
         </div>
@@ -109,7 +111,7 @@ export default function NoticeBanner({ onHeight }) {
             type="button"
             onClick={() => go(-1)}
             aria-label="Previous notice"
-            className="rounded-full p-1 text-white/55 outline-none transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40"
+            className={`rounded-full p-1 outline-none transition-colors focus-visible:ring-2 ${arrowCls}`}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -122,7 +124,7 @@ export default function NoticeBanner({ onHeight }) {
                 aria-selected={i === index}
                 aria-label={`Notice ${i + 1} of ${count}`}
                 onClick={() => setAt(i)}
-                className={`h-1.5 rounded-full transition-all ${i === index ? 'w-5 bg-white/80' : 'w-1.5 bg-white/30 hover:bg-white/55'}`}
+                className={`h-1.5 rounded-full transition-all ${i === index ? (light ? 'w-5 bg-[#0f2650]/80' : 'w-5 bg-white/80') : light ? 'w-1.5 bg-[#0f2650]/25 hover:bg-[#0f2650]/50' : 'w-1.5 bg-white/30 hover:bg-white/55'}`}
               />
             ))}
           </div>
@@ -130,7 +132,7 @@ export default function NoticeBanner({ onHeight }) {
             type="button"
             onClick={() => go(1)}
             aria-label="Next notice"
-            className="rounded-full p-1 text-white/55 outline-none transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40"
+            className={`rounded-full p-1 outline-none transition-colors focus-visible:ring-2 ${arrowCls}`}
           >
             <ChevronRight className="h-4 w-4" />
           </button>

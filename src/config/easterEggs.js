@@ -43,7 +43,7 @@ export const RIDDLES = {
   chopper: [
     'If Seros crews do not take the boat out to the rig, what do they ride?',
     'Its blades never stop, but it lands on a pad the size of a tennis court. What is it?',
-    'What brings a fresh crew to the rig, and takes the tired one home?',
+    'What brings a fresh crew to the rig, and takes the tired one home by air?',
     'A flying machine with no wings that sits on a deck above the waves. Which one?',
     'The rig has a pad for it, painted with a single letter. What is that called?',
     'Rotors on top, skids below, and the one way offshore crews commute. What is it?',

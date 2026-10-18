@@ -64,9 +64,15 @@ export function triggerSunset(name) {
   window.dispatchEvent(new CustomEvent('seros:sunset', { detail: { name } }))
 }
 
+// On a day with a custom banner (Admin > Banner Events) the banner's hidden touches are off: the home page says so here.
+let customBanner = false
+export function setCustomBanner(on) {
+  customBanner = !!on
+}
+
 // True when what was typed into the home search is the helicopter phrase.
 export function isChopperPhrase(text) {
-  return EASTER_EGGS.chopper && matches(text, EASTER_EGGS.chopperPhrases)
+  return EASTER_EGGS.chopper && !customBanner && matches(text, EASTER_EGGS.chopperPhrases)
 }
 
 // The helicopter scene plays in the home banner; the home page listens for this (see Home.jsx).
@@ -103,7 +109,7 @@ export function riddleForNow(now = Date.now()) {
   const h = Math.imul(slot ^ 0x9e3779b1, 0x85ebca6b) >>> 0
   if ((h >>> 3) % EASTER_EGGS.riddleEveryNthSlot !== 0) return null
   // A riddle is only asked if the secret it leads to is switched on.
-  const all = [...(EASTER_EGGS.sunset ? RIDDLES.sunset : []), ...(EASTER_EGGS.spudIn ? RIDDLES.spud : []), ...(EASTER_EGGS.chopper ? RIDDLES.chopper : [])]
+  const all = [...(EASTER_EGGS.sunset ? RIDDLES.sunset : []), ...(EASTER_EGGS.spudIn ? RIDDLES.spud : []), ...(EASTER_EGGS.chopper && !customBanner ? RIDDLES.chopper : [])]
   if (!all.length) return null
   return all[(h >>> 11) % all.length]
 }

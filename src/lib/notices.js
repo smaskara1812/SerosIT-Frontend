@@ -1,10 +1,10 @@
 // The four kinds of notice and how each looks on the navy banner. Shared by the banner card and the admin page's preview
 // so the two can never drift apart. `loud` kinds (Important, Safety) sit a little stronger.
 export const NOTICE_KINDS = {
-  I: { label: 'Info', accent: '#7fe3d6', loud: false },
-  A: { label: 'Important', accent: '#ffc15e', loud: true },
-  S: { label: 'Safety', accent: '#ff8b7e', loud: true },
-  C: { label: 'Celebration', accent: '#ffa8d0', loud: false },
+  I: { label: 'Info', accent: '#7fe3d6', ink: '#0b7a70', loud: false },
+  A: { label: 'Important', accent: '#ffc15e', ink: '#9a5b00', loud: true },
+  S: { label: 'Safety', accent: '#ff8b7e', ink: '#b42318', loud: true },
+  C: { label: 'Celebration', accent: '#ffa8d0', ink: '#b0266b', loud: false },
 }
 
 export const kindOf = (code) => NOTICE_KINDS[code] || NOTICE_KINDS.I

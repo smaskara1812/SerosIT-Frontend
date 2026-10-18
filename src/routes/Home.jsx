@@ -12,7 +12,7 @@ import ShortcutsPicker from '@/routes/ShortcutsPicker'
 import { useKonami } from '@/lib/easter'
 import { useIdle } from '@/lib/useIdle'
 import { EASTER_EGGS } from '@/config/easterEggs'
-import HomeHero from '@/components/home/HomeHero'
+import HomeBanner from '@/components/home/HomeBanner'
 import AttentionDigest from '@/components/home/AttentionDigest'
 
 // One tile per top-level nav group (Masters, IT Asset, Reports, Admin) —
@@ -235,6 +235,14 @@ export default function Home() {
     saveShortcuts(customPaths.filter((p) => p !== path))
   }
 
+  // On a day with a custom banner (Admin > Banner Events) the banner's hidden scenes and hints are off.
+  const customRef = useRef(false)
+  const [custom, setCustom] = useState(false)
+  const onCustomChange = useCallback((on) => {
+    customRef.current = on
+    setCustom(on)
+  }, [])
+
   // The hidden code puts the welcome banner into "drill-down" for a few seconds.
   // After a few idle minutes the banner whispers a hint (and the sidebar logo glows now and then, see Sidebar).
   const idle = useIdle(EASTER_EGGS.idleHints ? EASTER_EGGS.idleHintAfterMs : 0)
@@ -247,11 +255,12 @@ export default function Home() {
   }, [idle])
   useEffect(() => () => window.dispatchEvent(new CustomEvent('seros:idle-hint', { detail: { on: false } })), [])
   const hintLines = EASTER_EGGS.idleHintLines
-  const hint = idle && hintLines.length ? hintLines[hintAt % hintLines.length] : null
+  const hint = idle && hintLines.length && !custom ? hintLines[hintAt % hintLines.length] : null
 
   const [scene, setScene] = useState(null) // 'ship' or 'crew' while a banner scene plays
   const drillTimer = useRef(0)
   const playScene = useCallback((next) => {
+    if (customRef.current) return
     setScene(next)
     clearTimeout(drillTimer.current)
     drillTimer.current = setTimeout(() => setScene(null), next === 'crew' ? 18600 : 12500)
@@ -270,7 +279,7 @@ export default function Home() {
   return (
     <div className="space-y-8 pb-6">
       <Reveal className="relative z-20">
-        <HomeHero firstName={firstName} info={info} scene={scene} hint={hint} />
+        <HomeBanner firstName={firstName} info={info} scene={scene} hint={hint} onCustomChange={onCustomChange} />
       </Reveal>
 
       <Reveal delay={80}>
