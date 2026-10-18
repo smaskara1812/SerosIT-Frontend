@@ -4,6 +4,7 @@ import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import AccessDenied from '@/components/AccessDenied'
 import HistoryButton from '@/components/audit/HistoryButton'
 import { can } from '@/lib/permissions'
 import { Input } from '@/components/ui/input'
@@ -133,7 +134,14 @@ function FlagCheckbox({ value, onChange, disabled }) {
   )
 }
 
+// This page is open to anyone holding its rights (not only App Admins), so it checks View itself.
 export default function ApproverMappingPage() {
+  const { user } = useAuth()
+  if (!can(user, MENU_KEY, 'view')) return <AccessDenied />
+  return <ApproverMappingInner />
+}
+
+function ApproverMappingInner() {
   const { user } = useAuth()
   const canAdd = can(user, MENU_KEY, 'add')
   const canEdit = can(user, MENU_KEY, 'edit')

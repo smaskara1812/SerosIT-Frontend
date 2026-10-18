@@ -14,6 +14,7 @@ const UserManagement = lazy(() => import('@/routes/admin/UserManagement'))
 const AuditTrail = lazy(() => import('@/routes/admin/AuditTrail'))
 const HistorySettings = lazy(() => import('@/routes/admin/HistorySettings'))
 const EmailLog = lazy(() => import('@/routes/admin/EmailLog'))
+const NoticeBoardPage = lazy(() => import('@/routes/admin/NoticeBoardPage'))
 const MastersHub = lazy(() => import('@/routes/masters/MastersHub'))
 const MasterCrudPage = lazy(() => import('@/routes/masters/MasterCrudPage'))
 const JobDescriptionsPage = lazy(() => import('@/routes/masters/JobDescriptionsPage'))
@@ -94,13 +95,14 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<Home />} />
+          <Route path="/admin/notice-board" element={<NoticeBoardPage />} />
+          <Route path="/admin/approver-mapping" element={<ApproverMappingPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/user-rights" element={<UserRights />} />
             <Route path="/admin/user-management" element={<UserManagement />} />
             <Route path="/admin/audit-trail" element={<AuditTrail />} />
             <Route path="/admin/history-revert" element={<HistorySettings />} />
             <Route path="/admin/email-log" element={<EmailLog />} />
-            <Route path="/admin/approver-mapping" element={<ApproverMappingPage />} />
           </Route>
           <Route element={<MastersRoute />}>
             <Route path="/masters" element={<MastersHub />} />

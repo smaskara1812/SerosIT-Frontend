@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
-import { can } from '@/lib/permissions'
+import { navGroupVisible, navItemVisible } from '@/lib/permissions'
 import { makeMultiClick, triggerGusher } from '@/lib/easter'
 import { pickSpudMessage } from '@/lib/rigLines'
 import { IconChevronLeft, IconChevronRight, IconLogout } from '@/components/icons'
@@ -19,8 +19,8 @@ import {
 // An item with no menuKey (Dashboard, Admin's own sub-pages) is never
 // permission-gated by the menu system — only the top-level adminOnly flag
 // (handled separately) applies to those.
-function visibleItems(items, user) {
-  return items.filter((i) => !i.menuKey || can(user, i.menuKey))
+function visibleItems(items, user, group) {
+  return items.filter((i) => navItemVisible(i, group, user))
 }
 
 const COLLAPSE_KEY = 'serosit.sidebar_collapsed'
@@ -86,10 +86,10 @@ export default function Sidebar() {
   }
 
   const items = navTree
-    .filter((item) => !item.adminOnly || user?.is_app_admin)
+    .filter((item) => navGroupVisible(item, user))
     .filter((item) => {
       if (!item.sections) return true
-      return item.sections.some((s) => visibleItems(s.items, user).length > 0)
+      return item.sections.some((s) => visibleItems(s.items, user, item).length > 0)
     })
 
   return (
@@ -137,9 +137,9 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 px-3 py-4">
-        {items.map(({ key, label, path, icon: Icon, sections }) => {
+        {items.map(({ key, label, path, icon: Icon, sections, adminOnly }) => {
           const allItems = sections
-            ? sections.flatMap((s) => visibleItems(s.items, user))
+            ? sections.flatMap((s) => visibleItems(s.items, user, { adminOnly }))
             : null
           const targetPath = path || allItems[0].path
           const isActive = allItems

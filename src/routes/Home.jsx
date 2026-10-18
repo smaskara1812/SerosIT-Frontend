@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
 import { apiFetch } from '@/lib/api'
 import { navTree } from '@/config/nav'
-import { can } from '@/lib/permissions'
+import { can, navGroupVisible, navItemVisible } from '@/lib/permissions'
 import { navLeavesByPath, isLeafAccessible } from '@/lib/shortcuts'
 import { ArrowUpRight } from 'lucide-react'
 import { IconPlus } from '@/components/icons'
@@ -20,17 +20,17 @@ import AttentionDigest from '@/components/home/AttentionDigest'
 // A group with sections only earns a tile once it has at least one leaf the
 // user can actually open; its target path is the group's own hub page if it
 // has one, else the first accessible leaf — same rule Sidebar.jsx uses.
-function visibleItems(items, user) {
-  return items.filter((i) => !i.menuKey || can(user, i.menuKey))
+function visibleItems(items, user, group) {
+  return items.filter((i) => navItemVisible(i, group, user))
 }
 
 function quickLinks(user) {
   return navTree
     .filter((item) => item.key !== 'home')
-    .filter((item) => !item.adminOnly || user?.is_app_admin)
+    .filter((item) => navGroupVisible(item, user))
     .map((item) => {
       if (!item.sections) return item.path ? item : null
-      const items = item.sections.flatMap((s) => visibleItems(s.items, user))
+      const items = item.sections.flatMap((s) => visibleItems(s.items, user, item))
       if (items.length === 0) return null
       return { ...item, path: item.path || items[0].path, count: items.length }
     })

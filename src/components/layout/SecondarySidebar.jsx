@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
-import { can } from '@/lib/permissions'
+import { navItemVisible } from '@/lib/permissions'
 import { IconChevronLeft, IconChevronRight, IconChevronDown } from '@/components/icons'
 
 const COLLAPSE_KEY = 'serosit.secondary_sidebar_collapsed'
@@ -157,7 +157,7 @@ export default function SecondarySidebar() {
           </div>
           <div className="flex-1 overflow-y-auto px-3 pb-3">
             {activeItem.sections.map((section, i) => {
-              const items = section.items.filter((it) => !it.menuKey || can(user, it.menuKey))
+              const items = section.items.filter((it) => navItemVisible(it, activeItem, user))
               return <SectionGroup key={section.label || i} section={section} items={items} />
             })}
           </div>

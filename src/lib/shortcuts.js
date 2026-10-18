@@ -147,7 +147,7 @@ export function allNavLeaves() {
 }
 
 export function isLeafAccessible(leaf, user) {
-  if (leaf.adminOnly && !user?.is_app_admin) return false
+  if (leaf.adminOnly && !user?.is_app_admin && !leaf.openToRights) return false
   if (!leaf.menuKey) return true
   return can(user, leaf.menuKey, leaf.permAction || 'view')
 }

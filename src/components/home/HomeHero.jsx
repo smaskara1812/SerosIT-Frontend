@@ -3,6 +3,7 @@ import { pickGreeting } from '@/lib/greeting'
 import OffshoreScene from '@/components/home/OffshoreScene'
 import { lowPowerDevice } from '@/lib/perf'
 import PageSearch from '@/components/PageSearch'
+import NoticeBanner from '@/components/home/NoticeBanner'
 
 const CrewChangeScene = lazy(() => import('@/components/home/CrewChangeScene')) // fetched only when the code is typed
 
@@ -91,6 +92,9 @@ function formatTime(iso) {
 export default function HomeHero({ firstName, info, scene = null, hint = null }) {
   const drilling = scene === 'ship'
   const crew = scene === 'crew'
+  // How tall the notice block is. On wide screens it sits on the right without pushing anything, and the banner only
+  // keeps enough height for it: the card is as tall as the tallest notice, so this never changes as notices rotate.
+  const [noticeH, setNoticeH] = useState(0)
   // Chosen once per visit (re-chosen only if the name arrives late), so it does not change while the page is open.
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
@@ -105,7 +109,10 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
           </Suspense>
         )}
       </div>
-      <div className="relative z-10 px-8 pb-8 pt-9 text-white sm:px-10">
+      <div
+        className="relative z-10 px-8 pb-10 pt-11 text-white sm:px-10 xl:min-h-[var(--notice-min)]"
+        style={{ '--notice-min': noticeH ? `${noticeH + 84}px` : '0px' }}
+      >
         <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
           <div>
             <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[#8fe6da]">{today}</p>
@@ -115,6 +122,9 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
             <p key={hint ?? 'sub'} style={{ minHeight: '3.05rem', textWrap: 'balance' }} className={`mt-2 max-w-md text-[15px] leading-relaxed text-white/70 ${hint ? 'animate-in fade-in-0 duration-1000 italic text-white/60' : ''}`}>
               {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : crew ? 'Crew change on the Wildcat. Three on, three off.' : hint ?? greeting.sub}
             </p>
+          </div>
+          <div className={`transition-opacity duration-500 empty:hidden xl:absolute xl:right-10 xl:top-11 ${drilling || crew ? 'pointer-events-none opacity-0' : ''}`} inert={drilling || crew}>
+            <NoticeBanner onHeight={setNoticeH} />
           </div>
         </div>
 

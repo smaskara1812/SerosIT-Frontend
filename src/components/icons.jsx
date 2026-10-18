@@ -386,3 +386,13 @@ export function IconUpload(props) {
   )
 }
 
+
+export function IconMegaphone(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 11v2a1 1 0 0 0 1 1h2l7 4V6L6 10H4a1 1 0 0 0-1 1z" />
+      <path d="M16 9a4 4 0 0 1 0 6" />
+      <path d="M7 14l1 5a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1l-.6-3.4" />
+    </svg>
+  )
+}

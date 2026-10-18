@@ -1,6 +1,7 @@
 import {
   IconDashboard,
   IconShield,
+  IconMegaphone,
   IconUsers,
   IconHistory,
   IconLayers,
@@ -1201,6 +1202,7 @@ export const navTree = [
           {
             key: 'user_management', label: 'User Management', path: '/admin/user-management', icon: IconUsers, 
             menuKey: 'admin.user_management'},
+          { key: 'notice_board', label: 'Notice Board', path: '/admin/notice-board', icon: IconMegaphone, menuKey: 'admin.notice_board', openToRights: true },
           { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
           { key: 'history_revert', label: 'History and Revert', path: '/admin/history-revert', icon: IconHistory },
           { key: 'email_log', label: 'Email Log', path: '/admin/email-log', icon: IconMail },
@@ -1210,6 +1212,7 @@ export const navTree = [
             path: '/masters/approval-codes',
             icon: IconFileSignature,
             menuKey: 'masters.approval_codes',
+            openToRights: true,
           },
           {
             key: 'approver_mapping',
@@ -1217,6 +1220,7 @@ export const navTree = [
             path: '/admin/approver-mapping',
             icon: IconUserCheck,
             menuKey: 'admin.approver_mapping',
+            openToRights: true,
           },
         ],
       },
