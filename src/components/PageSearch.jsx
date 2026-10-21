@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { accessibleNavLeaves } from '@/lib/shortcuts'
 import { IconSearch } from '@/components/icons'
-import { isChopperPhrase, isConvoyPhrase, isFracPhrase, isRigMovePhrase, isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerChopper, triggerConvoy, triggerFrac, triggerRigMove, triggerSpud, triggerSunset } from '@/lib/easter'
+import { isChopperPhrase, isConvoyPhrase, isSignaturePhrase, isTerminalPhrase, isFracPhrase, isRigMovePhrase, isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerChopper, triggerConvoy, triggerFrac, triggerSignature, triggerTerminal, triggerRigMove, triggerSpud, triggerSunset } from '@/lib/easter'
 
 const MAX_RESULTS = 8
 
@@ -79,7 +79,9 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
       const rigMove = isRigMovePhrase(query)
       const frac = isFracPhrase(query)
       const convoy = isConvoyPhrase(query)
-      if ((spud || chopper || rigMove || frac || convoy || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
+      const signature = isSignaturePhrase(query)
+      const terminal = isTerminalPhrase(query)
+      if ((spud || chopper || rigMove || frac || convoy || signature || terminal || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
         e.preventDefault()
         setOpen(false)
         setQuery('')
@@ -90,6 +92,8 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
         else if (rigMove) triggerRigMove()
         else if (frac) triggerFrac()
         else if (convoy) triggerConvoy()
+        else if (signature) triggerSignature()
+        else if (terminal) triggerTerminal()
         else triggerSunset(first)
         return undefined
       }

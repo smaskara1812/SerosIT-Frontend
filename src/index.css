@@ -538,6 +538,104 @@
   .hero-convoy .cv-vapor { display: none; }
 }
 
+/* ---- Hidden banner scene: the night room (a signature, see DeskScene.jsx). 16 s: the terminal types its lines 0.9-9.8 s, the cursor starts
+   blinking at 10.4 s and the plaque fades in at 10.8 s. Timings mirror LINES in DeskScene.jsx. ---- */
+@keyframes dv-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dv-type { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes dv-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes dv-steam { 0% { opacity: 0.6; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-9px); } }
+@keyframes dv-tw { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes dv-flow-a { to { stroke-dashoffset: -84; } }
+@keyframes dv-flow-b { to { stroke-dashoffset: -78; } }
+@keyframes dv-flow-c { to { stroke-dashoffset: -102; } }
+@keyframes dv-plane { from { transform: translateX(-6px); } to { transform: translateX(500px); } }
+@keyframes dv-boat { from { transform: translateX(-30px); } to { transform: translateX(520px); } }
+@keyframes dv-esb { 0%, 38% { fill: #f4ecd0; } 46%, 70% { fill: #cfe3ff; } 78%, 100% { fill: #f4ecd0; } }
+@keyframes dv-scroll { from { transform: translateY(0); } to { transform: translateY(-84px); } }
+@keyframes dv-sweep { 0%, 15% { transform: translateX(0); } 70%, 100% { transform: translateX(70px); } }
+@keyframes dv-key { from { transform: translateY(0); } to { transform: translateY(0.7px); } }
+@keyframes dv-nod { from { transform: translateY(0); } to { transform: translateY(0.5px); } }
+@keyframes dv-sec { to { transform: rotate(360deg); } }
+@keyframes dv-flick { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
+.hero-desk .dv-scene { animation: dv-in 0.9s ease-out both; }
+.hero-desk .dv-cover { transform-box: fill-box; transform-origin: 100% 50%; animation: dv-type var(--d) steps(var(--n), jump-none) var(--t) both; }
+.hero-desk .dv-cursor { opacity: 0; animation: dv-blink 1s steps(1) 10.4s infinite; }
+.hero-desk .dv-caret { animation: dv-blink 1.1s steps(1) infinite; }
+.hero-desk .dv-sweep { animation: dv-sweep 4.2s ease-in-out infinite; }
+.hero-desk .dv-scroll { animation: dv-scroll 16s linear both; }
+.hero-desk .dv-steam { animation: dv-steam 2.6s ease-out infinite; }
+.hero-desk .dv-steam-b { animation-delay: -1.3s; }
+.hero-desk .dv-tw-a { animation: dv-tw 2.6s ease-in-out infinite; }
+.hero-desk .dv-tw-b { animation: dv-tw 3.5s ease-in-out -1s infinite; }
+.hero-desk .dv-tw-c { animation: dv-tw 4.4s ease-in-out -2s infinite; }
+.hero-desk .dv-beacon { animation: light-blink 1.6s steps(1) infinite; }
+.hero-desk .dv-traffic { animation: dv-flow-a 6s linear infinite; }
+.hero-desk .dv-traffic-b { animation-name: dv-flow-b; animation-duration: 4.5s; }
+.hero-desk .dv-traffic-c { animation-name: dv-flow-c; animation-duration: 3.2s; }
+.hero-desk .dv-plane { opacity: 0; animation: dv-in 0.3s linear 1.5s both, dv-plane 14s linear 1.5s both; }
+.hero-desk .dv-boat { animation: dv-boat 16s linear both; }
+.hero-desk .dv-esb { animation: dv-esb 8s ease-in-out infinite; }
+.hero-desk .dv-arm { animation: dv-key 0.26s ease-in-out infinite alternate; }
+.hero-desk .dv-arm-b { animation-delay: -0.13s; }
+.hero-desk .dv-head { animation: dv-nod 2.6s ease-in-out infinite alternate; }
+.hero-desk .dv-second { transform-origin: 0px 0px; animation: dv-sec 12s linear infinite; }
+.hero-desk .dv-lamp { animation: dv-flick 3.2s ease-in-out infinite; }
+@keyframes dv-swivel { 0%, 50% { transform: translateX(0) scaleX(1); } 58%, 78% { transform: translateX(1.4px) scaleX(0.9); } 86%, 100% { transform: translateX(0) scaleX(1); } }
+@keyframes dv-note { 0% { opacity: 0; transform: translate(0, 0); } 18% { opacity: 0.9; } 100% { opacity: 0; transform: translate(var(--dx), -24px); } }
+@keyframes dv-sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes dv-wag { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
+@keyframes dv-breathe { from { transform: scaleY(1); } to { transform: scaleY(1.05); } }
+@keyframes dv-zz { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: 0.8; } 100% { opacity: 0; transform: translateY(-8px); } }
+.hero-desk .dv-swivel { transform-origin: 0px 0px; animation: dv-swivel 12s ease-in-out infinite; }
+.hero-desk .dv-note { opacity: 0; animation: dv-note 3.6s ease-out var(--d) infinite; }
+.hero-desk .dv-sway { transform-origin: 190px -3px; animation: dv-sway 3.8s ease-in-out infinite alternate; }
+.hero-desk .dv-wag { transform-box: fill-box; transform-origin: 50% 50%; animation: dv-wag 0.45s ease-in-out infinite alternate; }
+.hero-desk .dv-breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: dv-breathe 3.4s ease-in-out infinite alternate; }
+.hero-desk .dv-zz { animation: dv-zz 3.2s ease-out infinite; }
+.hero-desk .dv-plate { opacity: 0; animation: dv-in 1.4s ease-out 10.8s both; }
+/* With reduced motion the screens show everything typed, the plaque is up and the city is still. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-desk [class*="dv-"] { animation-duration: 0.01s; animation-delay: 0s; animation-iteration-count: 1; }
+  .hero-desk .dv-steam, .hero-desk .dv-tw-a, .hero-desk .dv-tw-b, .hero-desk .dv-tw-c, .hero-desk .dv-beacon, .hero-desk .dv-traffic, .hero-desk .dv-arm, .hero-desk .dv-head, .hero-desk .dv-second, .hero-desk .dv-lamp, .hero-desk .dv-sweep, .hero-desk .dv-caret, .hero-desk .dv-esb { animation: none; }
+  .hero-desk .dv-plane { display: none; }
+  .hero-desk .dv-cursor { animation: none; opacity: 1; }
+}
+
+/* ---- Hidden banner scene: the Terminal (cheat codes). 30 s (set in Home.jsx), or the exit button / red dot ends it: the lines appear one after another; nothing closes it early, so text can be selected. Themes
+   after the Mac Terminal profiles the user chose (red, yellow, blue). The last line of each session is in the background colour: selecting it shows it. ---- */
+/* The steps use `start` / `jump-none` on purpose: with the default (jump-end) a delay such as 2.8 s rounds to an end progress of 0.9999999999999787, so the last step never happens. */
+@keyframes tm-show { to { opacity: 1; } }
+@keyframes tm-type { to { width: calc(var(--n) * 1ch); } }
+@keyframes tm-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+.tm-window { position: absolute; inset: 0; display: flex; flex-direction: column; container-type: size; overflow: hidden; border-radius: inherit; background: var(--bg); color: var(--fg); font-family: Menlo, ui-monospace, 'SF Mono', Consolas, monospace; user-select: text; cursor: text; }
+.tm-red { --bg: #7b3526; --fg: #eacab0; --prompt: #f3b49c; --accent: #ffd27a; }
+.tm-yellow { --bg: #fff49d; --fg: #010000; --prompt: #7a5a00; --accent: #b3261e; }
+.tm-blue { --bg: #2b66c8; --fg: #faffff; --prompt: #bcd8ff; --accent: #ffe08a; }
+.tm-bar { position: relative; display: flex; flex: none; align-items: center; gap: 1.8cqh; height: 8.6cqh; padding: 0 2.4cqh; background: linear-gradient(#ececec, #d3d3d3); border-bottom: 1px solid #b8b8b8; }
+.tm-dot { width: 4.2cqh; height: 4.2cqh; border: 0; padding: 0; border-radius: 50%; }
+button.tm-dot { cursor: pointer; }
+.tm-dot-r:hover { background: #ff3b30; }
+.tm-dot-r { background: #ff5f57; } .tm-dot-y { background: #febc2e; } .tm-dot-g { background: #28c840; }
+.tm-title { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 600 4.6cqh system-ui, -apple-system, sans-serif; color: #4d4d4d; pointer-events: none; }
+.tm-body { flex: 1; min-height: 0; padding: 1.8cqh 2.6cqw; font-size: calc(100cqh / 16.5); line-height: 1.22; white-space: pre; overflow: hidden; }
+.tm-line { min-height: 1.22em; opacity: 0; animation: tm-show 0.01s steps(1, start) var(--t) forwards; }
+.tm-prompt { color: var(--prompt); }
+.tm-type { display: inline-block; overflow: hidden; vertical-align: top; width: 0; animation: tm-type var(--d) steps(var(--n), jump-none) var(--t) forwards; }
+.tm-box { color: var(--accent); font-weight: 700; }
+.tm-given { color: var(--accent); }
+.tm-exit { position: absolute; right: 2.4cqh; top: 50%; transform: translateY(-50%); z-index: 1; padding: 0.7cqh 2cqh; font: 600 3.8cqh system-ui, -apple-system, sans-serif; color: #4d4d4d; background: rgba(0, 0, 0, 0.07); border: 1px solid #b0b0b0; border-radius: 1cqh; cursor: pointer; }
+.tm-exit:hover { background: rgba(0, 0, 0, 0.16); }
+.tm-exit:focus-visible, .tm-dot-r:focus-visible { outline: 2px solid #2a6df4; outline-offset: 1px; }
+.tm-dim { opacity: 0.88; }
+.tm-hidden { color: var(--bg); }
+.tm-hidden::selection { color: #ffffff; background: #2a6df4; }
+.tm-cursor { display: inline-block; width: 0.62em; height: 1.05em; vertical-align: text-bottom; background: var(--fg); animation: tm-blink 1s steps(1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tm-line { opacity: 1; animation: none; }
+  .tm-type { width: auto; animation: none; }
+  .tm-cursor { animation: none; }
+}
+
 /* Approval stamp: drops from large, lands hard, rests slightly crooked, then lifts away. */
 @keyframes stamp-thump {
   0% { transform: rotate(-9deg) scale(2.6); opacity: 0; }

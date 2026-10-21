@@ -114,6 +114,28 @@ export function triggerConvoy() {
   window.dispatchEvent(new CustomEvent('seros:convoy'))
 }
 
+// True when what was typed into the home search is a cheat-code phrase. It has no riddle (see riddleForNow); only an idle hint points to it.
+export function isTerminalPhrase(text) {
+  return EASTER_EGGS.terminal && !customBanner && matches(text, EASTER_EGGS.terminalPhrases)
+}
+
+// The terminal scene plays in the home banner; the home page listens for this (see Home.jsx).
+export function triggerTerminal() {
+  if (!EASTER_EGGS.terminal) return
+  window.dispatchEvent(new CustomEvent('seros:terminal'))
+}
+
+// True when what was typed into the home search is the signature phrase. It has no riddle (see riddleForNow) and no hint.
+export function isSignaturePhrase(text) {
+  return EASTER_EGGS.signature && !customBanner && matches(text, EASTER_EGGS.signaturePhrases)
+}
+
+// The signature scene plays in the home banner; the home page listens for this (see Home.jsx).
+export function triggerSignature() {
+  if (!EASTER_EGGS.signature) return
+  window.dispatchEvent(new CustomEvent('seros:signature'))
+}
+
 // True when what was typed into the home search is the spud-in phrase.
 export function isSpudPhrase(text) {
   return EASTER_EGGS.spudIn && matches(text, EASTER_EGGS.spudPhrases)

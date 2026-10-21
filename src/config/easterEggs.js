@@ -14,6 +14,11 @@ export const EASTER_EGGS = {
   fracPhrases: ['frac job', 'frac', 'fracking', 'fracturing', 'frac time'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never on a day with a custom banner
   convoy: true, // the convoy scene in the banner (Seros's electric, LNG and bulk trucks crossing a dusty highway at sunrise), started by a secret phrase typed into the home page search
   convoyPhrases: ['convoy', 'green logistics', 'truck convoy', 'seros green logistics'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never on a day with a custom banner
+  signature: true, // a credit for whoever built the app: a night desk in the banner. Deliberately has no riddle and no hint, so nobody finds it without being told or reading this
+  signaturePhrases: ['git blame'], // typed into the home page search and confirmed with Enter; never on a day with a custom banner
+  terminal: true, // the banner turns into a Terminal window for `terminalSeconds` (or until its exit button is clicked) and plays a small crossword session that leaks hints to the other secrets. Deliberately not in the riddles: only an idle hint points to it
+  terminalSeconds: 30, // how long the terminal stays up; it shows a countdown on its last prompt line
+  terminalPhrases: ['cheat code', 'cheat codes', 'cheats', 'iddqd', 'xyzzy', 'easter egg', 'easter eggs'], // what a gamer would type; any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never on a day with a custom banner
   loginQuips: true, // a rig-floor line under the "Invalid username or password" message
   sunset: true, // the secret phrase typed into the home page search and confirmed with Enter
   sunsetPhrases: ['golden hour', 'magic hour', 'sunset', 'sundown', 'dusk','golden'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts the sunset scene
@@ -31,6 +36,7 @@ export const EASTER_EGGS = {
     'Psst… the Seros logo, top left, likes to be knocked on. Five times.',
     'Psst… the search box changes its words through the day. Read them closely.',
     'Psst… not every search is looking for a page.',
+    'Psst… ask any gamer what to type when they want the secrets.',
   ],
 }
 

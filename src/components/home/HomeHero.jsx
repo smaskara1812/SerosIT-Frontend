@@ -9,6 +9,8 @@ const CrewChangeScene = lazy(() => import('@/components/home/CrewChangeScene')) 
 const RigMoveScene = lazy(() => import('@/components/home/RigMoveScene'))
 const FracJobScene = lazy(() => import('@/components/home/FracJobScene'))
 const ConvoyScene = lazy(() => import('@/components/home/ConvoyScene'))
+const DeskScene = lazy(() => import('@/components/home/DeskScene'))
+const TerminalScene = lazy(() => import('@/components/home/TerminalScene'))
 
 // Quiet contour lines and sonar rings, drawn once from a formula: a nod to charts and offshore survey work
 // without competing with the greeting. Pure decoration, hidden from assistive technology. The arrow keys make the
@@ -98,7 +100,9 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
   const move = scene === 'move'
   const frac = scene === 'frac'
   const convoy = scene === 'convoy'
-  const playing = drilling || crew || move || frac || convoy
+  const desk = scene === 'desk'
+  const term = scene === 'term'
+  const playing = drilling || crew || move || frac || convoy || desk || term
   // How tall the notice block is. On wide screens it sits on the right without pushing anything, and the banner only
   // keeps enough height for it: the card is as tall as the tallest notice, so this never changes as notices rotate.
   const [noticeH, setNoticeH] = useState(0)
@@ -106,7 +110,7 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
   return (
-    <section data-shelf className={`relative rounded-3xl ${drilling ? `hero-drill ${lowPowerDevice() ? 'hero-drill-lite' : ''}` : ''} ${crew ? 'hero-crew' : ''} ${move ? 'hero-move' : ''} ${frac ? 'hero-frac' : ''} ${convoy ? 'hero-convoy' : ''}`} style={{ background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }}>
+    <section data-shelf className={`relative rounded-3xl ${drilling ? `hero-drill ${lowPowerDevice() ? 'hero-drill-lite' : ''}` : ''} ${crew ? 'hero-crew' : ''} ${move ? 'hero-move' : ''} ${frac ? 'hero-frac' : ''} ${convoy ? 'hero-convoy' : ''} ${desk ? 'hero-desk' : ''} ${term ? 'hero-term' : ''}`} style={{ background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }}>
       <div className="absolute inset-0 overflow-hidden rounded-3xl">
         <Contours />
         {drilling && <OffshoreScene />}
@@ -130,9 +134,19 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
             <ConvoyScene />
           </Suspense>
         )}
+        {desk && (
+          <Suspense fallback={null}>
+            <DeskScene />
+          </Suspense>
+        )}
+        {term && (
+          <Suspense fallback={null}>
+            <TerminalScene />
+          </Suspense>
+        )}
       </div>
       <div
-        className="relative z-10 px-8 pb-10 pt-11 text-white sm:px-10 xl:min-h-[var(--notice-min)]"
+        className={`relative z-10 px-8 pb-10 pt-11 text-white sm:px-10 xl:min-h-[var(--notice-min)] ${term ? 'pointer-events-none opacity-0' : ''}`}
         style={{ '--notice-min': noticeH ? `${noticeH + 84}px` : '0px' }}
       >
         <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
@@ -142,7 +156,7 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
               {greeting.title}
             </h1>
             <p key={hint ?? 'sub'} style={{ minHeight: '3.05rem', textWrap: 'balance' }} className={`mt-2 max-w-md text-[15px] leading-relaxed text-white/70 ${hint ? 'animate-in fade-in-0 duration-1000 italic text-white/60' : ''}`}>
-              {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : crew ? 'Crew change on the Wildcat. Three on, three off.' : move ? 'Wildcat on location… tugs away, anchors going down.' : frac ? 'Frac job on the pad. Three stages, pumps at rate.' : convoy ? 'First light, and the convoy is already rolling.' : hint ?? greeting.sub}
+              {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : crew ? 'Crew change on the Wildcat. Three on, three off.' : move ? 'Wildcat on location… tugs away, anchors going down.' : frac ? 'Frac job on the pad. Three stages, pumps at rate.' : convoy ? 'First light, and the convoy is already rolling.' : desk ? 'Still here. One more commit.' : hint ?? greeting.sub}
             </p>
           </div>
           <div className={`transition-opacity duration-500 empty:hidden xl:absolute xl:right-10 xl:top-11 ${playing ? 'pointer-events-none opacity-0' : ''}`} inert={playing}>
@@ -157,7 +171,7 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
           <PageSearch variant="hero" />
         </div>
 
-        {info?.last_login && <p className={`mt-4 text-xs text-white/45 transition-opacity duration-500 ${crew || move || frac || convoy ? 'opacity-0' : ''}`}>Last signed in {formatTime(info.last_login)}</p>}
+        {info?.last_login && <p className={`mt-4 text-xs text-white/45 transition-opacity duration-500 ${crew || move || frac || convoy || desk ? 'opacity-0' : ''}`}>Last signed in {formatTime(info.last_login)}</p>}
       </div>
     </section>
   )

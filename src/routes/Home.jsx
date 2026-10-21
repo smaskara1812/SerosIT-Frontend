@@ -257,13 +257,13 @@ export default function Home() {
   const hintLines = EASTER_EGGS.idleHintLines
   const hint = idle && hintLines.length && !custom ? hintLines[hintAt % hintLines.length] : null
 
-  const [scene, setScene] = useState(null) // 'ship', 'crew', 'move', 'frac' or 'convoy' while a banner scene plays
+  const [scene, setScene] = useState(null) // 'ship', 'crew', 'move', 'frac', 'convoy', 'desk' or 'term' while a banner scene plays
   const drillTimer = useRef(0)
   const playScene = useCallback((next) => {
     if (customRef.current) return
     setScene(next)
     clearTimeout(drillTimer.current)
-    drillTimer.current = setTimeout(() => setScene(null), next === 'crew' ? 18600 : next === 'move' ? 17800 : next === 'frac' ? 18600 : next === 'convoy' ? 16400 : 12500)
+    drillTimer.current = setTimeout(() => setScene(null), next === 'crew' ? 18600 : next === 'move' ? 17800 : next === 'frac' ? 18600 : next === 'convoy' ? 16400 : next === 'desk' ? 16400 : next === 'term' ? EASTER_EGGS.terminalSeconds * 1000 + 600 : 12500)
   }, [])
   useKonami(() => playScene(EASTER_EGGS.konamiScene === 'crew' ? 'crew' : 'ship'))
   // The helicopter scene is started by a secret phrase typed into the search box (see PageSearch).
@@ -272,15 +272,27 @@ export default function Home() {
     const onRigMove = () => playScene('move')
     const onFrac = () => playScene('frac')
     const onConvoy = () => playScene('convoy')
+    const onSignature = () => playScene('desk')
+    const onTerminal = () => playScene('term')
+    const onSceneEnd = () => {
+      clearTimeout(drillTimer.current)
+      setScene(null)
+    }
     window.addEventListener('seros:chopper', onChopper)
     window.addEventListener('seros:rigmove', onRigMove)
     window.addEventListener('seros:frac', onFrac)
     window.addEventListener('seros:convoy', onConvoy)
+    window.addEventListener('seros:signature', onSignature)
+    window.addEventListener('seros:terminal', onTerminal)
+    window.addEventListener('seros:scene-end', onSceneEnd)
     return () => {
       window.removeEventListener('seros:chopper', onChopper)
       window.removeEventListener('seros:rigmove', onRigMove)
       window.removeEventListener('seros:frac', onFrac)
       window.removeEventListener('seros:convoy', onConvoy)
+      window.removeEventListener('seros:signature', onSignature)
+      window.removeEventListener('seros:terminal', onTerminal)
+      window.removeEventListener('seros:scene-end', onSceneEnd)
     }
   }, [playScene])
   useEffect(() => () => clearTimeout(drillTimer.current), [])
