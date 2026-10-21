@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import BannerArt from '@/components/home/BannerArt'
-import { backgroundCss, fillTokens, textColorOf, withDefaults, yearTokens } from '@/lib/bannerDesign'
+import { backgroundCss, bannerFrame, fillTokens, textColorOf, withDefaults, yearTokens } from '@/lib/bannerDesign'
 
 // The home banner for a custom design (Admin > Banner Events). The same component draws the live banner and the editor's
 // preview, so what a person sees while designing is exactly what everyone sees on the day. The search box and the notice
@@ -47,7 +47,7 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
   const chipBorder = `${color}55`
 
   return (
-    <section data-shelf className="@container relative rounded-3xl" style={{ background: backgroundCss(design) }}>
+    <section data-shelf className="@container relative rounded-3xl" style={{ background: backgroundCss(design), boxShadow: bannerFrame(design) }}>
       {previewBadge && (
         <span className="absolute -top-3 left-6 z-20 rounded-full bg-amber-400 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-950 shadow">
           {previewBadge}

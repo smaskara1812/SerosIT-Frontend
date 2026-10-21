@@ -9,6 +9,7 @@
     "build": "vite build --mode production",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "check:templates": "node scripts/check-templates.mjs",
     "preview": "vite preview --mode production",
     "preview:dev": "vite preview --mode development"
   },

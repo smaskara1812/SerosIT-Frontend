@@ -1,10 +1,44 @@
 import { FONTS, shapeInfo, shapeSpec } from '@/lib/bannerShapes'
 import { fillTokens } from '@/lib/bannerDesign'
+import { ARTBOX, artPieces, isArt } from '@/lib/bannerArt'
 
 // One shape of a design, drawn on the banner's 1200 x 360 canvas. All numbers come from a validated design. A shape can be
 // a blend of two colours and can have an outline; a text label is drawn as real text. `uid` keeps the blend's id unique
 // when several banners are on one page.
 export function LayerShape({ layer, uid = 'x' }) {
+  if (isArt(layer.type)) {
+    const box = ARTBOX[layer.type]
+    const pieces = artPieces(layer.type).map((p, i) => {
+      const gid = `a${uid}${layer.id}${i}`.replace(/[^a-zA-Z0-9_-]/g, '')
+      return (
+        <g key={i}>
+          {p.grad && (
+            <defs>
+              <linearGradient id={gid} x1="0" y1="0" x2={p.grad[2]} y2={p.grad[3]}>
+                <stop offset="0" stopColor={p.grad[0]} />
+                <stop offset="1" stopColor={p.grad[1]} />
+              </linearGradient>
+            </defs>
+          )}
+          {p.gd && (
+            <defs>
+              {p.gd.kind === 'radial' ? (
+                <radialGradient id={gid} cx="0.5" cy="0.5" r="0.5">{p.gd.stops.map(([o, c, a], k) => <stop key={k} offset={o} stopColor={c} stopOpacity={a ?? 1} />)}</radialGradient>
+              ) : (
+                <linearGradient id={gid} x1={p.gd.x1} y1={p.gd.y1} x2={p.gd.x2} y2={p.gd.y2}>{p.gd.stops.map(([o, c, a], k) => <stop key={k} offset={o} stopColor={c} stopOpacity={a ?? 1} />)}</linearGradient>
+              )}
+            </defs>
+          )}
+          <path d={p.d} transform={p.t} opacity={p.op} fill={p.grad || p.gd ? `url(#${gid})` : p.fill} stroke={p.stroke} strokeWidth={p.sw} strokeDasharray={p.dash} strokeLinejoin="round" strokeLinecap={p.round ? 'round' : undefined} />
+        </g>
+      )
+    })
+    return (
+      <g transform={`translate(${layer.x} ${layer.y}) rotate(${layer.rot || 0})`} opacity={layer.opacity ?? 1}>
+        {box ? <g transform={`scale(${layer.w / box[0]} ${layer.h / box[1]}) translate(${-(box[0] / 2 + (box[2] || 0))} ${-(box[1] / 2 + (box[3] || 0))})`}>{pieces}</g> : <g transform={`scale(${layer.w} ${layer.h})`}>{pieces}</g>}
+      </g>
+    )
+  }
   const spec = shapeSpec(layer)
   const gid = `g${uid}${layer.id}`.replace(/[^a-zA-Z0-9_-]/g, '')
   const blend = layer.fill2 ? gid : null

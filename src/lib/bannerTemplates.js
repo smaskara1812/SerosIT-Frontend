@@ -28,9 +28,6 @@ function make({ greeting, message, caption, bg, angle = 110, pattern, contours, 
 
 // `when` is [first month, first day, last month, last day] for a fixed-date occasion.
 
-// A handful of gears of different sizes and see-through-ness, so a cluster looks lively rather than stamped out.
-const gears = (items) => items.map(([x, y, size, fill, opacity, rot]) => S('gear', x, y, size, size, fill, { opacity, rot }))
-
 export const TEMPLATES = [
   {
     key: 'republic', label: 'Republic Day', note: '26 January', when: [1, 26, 1, 26],
@@ -60,58 +57,82 @@ export const TEMPLATES = [
   },
   {
     key: 'safety', label: 'National Safety Day', note: '4 March', when: [3, 4, 3, 4],
-    design: make({ edges: [{ edge: 'bottom', type: 'bands', size: 16, colors: ['#111827', '#f5c400'] }], tint: '#fffbe6', greeting: 'Safety first, {name}', message: 'National Safety Day. Look out for each other today.', caption: 'Safety Day', bg: ['#f5c400', '#e8a900'], angle: 100, pattern: ['stripes', '#111827', 0.09, 1.2],
-      // The signs of safety: a hard hat, a first-aid cross, a warning triangle and a cone.
+    design: make({ tint: '#ffffff', greeting: 'Happy National Safety Day, {name}!', message: 'Building a safer, healthier workplace together.', caption: 'Safety First · 4 March', bg: ['#ecfdf5', '#f0f9ff', '#fef3c7'], angle: 100, pattern: ['grid', '#0f766e', 0.05, 1.6],
+      // Fresh and encouraging: mint melting into sky blue and pale amber, faint blueprint gears and a shield behind, and a friendly cluster of
+      // the kit of a safe site on the right: hard hat, goggles, checklist, cone, gears and a spanner, with a few leaves for care.
       layers: () => [
-        S('hardhat', 1050, 262, 200, 138, '#111827'),
-        S('circle', 905, 284, 116, 116, '#16a34a'), S('rect', 905, 284, 68, 22, '#ffffff', { p: 0.25 }), S('rect', 905, 284, 22, 68, '#ffffff', { p: 0.25 }),
-        S('triangle', 1175, 296, 88, 78, '#f5c400', { stroke: '#111827', sw: 7 }), S('text', 1175, 306, 0, 0, '#111827', { text: '!', size: 44, bold: true, font: 'sans', spacing: 0 }),
-        S('cone', 780, 298, 62, 90, '#d94b2b'),
-        S('sparkle', 740, 70, 30, 30, '#111827', { opacity: 0.35 }), S('sparkle', 1150, 190, 20, 20, '#111827', { opacity: 0.3 }),
+        S('gear', 590, 62, 170, 170, '#0f766e', { opacity: 0.07 }), S('gear', 905, 58, 92, 92, '#0f766e', { opacity: 0.06 }), S('shield', 735, 262, 190, 212, '#0f766e', { opacity: 0.07 }),
+        S('circle', 1010, 330, 330, 20, '#0f766e', { opacity: 0.12 }),
+        S('wrench', 1148, 188, 170, 64, '#cbd5e1', { rot: 52, stroke: '#0f172a', sw: 3 }),
+        S('artgear', 1095, 232, 150, 150, '#000000'), S('artgear', 905, 292, 98, 98, '#000000', { rot: 14 }),
+        S('artclipboard', 900, 212, 132, 132, '#000000', { rot: -9 }),
+        S('arthat', 1010, 238, 196, 196, '#000000'),
+        S('artgoggles', 1005, 312, 128, 128, '#000000'),
+        S('artcone', 1125, 292, 118, 118, '#000000'),
+        S('leaf', 835, 150, 34, 22, '#4ade80', { stroke: '#0f172a', sw: 2.5, rot: -35 }), S('leaf', 1176, 262, 34, 22, '#4ade80', { stroke: '#0f172a', sw: 2.5, rot: 40 }), S('leaf', 960, 150, 30, 20, '#22c55e', { stroke: '#0f172a', sw: 2.5, rot: 25 }),
+        S('sparkle', 1180, 120, 22, 22, '#0f766e', { opacity: 0.25 }),
       ] }),
   },
   {
     key: 'women', label: 'International Women’s Day', note: '8 March', when: [3, 8, 3, 8],
-    design: make({ edges: [{ edge: 'top', type: 'pearls', size: 36, colors: ['#ffffff', '#fbcfe8'] }], tint: '#fdf2f8', greeting: 'Happy Women’s Day, {name}', message: 'Thank you for everything you bring to every rig and office.', caption: '8 March', bg: ['#7c3aed', '#ec4899'], angle: 120, pattern: ['dots', '#ffffff', 0.14, 1.3],
-      layers: () => [S('heart', 1060, 300, 70, 62, '#ffffff', { opacity: 0.9 }), S('sparkle', 700, 70, 40, 40, '#fde68a'), S('sparkle', 780, 200, 28, 28, '#ffffff', { opacity: 0.8 }), S('sparkle', 1130, 330, 36, 36, '#fde68a'), S('sparkle', 900, 310, 30, 30, '#ffffff', { opacity: 0.7 })] }),
+    design: make({ notice: { x: 66, y: 25 }, edges: [{ edge: 'top', type: 'pearls', size: 30, colors: ['#c4b5fd', '#fde68a'], opacity: 0.9 }], tint: '#ffffff', greeting: 'Happy Women’s Day, {name}', message: 'Thank you for everything you bring to every rig and office.', caption: '8 March', bg: ['#faf5ff', '#fff7ed'], angle: 110, pattern: ['dots', '#7c3aed', 0.06, 1.4],
+      // Soft line art: a calm portrait drawn in one flowing line, a lotus at her shoulder, and blobs of amber and lavender behind.
+      layers: () => [
+        S('circle', 1010, 190, 330, 330, '#e9d5ff', { opacity: 0.3 }),
+        S('artwoman', 1010, 205, 300, 300, '#000000'),
+        S('sparkle', 840, 110, 30, 30, '#f59e0b', { opacity: 0.7 }), S('sparkle', 1175, 300, 24, 24, '#7c3aed', { opacity: 0.5 }), S('sparkle', 870, 300, 20, 20, '#7c3aed', { opacity: 0.4 }),
+      ] }),
   },
   {
     key: 'labour', label: 'Labour Day', note: '1 May', when: [5, 1, 5, 1],
-    // A thank-you the whole company can use: the roles that make the work happen, each with an editable label, so HR can name the
-    // departments or trades it wants to thank.
-    design: make({ edges: [{ edge: 'bottom', type: 'zigzag', size: 22, colors: ['#facc15', '#1e293b'], opacity: 0.9 }], tint: '#f1f5f9', greeting: 'Happy Labour Day, {name}', message: 'Every role. One crew. Thank you for the work you do, on the rig and off it.', caption: '1 May', bg: ['#0f172a', '#334155'], angle: 115, contours: ['#cbd5e1', 0.07],
+    // Dignified and warm: deep navy, amber and steel. A worker in a hard hat and safety vest, wrench in hand, stands before a big slate gear
+    // and a steel truss, with a soft amber glow behind. (The earlier role strip with editable department labels was replaced.)
+    design: make({ notice: { x: 60, y: 25 }, tint: '#ffffff', greeting: 'Happy Labour Day, {name}!', message: 'Honouring the hands, minds and dedication that build our everyday.', caption: '', bg: ['#1b1f4f', '#334155'], angle: 100, pattern: ['grid', '#94a3b8', 0.04, 1.6],
       layers: () => [
-        S('line', 954, 322, 440, 2, '#64748b', { opacity: 0.7 }),
-        S('rig', 790, 286, 44, 76, '#e2e8f0', { opacity: 0.92 }), S('ship', 872, 296, 76, 40, '#e2e8f0', { opacity: 0.92 }), S('helicopter', 954, 292, 74, 38, '#e2e8f0', { opacity: 0.92 }),
-        S('gear', 1036, 292, 54, 54, '#94a3b8', { opacity: 0.95 }), S('hardhat', 1118, 298, 60, 44, '#fbbf24'),
-        ...[['Rig', 790], ['Marine', 872], ['Aviation', 954], ['Engineering', 1036], ['Safety', 1118]].map(([label, x]) => S('text', x, 337, 0, 0, '#cbd5e1', { text: label, size: 12, bold: true, font: 'sans', spacing: 1, opacity: 0.85 })),
+        S('gear', 585, 66, 170, 170, '#94a3b8', { opacity: 0.07 }), S('gear', 905, 58, 84, 84, '#94a3b8', { opacity: 0.06 }),
+        S('artskyline', 910, 205, 580, 311, '#000000'),
+        S('artlabour', 967, 183, 350, 275, '#000000'),
       ] }),
   },
   {
     key: 'environment', label: 'World Environment Day', note: '5 June', when: [6, 5, 6, 5],
-    design: make({ edges: [{ edge: 'bottom', type: 'waves', size: 40, colors: ['#14532d', '#4ade80'], opacity: 0.8 }], tint: '#f0fdf4', greeting: 'Happy Environment Day, {name}', message: 'Small choices on the rig make a big difference to the planet.', caption: '5 June', bg: ['#0f5132', '#15803d'], angle: 110, pattern: ['waves', '#ffffff', 0.12, 1.3],
-      layers: () => [S('tree', 1040, 270, 110, 150, '#bbf7d0'), S('tree', 930, 290, 80, 110, '#86efac'), S('sun', 720, 70, 70, 70, '#fde68a'), S('cloud', 800, 150, 110, 60, '#ffffff', { opacity: 0.5 }), S('drop', 1135, 306, 34, 46, '#7dd3fc')] }),
+    design: make({ notice: { x: 60, y: 25 }, tint: '#ffffff', greeting: 'Happy World Environment Day, {name}!', message: 'Nurturing our planet, restoring ecosystems and building a sustainable future together.', caption: 'Protect & Restore · 5 June', bg: ['#fff1e0', '#fbd5d0'], angle: 100,
+      // Warm and hopeful: peach melting into soft rose, faint leaves, sprouts and wind behind, and on the right the earth with leaves, solar panels, wind turbines, birds and butterflies, and people planting and watering, and a faint
+      // growing plant behind like a watermark.
+      layers: () => [
+        S('leaf', 330, 40, 110, 170, '#e07a3a', { opacity: 0.09, rot: 25 }), S('leaf', 590, 322, 120, 150, '#e07a3a', { opacity: 0.08, rot: -20 }), S('leaf', 800, 70, 70, 100, '#4e8a4a', { opacity: 0.07, rot: 40 }),
+        S('artplant', 640, 196, 260, 200, '#000000', { opacity: 0.13 }),
+        S('circle', 1010, 200, 330, 330, '#fff7ee', { opacity: 0.55 }),
+        S('artearth', 1010, 198, 330, 305, '#000000'),
+      ] }),
   },
   {
     key: 'engineers', label: 'Engineers’ Day', note: '15 September', when: [9, 15, 9, 15],
-    design: make({ edges: [{ edge: 'top', type: 'diamonds', size: 26, colors: ['#a5b4fc', '#6366f1'], opacity: 0.85 }], tint: '#eef2ff', greeting: 'Happy Engineers’ Day, {name}', message: 'To everyone who builds, fixes and keeps things running.', caption: '15 September', bg: ['#0f172a', '#4338ca'], angle: 120, pattern: ['grid', '#c7d2fe', 0.06, 1], contours: ['#c7d2fe', 0.08],
+    design: make({ notice: { x: 60, y: 25 }, tint: '#ffffff', greeting: 'Happy Engineers’ Day, {name}!', message: 'Honouring the vision, precision and ingenuity that build our tomorrow.', caption: '', bg: ['#f0fdfa', '#eff6ff'], angle: 100, pattern: ['grid', '#2563eb', 0.05, 1.1],
+      // Bright and technical: teal melting into cyber blue, faint blueprint gears and formulas behind, and on the right a drafting
+      // tablet with a gear assembly, a compass, a caliper, a crane tower, circuit traces and two tiny engineers at work.
       layers: () => [
-        ...gears([[1060, 276, 150, '#a5b4fc', 0.9, 0], [950, 314, 84, '#818cf8', 0.75, 15], [1150, 316, 66, '#c7d2fe', 0.6, -10], [870, 290, 50, '#6366f1', 0.55, 8], [790, 318, 34, '#a5b4fc', 0.5, -5], [1010, 196, 38, '#818cf8', 0.4, 20]]),
-        S('wrench', 880, 236, 130, 48, '#e0e7ff', { rot: -35, opacity: 0.8 }), S('drillbit', 760, 286, 40, 56, '#e0e7ff', { rot: 180, opacity: 0.7 }),
+        S('gear', 585, 66, 170, 170, '#0d9488', { opacity: 0.07 }), S('gear', 760, 312, 120, 120, '#2563eb', { opacity: 0.06 }), S('gear', 900, 60, 80, 80, '#2563eb', { opacity: 0.06 }),
+        S('text', 554, 300, 0, 0, '#1e3a8a', { text: 'x² + y² = c²', size: 24, bold: false, font: 'serif', spacing: 1, opacity: 0.12 }),
+        S('text', 630, 260, 0, 0, '#1e3a8a', { text: 'F = m · a', size: 22, bold: false, font: 'serif', spacing: 1, opacity: 0.1 }),
+        S('artcircuit', 949, 178, 543, 374, '#000000', { opacity: 0.2 }),
+        S('circle', 960, 336, 300, 18, '#1e3a8a', { opacity: 0.12 }),
+        S('artdraft', 957, 171, 340, 249, '#000000'),
       ] }),
   },
   {
     key: 'gandhi', label: 'Gandhi Jayanti', note: '2 October', when: [10, 2, 10, 2],
-    design: make({ tint: '#fffdf7', greeting: 'Gandhi Jayanti, {name}', message: 'Truth, simplicity and doing the right thing, every day.', caption: '2 October', bg: ['#f6efe0', '#e9dfc9'], angle: 100, contours: ['#1c448a', 0.08],
-      // Round spectacles with both arms curling the same way.
+    design: make({ tint: '#fffdf7', greeting: 'Gandhi Jayanti, {name}', message: 'Truth, simplicity and doing the right thing, every day.', caption: '', bg: ['#f6efe0', '#e9dfc9'], angle: 100, contours: ['#1c448a', 0.08],
+      // Round spectacles, the thing to see, over a faint charkha that sits behind like a watermark.
       layers: () => [
+        S('artcharkha', 960, 190, 470, 316, '#000000', { opacity: 0.1 }),
         S('circle', 934, 288, 86, 86, '#1c448a', { opacity: 0.07 }), S('circle', 1046, 288, 86, 86, '#1c448a', { opacity: 0.07 }),
         S('spectacles', 990, 288, 360, 130, '#1c448a', { p: 0.03 }),
       ] }),
   },
   {
     key: 'ganesh', label: 'Ganesh Chaturthi', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'top', type: 'garland', size: 46, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f97316'] }], tint: '#fff4e5', greeting: 'Ganpati Bappa Morya, {name}', message: 'Wishing you joy, wisdom and a fresh beginning.', caption: 'Ganesh Chaturthi', bg: ['#6b0f2a', '#c2410c'], angle: 120, pattern: ['dots', '#fbbf24', 0.12, 1.2],
+    design: make({ edges: [{ edge: 'top', type: 'garland', size: 46, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f97316'] }], tint: '#fff4e5', greeting: 'Ganpati Bappa Morya, {name}', message: 'Wishing you joy, wisdom and a fresh beginning.', caption: 'Happy Ganesh Chaturthi', bg: ['#6b0f2a', '#c2410c'], angle: 120, pattern: ['dots', '#fbbf24', 0.12, 1.2],
       layers: () => [
         // A heap of modaks on a plantain leaf, as the festival is painted, with rose petals scattered round it.
         S('bananaleaf', 1030, 334, 430, 88, '#84cc16', { fill2: '#365314', grad: 90, rot: -2 }),
@@ -146,22 +167,36 @@ export const TEMPLATES = [
       ] }),
   },
   {
-    key: 'holi', label: 'Holi', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'top', type: 'bunting', size: 36, colors: ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6'] }], tint: '#fff5f9', notice: { x: null, y: 50 }, greeting: 'Happy Holi, {name}', message: 'Wishing you a colourful and joyful day.', caption: 'Festival of colours', bg: ['#fde68a', '#fbcfe8', '#a5f3fc'], angle: 110,
-      // Clouds of gulal, paint splashes, water balloons and flying colour, every one a bright blend of two colours.
+    key: 'deepavali', label: 'Deepavali', note: 'Set the dates for this year', when: null,
+    design: make({ edges: [{ edge: 'top', type: 'diamonds', size: 26, colors: ['#fbbf24', '#b45309'], opacity: 0.9 }], notice: { x: 60, y: 25 }, tint: '#fff4dc', greeting: 'Shubh Deepavali, {name}', message: 'May the light of the diya bring prosperity, peace and joy to you and your family.', caption: 'Happy Diwali', bg: ['#1b0c3d', '#4a1259', '#7a1d3c'], angle: 110, pattern: ['sunburst', '#fbbf24', 0.07, 1.2],
+      // Royal: deep indigo melting into plum and crimson, a gold sunburst behind, and on the right a great ornate diya with a glowing
+      // flame, a hanging kandil, a lotus rangoli and a marigold garland, under gold rings and stars.
       layers: () => [
-        S('burst', 1040, 300, 250, 250, '#ec4899', { fill2: '#f97316', grad: 60, opacity: 0.9 }),
-        S('burst', 915, 322, 170, 170, '#22d3ee', { fill2: '#6366f1', grad: 120, opacity: 0.88 }),
-        S('burst', 1160, 322, 180, 180, '#facc15', { fill2: '#22c55e', grad: 70, opacity: 0.88 }),
-        S('burst', 820, 330, 120, 120, '#4ade80', { fill2: '#06b6d4', grad: 90, opacity: 0.85 }),
-        S('burst', 1000, 220, 110, 110, '#a855f7', { fill2: '#ec4899', grad: 45, opacity: 0.8 }),
-        S('splash', 760, 90, 130, 130, '#db2777', { fill2: '#f472b6', grad: 45, rot: 15 }),
-        S('splash', 1130, 66, 110, 110, '#0ea5e9', { fill2: '#22d3ee', grad: 60, rot: -20 }),
-        S('splash', 880, 190, 76, 76, '#f59e0b', { fill2: '#fde047', grad: 90, rot: 30 }),
-        S('balloon', 700, 214, 42, 70, '#ec4899', { fill2: '#f97316', grad: 90, rot: -14 }), S('balloon', 826, 150, 46, 76, '#38bdf8', { fill2: '#6366f1', grad: 90, rot: 8 }),
-        S('drop', 940, 70, 30, 42, '#f43f5e', { rot: 20 }), S('drop', 1010, 150, 24, 34, '#0ea5e9', { rot: -25 }), S('drop', 1175, 190, 28, 40, '#7c3aed', { rot: 15 }), S('drop', 730, 40, 22, 30, '#16a34a', { rot: -12 }),
-        S('circle', 1176, 120, 16, 16, '#ec4899', { opacity: 0.9 }), S('circle', 780, 240, 13, 13, '#f43f5e', { opacity: 0.9 }), S('circle', 960, 130, 12, 12, '#38bdf8', { opacity: 0.9 }), S('circle', 1090, 140, 10, 10, '#facc15', { opacity: 0.95 }), S('circle', 710, 120, 11, 11, '#22c55e', { opacity: 0.9 }), S('circle', 1050, 36, 12, 12, '#a855f7', { opacity: 0.9 }),
-        S('sparkle', 860, 60, 22, 22, '#ffffff', { opacity: 0.9 }), S('sparkle', 1100, 230, 18, 18, '#ffffff', { opacity: 0.85 }),
+        S('ring', 1010, 196, 420, 420, '#fbbf24', { opacity: 0.16, p: 0.012 }), S('ring', 1010, 196, 350, 350, '#fbbf24', { opacity: 0.1, p: 0.008 }),
+        S('circle', 1010, 200, 300, 300, '#f59e0b', { opacity: 0.1 }),
+        S('artdiwali', 985, 204, 368, 281, '#000000'),
+        S('sparkle', 760, 90, 30, 30, '#fde68a', { opacity: 0.8 }), S('sparkle', 700, 250, 22, 22, '#fbbf24', { opacity: 0.6 }), S('star', 820, 320, 22, 22, '#fde68a', { opacity: 0.5, n: 5, p: 0.45 }),
+      ] }),
+  },
+  {
+    key: 'holi', label: 'Holi', note: 'Set the dates for this year', when: null,
+    design: make({ edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6'] }], tint: '#fff7fb', notice: { x: 58, y: 30 }, greeting: 'Happy Holi, {name}', message: 'Wishing you a colourful and joyful day.', caption: 'Festival of colours', bg: ['#fff1b0', '#ffc0dc', '#a9d8ff'], angle: 105, pattern: ['dots', '#ffffff', 0.4, 0.7],
+      // Festive but not crowded: bunting and a fine speckle, four soft clouds of colour, a few outlined splashes and two glossy balloons,
+      // and four plates of gulal in a loose group.
+      layers: () => [
+        S('burst', 1010, 250, 360, 360, '#ec4899', { fill2: '#f97316', grad: 60, opacity: 0.62 }),
+        S('burst', 800, 292, 270, 270, '#22d3ee', { fill2: '#6366f1', grad: 120, opacity: 0.5 }),
+        S('burst', 1160, 258, 270, 270, '#facc15', { fill2: '#22c55e', grad: 70, opacity: 0.42 }),
+        S('burst', 650, 304, 190, 190, '#a855f7', { fill2: '#ec4899', grad: 45, opacity: 0.35 }),
+        S('splash', 766, 98, 120, 120, '#7c3aed', { opacity: 0.16, rot: 15 }), S('splash', 760, 90, 120, 120, '#db2777', { fill2: '#f472b6', grad: 45, rot: 15, stroke: '#ffffff', sw: 3 }),
+        S('splash', 1136, 76, 100, 100, '#7c3aed', { opacity: 0.16, rot: -20 }), S('splash', 1130, 68, 100, 100, '#0ea5e9', { fill2: '#22d3ee', grad: 60, rot: -20, stroke: '#ffffff', sw: 3 }),
+        S('artgulalteal', 905, 218, 128, 103, '#000000'), S('artgulalyellow', 1090, 218, 143, 103, '#000000'),
+        S('artgulalpink', 995, 298, 146, 121, '#000000'), S('artgulalgreen', 1132, 306, 118, 95, '#000000'),
+        S('balloon', 706, 222, 42, 70, '#7c3aed', { opacity: 0.16, rot: -14 }), S('balloon', 700, 214, 42, 70, '#ec4899', { fill2: '#f97316', grad: 90, rot: -14, stroke: '#ffffff', sw: 2.5 }), S('circle', 693, 196, 8, 14, '#ffffff', { opacity: 0.6, rot: -14 }),
+        S('balloon', 836, 128, 40, 66, '#7c3aed', { opacity: 0.16, rot: 8 }), S('balloon', 830, 120, 40, 66, '#38bdf8', { fill2: '#6366f1', grad: 90, rot: 8, stroke: '#ffffff', sw: 2.5 }), S('circle', 823, 102, 7, 13, '#ffffff', { opacity: 0.6, rot: 8 }),
+        S('drop', 960, 70, 24, 34, '#f43f5e', { rot: 20, stroke: '#ffffff', sw: 2 }), S('drop', 1190, 172, 22, 32, '#7c3aed', { rot: 15, stroke: '#ffffff', sw: 2 }),
+        S('circle', 1176, 120, 14, 14, '#ec4899', { opacity: 0.9 }), S('circle', 1050, 138, 10, 10, '#facc15', { opacity: 0.95 }),
+        S('sparkle', 860, 60, 20, 20, '#ffffff', { opacity: 0.9 }), S('sparkle', 1060, 150, 16, 16, '#ffffff', { opacity: 0.85 }),
       ] }),
   },
   {

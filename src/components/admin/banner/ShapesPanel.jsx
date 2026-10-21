@@ -4,6 +4,7 @@ import { CATEGORIES, FONTS, MAX_LAYERS, SHAPES, SHAPE_SETTINGS, shapeInfo } from
 import { ShapeGlyph } from '@/components/home/BannerShapes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { isArt } from '@/lib/bannerArt'
 import { Choice, ColorField, Section, SliderField } from '@/components/admin/banner/controls'
 
 const SCATTERABLE = SHAPES.filter((s) => s.key !== 'line' && s.key !== 'wave')
@@ -18,6 +19,7 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
   const full = room <= 0
   const settings = sel ? SHAPE_SETTINGS[sel.type] || [] : []
   const isText = sel?.type === 'text'
+  const picture = !!sel && isArt(sel.type)
   const set = (patch, key) => onUpdate(sel.id, patch, key ? `${key}-${sel.id}` : undefined)
   const setSize = (key, v) => {
     if (keepRatio && key === 'w') set({ w: v, h: Math.max(2, Math.round((sel.h * v) / sel.w)) }, 'size')
@@ -69,6 +71,8 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
             </>
           )}
 
+          {picture && <p className="text-xs text-muted-foreground">This is a ready-made picture, so its colours are fixed. You can move, resize, turn and fade it.</p>}
+          {!picture && (<>
           <Choice label="Fill" value={sel.fill2 ? 'blend' : 'solid'} onChange={(v) => set(v === 'blend' ? { fill2: '#ec4899', grad: sel.grad ?? 90 } : { fill2: undefined, grad: undefined })} options={[{ key: 'solid', label: 'One colour' }, { key: 'blend', label: 'Blend of two' }]} />
           <ColorField label={sel.fill2 ? 'First colour' : 'Colour'} value={sel.fill} onChange={(c) => set({ fill: c }, 'fill')} />
           {sel.fill2 && (
@@ -89,6 +93,7 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
               </>
             )}
           </div>
+          </>)}
 
           <SliderField label="How solid" value={sel.opacity} min={0.05} max={1} step={0.05} onChange={(v) => set({ opacity: v }, 'op')} lo="See-through" hi="Solid" />
           {!isText && (

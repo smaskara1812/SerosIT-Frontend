@@ -11,6 +11,7 @@ export const DEFAULT_DESIGN = {
   showLastSignIn: true,
   search: { tint: '#ffffff' },
   notice: { x: null, y: 0 }, // across and down, 0 to 100 (null across = the side the layout puts it on)
+  frame: { mode: 'auto', color: null }, // the edge around the banner: auto (a light banner gets one), on, or off; colour null = from the banner
   edges: [], // border strips along the top or bottom: { edge, type, size, colors, opacity }
   layers: [],
 }
@@ -30,6 +31,7 @@ export function withDefaults(d) {
     contours: { ...base.contours, ...d.contours },
     search: { ...base.search, ...d.search },
     notice: legacyNotice({ ...base.notice, ...d.notice }),
+    frame: { ...base.frame, ...d.frame },
     edges: d.edges || [],
   }
 }
@@ -66,8 +68,8 @@ export const PALETTE = [
 const look = (background, pattern, contours, color = null, tint = '#ffffff') => ({ background, pattern, contours, text: { color }, search: { tint } })
 export const PRESETS = [
   { key: 'seros', label: 'Seros navy', ...look({ type: 'gradient', colors: ['#1c448a', '#17356f', '#0f2650'], angle: 118 }, { type: 'none', color: '#ffffff', opacity: 0.12, scale: 1 }, { on: true, color: '#ffffff', opacity: 0.13, density: 2 }, null, '#ffffff') },
-  { key: 'tricolour', label: 'Tricolour', ...look({ type: 'gradient', colors: ['#ffb066', '#f6f1e6', '#8fdc9a'], angle: 90 }, { type: 'none', color: '#0f2650', opacity: 0.1, scale: 1 }, { on: false, color: '#0f2650', opacity: 0.12, density: 2 }, null, '#fffdf6') },
-  { key: 'safety', label: 'Safety yellow', ...look({ type: 'gradient', colors: ['#f5c400', '#e8a900'], angle: 100 }, { type: 'stripes', color: '#111827', opacity: 0.1, scale: 1.2 }, { on: false, color: '#111827', opacity: 0.12, density: 2 }, null, '#fffbe6') },
+  // { key: 'tricolour', label: 'Tricolour', ...look({ type: 'gradient', colors: ['#ffb066', '#f6f1e6', '#8fdc9a'], angle: 90 }, { type: 'none', color: '#0f2650', opacity: 0.1, scale: 1 }, { on: false, color: '#0f2650', opacity: 0.12, density: 2 }, null, '#fffdf6') },
+  // { key: 'safety', label: 'Safety yellow', ...look({ type: 'gradient', colors: ['#f5c400', '#e8a900'], angle: 100 }, { type: 'stripes', color: '#111827', opacity: 0.1, scale: 1.2 }, { on: false, color: '#111827', opacity: 0.12, density: 2 }, null, '#fffbe6') },
   { key: 'night', label: 'Celebration', ...look({ type: 'gradient', colors: ['#2b1055', '#7c3aed'], angle: 120 }, { type: 'dots', color: '#fde68a', opacity: 0.28, scale: 1.2 }, { on: false, color: '#ffffff', opacity: 0.12, density: 2 }, null, '#f5f0ff') },
   { key: 'green', label: 'Fresh green', ...look({ type: 'gradient', colors: ['#0f5132', '#16a34a'], angle: 110 }, { type: 'waves', color: '#ffffff', opacity: 0.14, scale: 1.3 }, { on: false, color: '#ffffff', opacity: 0.12, density: 2 }, null, '#f0fdf4') },
   { key: 'sunrise', label: 'Warm sunrise', ...look({ type: 'gradient', colors: ['#ff7e5f', '#feb47b'], angle: 100 }, { type: 'sunburst', color: '#ffffff', opacity: 0.18, scale: 1 }, { on: false, color: '#ffffff', opacity: 0.12, density: 2 }, null, '#fff5ee') },
@@ -184,3 +186,22 @@ export const EDGE_TYPES = [
   { key: 'diamonds', label: 'Diamond chain' },
   { key: 'bands', label: 'Colour bands' },
 ]
+
+// The edge around a banner, so a light one does not melt into the page behind it. Automatic: a light background gets a firm ring and a
+// soft shadow in a darkened shade of its own colour, a dark one only a faint edge. A person can also force it on, switch it off, or
+// pick the colour.
+export function bannerFrame(design) {
+  const { mode, color } = { mode: 'auto', color: null, ...design.frame }
+  if (mode === 'off') return undefined
+  const colors = design.background.colors
+  const avg = colors.reduce((sum, c) => sum + luminance(c), 0) / colors.length
+  const light = avg >= 0.45
+  if (mode === 'auto' && !light && !color) return '0 0 0 1px rgba(255,255,255,0.10), 0 12px 28px -16px rgba(15,23,42,0.45)'
+  if (color) {
+    const [r, g, b] = channels(color)
+    return `0 0 0 1.5px rgba(${r},${g},${b},0.7), 0 14px 30px -16px rgba(${r},${g},${b},0.55)`
+  }
+  if (!light) return '0 0 0 1.5px rgba(255,255,255,0.32), 0 14px 30px -16px rgba(15,23,42,0.55)'
+  const [r, g, b] = channels(colors[colors.length - 1]).map((v) => Math.round(v * 0.62))
+  return `0 0 0 1.5px rgba(${r},${g},${b},0.38), 0 14px 30px -16px rgba(${r},${g},${b},0.55)`
+}

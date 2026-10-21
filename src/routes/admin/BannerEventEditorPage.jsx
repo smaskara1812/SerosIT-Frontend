@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowLeft, CalendarDays, Eye, Grid3x3, LayoutTemplate, Palette, Redo2, RotateCcw, Shapes, Spline, Sparkles, Type, Undo2 } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Copy, Eye, Grid3x3, LayoutTemplate, Palette, Redo2, RotateCcw, Shapes, Spline, Sparkles, Type, Undo2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { apiFetch } from '@/lib/api'
 import { can } from '@/lib/permissions'
@@ -151,6 +151,7 @@ export default function BannerEventEditorPage() {
   const [showNotice, setShowNotice] = useState(true)
   const [eventId, setEventId] = useState(isNew ? null : id)
   const [selectedId, setSelectedId] = useState(null)
+  const fromTemplate = useRef(null) // TEMPORARY (with the copy button below): the template this design was started from
   const [templatesOpen, setTemplatesOpen] = useState(isNew && !copyFrom) // a new event starts by offering the templates
   const [zones, setZones] = useState(true)
   const [keepRatio, setKeepRatio] = useState(true)
@@ -224,6 +225,7 @@ export default function BannerEventEditorPage() {
   // filled in only where the person has not already chosen them.
   const pickTemplate = useCallback((t) => {
     setTemplatesOpen(false)
+    fromTemplate.current = t ? t.key : null
     if (!t) return
     edit((d) => Object.assign(d, cloneDesign(t.design)), 'template')
     setSelectedId(null)
@@ -383,6 +385,16 @@ export default function BannerEventEditorPage() {
           <Button variant="outline" size="icon" onClick={redo} disabled={!doc.future.length} aria-label="Redo"><Redo2 /></Button>
         </div>
         <Button variant="outline" size="sm" onClick={() => setTemplatesOpen(true)}><Sparkles /> Templates</Button>
+        {import.meta.env.DEV && (
+          // TEMPORARY, development only: copies the whole design as JSON (and logs it) so template tweaks can be pasted back to be applied in code.
+          <Button variant="outline" size="sm" title="Development only: copy this design as JSON" onClick={() => {
+            const out = JSON.stringify({ template: fromTemplate.current, name: meta.name, design }, null, 1)
+            console.log(out)
+            navigator.clipboard?.writeText(out).then(() => toast.success('Design copied to the clipboard'), () => toast.error('Could not copy; it is in the console instead'))
+          }}>
+            <Copy /> Copy design
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => edit((d) => Object.assign(d, cloneDesign(DEFAULT_DESIGN), { text: d.text, layers: d.layers, layout: d.layout }), 'reset')} title="Put the colours, pattern and lines back to the normal banner look (your words and shapes are kept)">
           <RotateCcw /> Normal look
         </Button>
@@ -562,6 +574,17 @@ export default function BannerEventEditorPage() {
                       <input type="color" value={design.search.tint} onChange={(e) => edit((d) => { d.search.tint = softenTint(e.target.value) }, 'tint')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" aria-label="Pick any light colour for the search box" />
                     </label>
                   </div>
+                </Section>
+                <Section title="Edge around the banner" hint="A thin edge and soft shadow so the banner stands out from the page. Automatic adds one to a light banner by itself.">
+                  <Choice label="Edge" value={design.frame.mode} onChange={(v) => edit((d) => { d.frame.mode = v })} options={[{ key: 'auto', label: 'Automatic' }, { key: 'on', label: 'Always' }, { key: 'off', label: 'None' }]} />
+                  {design.frame.mode !== 'off' && (
+                    <>
+                      <label className="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" checked={!!design.frame.color} onChange={(e) => edit((d) => { d.frame.color = e.target.checked ? '#475569' : null })} /> Choose the edge colour myself
+                      </label>
+                      {design.frame.color && <ColorField label="Edge colour" value={design.frame.color} onChange={(c) => edit((d) => { d.frame.color = c }, 'fcolor')} />}
+                    </>
+                  )}
                 </Section>
               </>
             )}
