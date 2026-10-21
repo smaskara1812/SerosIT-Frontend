@@ -257,20 +257,31 @@ export default function Home() {
   const hintLines = EASTER_EGGS.idleHintLines
   const hint = idle && hintLines.length && !custom ? hintLines[hintAt % hintLines.length] : null
 
-  const [scene, setScene] = useState(null) // 'ship' or 'crew' while a banner scene plays
+  const [scene, setScene] = useState(null) // 'ship', 'crew', 'move', 'frac' or 'convoy' while a banner scene plays
   const drillTimer = useRef(0)
   const playScene = useCallback((next) => {
     if (customRef.current) return
     setScene(next)
     clearTimeout(drillTimer.current)
-    drillTimer.current = setTimeout(() => setScene(null), next === 'crew' ? 18600 : 12500)
+    drillTimer.current = setTimeout(() => setScene(null), next === 'crew' ? 18600 : next === 'move' ? 17800 : next === 'frac' ? 18600 : next === 'convoy' ? 16400 : 12500)
   }, [])
   useKonami(() => playScene(EASTER_EGGS.konamiScene === 'crew' ? 'crew' : 'ship'))
   // The helicopter scene is started by a secret phrase typed into the search box (see PageSearch).
   useEffect(() => {
     const onChopper = () => playScene('crew')
+    const onRigMove = () => playScene('move')
+    const onFrac = () => playScene('frac')
+    const onConvoy = () => playScene('convoy')
     window.addEventListener('seros:chopper', onChopper)
-    return () => window.removeEventListener('seros:chopper', onChopper)
+    window.addEventListener('seros:rigmove', onRigMove)
+    window.addEventListener('seros:frac', onFrac)
+    window.addEventListener('seros:convoy', onConvoy)
+    return () => {
+      window.removeEventListener('seros:chopper', onChopper)
+      window.removeEventListener('seros:rigmove', onRigMove)
+      window.removeEventListener('seros:frac', onFrac)
+      window.removeEventListener('seros:convoy', onConvoy)
+    }
   }, [playScene])
   useEffect(() => () => clearTimeout(drillTimer.current), [])
 

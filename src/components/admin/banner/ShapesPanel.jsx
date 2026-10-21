@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ArrowDown, ArrowUp, Copy, Shuffle, Trash2, Type } from 'lucide-react'
+import { BANNER_FONTS } from '@/lib/bannerFonts'
 import { CATEGORIES, FONTS, MAX_LAYERS, SHAPES, SHAPE_SETTINGS, shapeInfo } from '@/lib/bannerShapes'
 import { ShapeGlyph } from '@/components/home/BannerShapes'
 import { Button } from '@/components/ui/button'
@@ -63,7 +64,14 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
               <SliderField label="Size" value={sel.size} min={10} max={200} step={1} onChange={(v) => set({ size: v }, 'tsize')} lo="Small" hi="Huge" />
               <SliderField label="Space between letters" value={sel.spacing ?? 0} min={0} max={20} step={0.5} onChange={(v) => set({ spacing: v }, 'spacing')} lo="Tight" hi="Wide" />
               <div className="flex flex-wrap items-center gap-3">
-                <Choice label="Style of letters" value={sel.font || 'sans'} onChange={(v) => set({ font: v })} options={[{ key: 'sans', label: 'Clean' }, { key: 'serif', label: 'Classic' }]} />
+                <label className="flex items-center gap-2 text-sm">
+                  Font
+                  <select className="h-8 rounded-lg border border-border bg-background px-2 text-sm" value={sel.font || 'sans'} onChange={(e) => set({ font: e.target.value })} aria-label="Font">
+                    <option value="sans">Clean (usual)</option>
+                    <option value="serif">Classic</option>
+                    {BANNER_FONTS.filter((f) => f.css).map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                  </select>
+                </label>
                 <label className="inline-flex items-center gap-2 text-sm"><input type="checkbox" checked={sel.bold !== false} onChange={(e) => set({ bold: e.target.checked })} /> Bold</label>
               </div>
               <p className="text-xs text-muted-foreground" style={{ fontFamily: FONTS[sel.font || 'sans'] }}>Letters look like this.</p>

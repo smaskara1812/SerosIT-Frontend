@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { accessibleNavLeaves } from '@/lib/shortcuts'
 import { IconSearch } from '@/components/icons'
-import { isChopperPhrase, isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerChopper, triggerSpud, triggerSunset } from '@/lib/easter'
+import { isChopperPhrase, isConvoyPhrase, isFracPhrase, isRigMovePhrase, isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerChopper, triggerConvoy, triggerFrac, triggerRigMove, triggerSpud, triggerSunset } from '@/lib/easter'
 
 const MAX_RESULTS = 8
 
@@ -76,7 +76,10 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
     if (e.key === 'Enter' && variant === 'hero') {
       const spud = isSpudPhrase(query)
       const chopper = isChopperPhrase(query)
-      if ((spud || chopper || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
+      const rigMove = isRigMovePhrase(query)
+      const frac = isFracPhrase(query)
+      const convoy = isConvoyPhrase(query)
+      if ((spud || chopper || rigMove || frac || convoy || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
         e.preventDefault()
         setOpen(false)
         setQuery('')
@@ -84,6 +87,9 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
         const first = (user?.display_name || user?.username || '').split(' ')[0]
         if (spud) triggerSpud(first)
         else if (chopper) triggerChopper()
+        else if (rigMove) triggerRigMove()
+        else if (frac) triggerFrac()
+        else if (convoy) triggerConvoy()
         else triggerSunset(first)
         return undefined
       }

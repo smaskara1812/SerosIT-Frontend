@@ -8,6 +8,12 @@ export const EASTER_EGGS = {
   konamiScene: 'ship', // which banner scene the Konami code plays: 'ship' (the Seros ship passing the Wildcat) or 'crew' (the helicopter landing on the Wildcat)
   chopper: true, // the helicopter scene in the banner, started by a secret phrase typed into the home page search
   chopperPhrases: ['chopper', 'helicopter', 'helipad'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never "crew change", which is a real page name
+  rigMove: true, // the Wildcat rig move scene in the banner (two anchor handling vessels tow the rig in and sail off, she ballasts down and pays out her own four anchors), started by a secret phrase typed into the home page search
+  rigMovePhrases: ['anchors away', 'anchors', 'drop anchor', 'rig tow', 'towing the rig'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never on a day with a custom banner. Not "rig move" or "rig moves": that is a page
+  fracJob: true, // the frac job scene in the banner (the Seros frac fleet on a land pad pumping three stages while the Axom Rhino drills the next well), started by a secret phrase typed into the home page search
+  fracPhrases: ['frac job', 'frac', 'fracking', 'fracturing', 'frac time'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never on a day with a custom banner
+  convoy: true, // the convoy scene in the banner (Seros's electric, LNG and bulk trucks crossing a dusty highway at sunrise), started by a secret phrase typed into the home page search
+  convoyPhrases: ['convoy', 'green logistics', 'truck convoy', 'seros green logistics'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it; never on a day with a custom banner
   loginQuips: true, // a rig-floor line under the "Invalid username or password" message
   sunset: true, // the secret phrase typed into the home page search and confirmed with Enter
   sunsetPhrases: ['golden hour', 'magic hour', 'sunset', 'sundown', 'dusk','golden'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts the sunset scene
@@ -29,7 +35,7 @@ export const EASTER_EGGS = {
 }
 
 // Riddles for the home search box. Each answer is a secret phrase (typed into the search box and confirmed with
-// Enter): the "sunset" answers must be in sunsetPhrases above, the "spud" answers in spudPhrases, and the "chopper" answers in chopperPhrases.
+// Enter): the "sunset" answers must be in sunsetPhrases above, the "spud" answers in spudPhrases, and the "chopper" answers in chopperPhrases, the "rigmove" answers in rigMovePhrases, the "frac" answers in fracPhrases, and the "convoy" answers in convoyPhrases.
 export const RIDDLES = {
   sunset: [
     'Photographers chase it, and the rig glows in it. Which hour?',
@@ -47,6 +53,27 @@ export const RIDDLES = {
     'A flying machine with no wings that sits on a deck above the waves. Which one?',
     'The rig has a pad for it, painted with a single letter. What is that called?',
     'Rotors on top, skids below, and the one way offshore crews commute. What is it?',
+  ],
+  rigmove: [
+    'The Wildcat is on location and her tugs are leaving. Next? Two words.',
+    'What is the job of getting a rig’s anchors out and set? Two words.',
+    'The order given when a rig’s anchors go down. Two words.',
+    'Tugs tow the Wildcat in, then leave. What does she do next?',
+    // 'The Wildcat is held in place by her anchors. Two words for the job?',
+    'A rig stays put at sea by lines to the seabed. Name the job.',
+  ],
+  frac: [
+    'Pumps roar and the rock cracks. What is the job called? Two words.',
+    'Water, sand and chemicals go down a well to crack the rock. Name it.',
+    'Three stages, one wellhead and a fleet of pump trucks. What job?',
+    'Not drilling, not a rig move: pumping to crack open the rock.',
+    'The shale will not give up its oil until it is cracked. How?',
+  ],
+  convoy: [
+    'Several trucks, one road, one destination. What is the group called?',
+    'Trucks rolling together at first light. One word.',
+    'Seros’s LNG and electric trucks run in a line at dawn. What is it?',
+    'Its hashtag says two words, and its trucks run on LNG and electricity.',
   ],
   spud: [
     'Two words mark the moment a bit first bites the ground.',

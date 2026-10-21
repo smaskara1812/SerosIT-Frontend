@@ -20,6 +20,7 @@ import BannerView from '@/components/home/BannerView'
 import BannerArt from '@/components/home/BannerArt'
 import NoticeCard from '@/components/home/NoticeCard'
 import EdgesPanel from '@/components/admin/banner/EdgesPanel'
+import FontPicker from '@/components/admin/banner/FontPicker'
 import { ColorField, Choice, FitPreview, Section, SliderField } from '@/components/admin/banner/controls'
 import ShapeCanvas from '@/components/admin/banner/ShapeCanvas'
 import ShapesPanel from '@/components/admin/banner/ShapesPanel'
@@ -512,6 +513,12 @@ export default function BannerEventEditorPage() {
                 <Section title="Message" hint="A line under the greeting.">
                   <Textarea rows={3} value={design.text.message} maxLength={200} onChange={(e) => edit((d) => { d.text.message = e.target.value }, 'message')} placeholder="Wishing every crew a safe and proud day." aria-label="Message" />
                   <p className="text-right text-[11px] text-muted-foreground">{design.text.message.length}/200</p>
+                </Section>
+                <Section title="Greeting font" hint="The look of the big greeting. The picture and the live banner update straight away.">
+                  <FontPicker label="Greeting font" value={design.text.titleFont} onChange={(v) => edit((d) => { d.text.titleFont = v })} />
+                </Section>
+                <Section title="Message font" hint="The look of the line under the greeting.">
+                  <FontPicker label="Message font" value={design.text.bodyFont} onChange={(v) => edit((d) => { d.text.bodyFont = v })} />
                 </Section>
                 <Section title="Small tag" hint="A short label shown as a pill, like “Safety week”.">
                   <Input value={design.text.caption} maxLength={40} onChange={(e) => edit((d) => { d.text.caption = e.target.value }, 'caption')} placeholder="Optional" aria-label="Small tag" />

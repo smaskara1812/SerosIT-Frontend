@@ -602,7 +602,9 @@ export function shapeSpec(l) {
 
 import { fillTokens } from '@/lib/bannerDesign'
 
-export const FONTS = { sans: "'Plus Jakarta Sans', system-ui, sans-serif", serif: "Georgia, 'Times New Roman', serif" }
+import { BANNER_FONTS } from '@/lib/bannerFonts'
+
+export const FONTS = { sans: "'Plus Jakarta Sans', system-ui, sans-serif", serif: "Georgia, 'Times New Roman', serif", ...Object.fromEntries(BANNER_FONTS.filter((f) => f.css).map((f) => [f.key, f.css])) }
 export const MAX_TEXT = 40
 
 // The box a text label takes up, for selecting and moving it. Measured with the real font when the browser can, else a

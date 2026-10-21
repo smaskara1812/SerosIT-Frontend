@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import BannerArt from '@/components/home/BannerArt'
+import { fontFamily, titleWeight, useBannerFonts } from '@/lib/bannerFonts'
 import { backgroundCss, bannerFrame, fillTokens, textColorOf, withDefaults, yearTokens } from '@/lib/bannerDesign'
 
 // The home banner for a custom design (Admin > Banner Events). The same component draws the live banner and the editor's
@@ -10,6 +11,7 @@ import { backgroundCss, bannerFrame, fillTokens, textColorOf, withDefaults, year
 // Phone preview behaves like a real screen of that size.
 export default function BannerView({ design: raw, firstName, todayLabel, fallbackTitle, fallbackSub, lastSigned, search, notice, previewBadge, overlay, zones }) {
   const design = withDefaults(raw)
+  useBannerFonts([design.text.titleFont, design.text.bodyFont, ...design.layers.filter((l) => l.type === 'text').map((l) => l.font)])
   const color = textColorOf(design)
   const layout = design.layout
   const noticeRef = useRef(null)
@@ -64,8 +66,8 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
           <div className={`relative max-w-xl ${blockCls} ${zones ? 'outline-dashed outline-2 outline-offset-4 outline-sky-400/80' : ''}`}>
             {zones && <ZoneLabel>Greeting and message</ZoneLabel>}
             <p className="text-[13px] font-semibold uppercase tracking-[0.14em]" style={{ opacity: 0.85 }}>{todayLabel}</p>
-            <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl" style={{ textWrap: 'balance' }}>{title}</h1>
-            {sub && <p className="mt-2 text-[15px] leading-relaxed" style={{ opacity: 0.8, textWrap: 'balance' }}>{sub}</p>}
+            <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl" style={{ textWrap: 'balance', fontFamily: fontFamily(design.text.titleFont), fontWeight: titleWeight(design.text.titleFont) }}>{title}</h1>
+            {sub && <p className="mt-2 text-[15px] leading-relaxed" style={{ opacity: 0.8, textWrap: 'balance', fontFamily: fontFamily(design.text.bodyFont) }}>{sub}</p>}
             {caption && (
               <span className="mt-3 inline-block rounded-full border px-3 py-1 text-xs font-semibold tracking-wide" style={{ background: chipBg, borderColor: chipBorder }}>
                 {caption}

@@ -81,6 +81,39 @@ export function triggerChopper() {
   window.dispatchEvent(new CustomEvent('seros:chopper'))
 }
 
+// True when what was typed into the home search is the rig move phrase.
+export function isRigMovePhrase(text) {
+  return EASTER_EGGS.rigMove && !customBanner && matches(text, EASTER_EGGS.rigMovePhrases)
+}
+
+// The rig move scene plays in the home banner; the home page listens for this (see Home.jsx).
+export function triggerRigMove() {
+  if (!EASTER_EGGS.rigMove) return
+  window.dispatchEvent(new CustomEvent('seros:rigmove'))
+}
+
+// True when what was typed into the home search is the frac job phrase.
+export function isFracPhrase(text) {
+  return EASTER_EGGS.fracJob && !customBanner && matches(text, EASTER_EGGS.fracPhrases)
+}
+
+// The frac job scene plays in the home banner; the home page listens for this (see Home.jsx).
+export function triggerFrac() {
+  if (!EASTER_EGGS.fracJob) return
+  window.dispatchEvent(new CustomEvent('seros:frac'))
+}
+
+// True when what was typed into the home search is the convoy phrase.
+export function isConvoyPhrase(text) {
+  return EASTER_EGGS.convoy && !customBanner && matches(text, EASTER_EGGS.convoyPhrases)
+}
+
+// The convoy scene plays in the home banner; the home page listens for this (see Home.jsx).
+export function triggerConvoy() {
+  if (!EASTER_EGGS.convoy) return
+  window.dispatchEvent(new CustomEvent('seros:convoy'))
+}
+
 // True when what was typed into the home search is the spud-in phrase.
 export function isSpudPhrase(text) {
   return EASTER_EGGS.spudIn && matches(text, EASTER_EGGS.spudPhrases)
@@ -109,7 +142,7 @@ export function riddleForNow(now = Date.now()) {
   const h = Math.imul(slot ^ 0x9e3779b1, 0x85ebca6b) >>> 0
   if ((h >>> 3) % EASTER_EGGS.riddleEveryNthSlot !== 0) return null
   // A riddle is only asked if the secret it leads to is switched on.
-  const all = [...(EASTER_EGGS.sunset ? RIDDLES.sunset : []), ...(EASTER_EGGS.spudIn ? RIDDLES.spud : []), ...(EASTER_EGGS.chopper && !customBanner ? RIDDLES.chopper : [])]
+  const all = [...(EASTER_EGGS.sunset ? RIDDLES.sunset : []), ...(EASTER_EGGS.spudIn ? RIDDLES.spud : []), ...(EASTER_EGGS.chopper && !customBanner ? RIDDLES.chopper : []), ...(EASTER_EGGS.rigMove && !customBanner ? RIDDLES.rigmove : []), ...(EASTER_EGGS.fracJob && !customBanner ? RIDDLES.frac : []), ...(EASTER_EGGS.convoy && !customBanner ? RIDDLES.convoy : [])]
   if (!all.length) return null
   return all[(h >>> 11) % all.length]
 }

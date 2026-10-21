@@ -11,11 +11,11 @@ const S = (type, x, y, w, h, fill, extra = {}) => {
   return type === 'text' ? { ...layer, ...textBox(layer) } : layer // a text label's box follows its words
 }
 
-function make({ greeting, message, caption, bg, angle = 110, pattern, contours, layers, layout = 'standard', tint = '#ffffff', notice = { x: null, y: 0 }, edges = [] }) {
+function make({ titleFont = 'default', bodyFont = 'default', greeting, message, caption, bg, angle = 110, pattern, contours, layers, layout = 'standard', tint = '#ffffff', notice = { x: null, y: 0 }, edges = [] }) {
   counter = 0
   const d = cloneDesign(DEFAULT_DESIGN)
   d.layout = layout
-  d.text = { greeting, message, caption, color: null }
+  d.text = { greeting, message, caption, color: null, titleFont, bodyFont }
   d.background = { type: bg.length === 1 ? 'solid' : 'gradient', colors: bg, angle }
   if (pattern) d.pattern = { type: pattern[0], color: pattern[1], opacity: pattern[2], scale: pattern[3] ?? 1 }
   d.contours = contours ? { on: true, color: contours[0], opacity: contours[1], density: 2 } : { on: false, color: '#ffffff', opacity: 0.12, density: 2 }
@@ -57,7 +57,7 @@ export const TEMPLATES = [
   },
   {
     key: 'safety', label: 'National Safety Day', note: '4 March', when: [3, 4, 3, 4],
-    design: make({ tint: '#ffffff', greeting: 'Happy National Safety Day, {name}!', message: 'Building a safer, healthier workplace together.', caption: 'Safety First · 4 March', bg: ['#ecfdf5', '#f0f9ff', '#fef3c7'], angle: 100, pattern: ['grid', '#0f766e', 0.05, 1.6],
+    design: make({ tint: '#eff6ff', greeting: 'Happy National Safety Day, {name}!', message: 'Building a safer, healthier workplace together.', caption: 'Safety First · 4 March', bg: ['#ecfdf5', '#f0f9ff', '#fef3c7'], angle: 100, pattern: ['grid', '#0f766e', 0.05, 1.6],
       // Fresh and encouraging: mint melting into sky blue and pale amber, faint blueprint gears and a shield behind, and a friendly cluster of
       // the kit of a safe site on the right: hard hat, goggles, checklist, cone, gears and a spanner, with a few leaves for care.
       layers: () => [
@@ -75,7 +75,7 @@ export const TEMPLATES = [
   },
   {
     key: 'women', label: 'International Women’s Day', note: '8 March', when: [3, 8, 3, 8],
-    design: make({ notice: { x: 66, y: 25 }, edges: [{ edge: 'top', type: 'pearls', size: 30, colors: ['#c4b5fd', '#fde68a'], opacity: 0.9 }], tint: '#ffffff', greeting: 'Happy Women’s Day, {name}', message: 'Thank you for everything you bring to every rig and office.', caption: '8 March', bg: ['#faf5ff', '#fff7ed'], angle: 110, pattern: ['dots', '#7c3aed', 0.06, 1.4],
+    design: make({ titleFont: 'playfair', bodyFont: 'default', notice: { x: 66, y: 25 }, edges: [{ edge: 'top', type: 'pearls', size: 30, colors: ['#c4b5fd', '#fde68a'], opacity: 0.9 }], tint: '#fff1f2', greeting: 'Happy Women’s Day, {name}', message: 'Thank you for everything you bring to every rig and office.', caption: '8 March', bg: ['#faf5ff', '#fff7ed'], angle: 110, pattern: ['dots', '#7c3aed', 0.06, 1.4],
       // Soft line art: a calm portrait drawn in one flowing line, a lotus at her shoulder, and blobs of amber and lavender behind.
       layers: () => [
         S('circle', 1010, 190, 330, 330, '#e9d5ff', { opacity: 0.3 }),
@@ -87,7 +87,7 @@ export const TEMPLATES = [
     key: 'labour', label: 'Labour Day', note: '1 May', when: [5, 1, 5, 1],
     // Dignified and warm: deep navy, amber and steel. A worker in a hard hat and safety vest, wrench in hand, stands before a big slate gear
     // and a steel truss, with a soft amber glow behind. (The earlier role strip with editable department labels was replaced.)
-    design: make({ notice: { x: 60, y: 25 }, tint: '#ffffff', greeting: 'Happy Labour Day, {name}!', message: 'Honouring the hands, minds and dedication that build our everyday.', caption: '', bg: ['#1b1f4f', '#334155'], angle: 100, pattern: ['grid', '#94a3b8', 0.04, 1.6],
+    design: make({ titleFont: 'bebas', bodyFont: 'default', notice: { x: 60, y: 25 }, tint: '#ffffff', greeting: 'Happy Labour Day, {name}!', message: 'Honouring the hands, minds and dedication that build our everyday.', caption: '', bg: ['#1b1f4f', '#334155'], angle: 100, pattern: ['grid', '#94a3b8', 0.04, 1.6],
       layers: () => [
         S('gear', 585, 66, 170, 170, '#94a3b8', { opacity: 0.07 }), S('gear', 905, 58, 84, 84, '#94a3b8', { opacity: 0.06 }),
         S('artskyline', 910, 205, 580, 311, '#000000'),
@@ -96,7 +96,7 @@ export const TEMPLATES = [
   },
   {
     key: 'environment', label: 'World Environment Day', note: '5 June', when: [6, 5, 6, 5],
-    design: make({ notice: { x: 60, y: 25 }, tint: '#ffffff', greeting: 'Happy World Environment Day, {name}!', message: 'Nurturing our planet, restoring ecosystems and building a sustainable future together.', caption: 'Protect & Restore · 5 June', bg: ['#fff1e0', '#fbd5d0'], angle: 100,
+    design: make({ notice: { x: 56, y: 4 }, tint: '#ffffff', greeting: 'Happy World Environment Day, {name}!', message: 'Nurturing our planet, restoring ecosystems and building a sustainable future together.', caption: '', bg: ['#fff1e0', '#fbd5d0'], angle: 100,
       // Warm and hopeful: peach melting into soft rose, faint leaves, sprouts and wind behind, and on the right the earth with leaves, solar panels, wind turbines, birds and butterflies, and people planting and watering, and a faint
       // growing plant behind like a watermark.
       layers: () => [
@@ -122,7 +122,7 @@ export const TEMPLATES = [
   },
   {
     key: 'gandhi', label: 'Gandhi Jayanti', note: '2 October', when: [10, 2, 10, 2],
-    design: make({ tint: '#fffdf7', greeting: 'Gandhi Jayanti, {name}', message: 'Truth, simplicity and doing the right thing, every day.', caption: '', bg: ['#f6efe0', '#e9dfc9'], angle: 100, contours: ['#1c448a', 0.08],
+    design: make({ titleFont: 'lora', bodyFont: 'lora', tint: '#f6efdf', greeting: 'Gandhi Jayanti, {name}', message: 'Truth, simplicity and doing the right thing, every day.', caption: '', bg: ['#f6efe0', '#e9dfc9'], angle: 100, contours: ['#1c448a', 0.08],
       // Round spectacles, the thing to see, over a faint charkha that sits behind like a watermark.
       layers: () => [
         S('artcharkha', 960, 190, 470, 316, '#000000', { opacity: 0.1 }),
@@ -132,7 +132,7 @@ export const TEMPLATES = [
   },
   {
     key: 'ganesh', label: 'Ganesh Chaturthi', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'top', type: 'garland', size: 46, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f97316'] }], tint: '#fff4e5', greeting: 'Ganpati Bappa Morya, {name}', message: 'Wishing you joy, wisdom and a fresh beginning.', caption: 'Happy Ganesh Chaturthi', bg: ['#6b0f2a', '#c2410c'], angle: 120, pattern: ['dots', '#fbbf24', 0.12, 1.2],
+    design: make({ titleFont: 'yatra', bodyFont: 'default', edges: [{ edge: 'top', type: 'garland', size: 46, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f97316'] }], tint: '#fff4e5', greeting: 'Ganpati Bappa Morya, {name}', message: 'Wishing you joy, wisdom and a fresh beginning.', caption: 'Happy Ganesh Chaturthi', bg: ['#6b0f2a', '#c2410c'], angle: 120, pattern: ['dots', '#fbbf24', 0.12, 1.2],
       layers: () => [
         // A heap of modaks on a plantain leaf, as the festival is painted, with rose petals scattered round it.
         S('bananaleaf', 1030, 334, 430, 88, '#84cc16', { fill2: '#365314', grad: 90, rot: -2 }),
@@ -145,7 +145,7 @@ export const TEMPLATES = [
   },
   {
     key: 'dussehra', label: 'Dussehra', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'bottom', type: 'garland', size: 46, colors: ['#f59e0b', '#fbbf24', '#f97316', '#fcd34d'] }], tint: '#fff1e0', greeting: 'Happy Dussehra, {name}', message: 'May good triumph over evil in all that we do.', caption: 'Vijayadashami', bg: ['#7f1d1d', '#c2410c', '#991b1b'], angle: 100,
+    design: make({ titleFont: 'yatra', bodyFont: 'default', edges: [{ edge: 'bottom', type: 'garland', size: 46, colors: ['#f59e0b', '#fbbf24', '#f97316', '#fcd34d'] }], tint: '#fff1e0', greeting: 'Happy Dussehra, {name}', message: 'May good triumph over evil in all that we do.', caption: 'Vijayadashami', bg: ['#7f1d1d', '#c2410c', '#991b1b'], angle: 100,
       // A glowing red-orange sky, temples rising in hazy rows, a golden bow with its arrow raised, and marigolds along the foot.
       layers: () => [
         S('circle', 1000, 210, 460, 460, '#fb923c', { opacity: 0.16 }), S('circle', 1000, 210, 300, 300, '#fdba74', { opacity: 0.18 }), S('circle', 1000, 210, 160, 160, '#fed7aa', { opacity: 0.22 }),
@@ -168,7 +168,7 @@ export const TEMPLATES = [
   },
   {
     key: 'deepavali', label: 'Deepavali', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'top', type: 'diamonds', size: 26, colors: ['#fbbf24', '#b45309'], opacity: 0.9 }], notice: { x: 60, y: 25 }, tint: '#fff4dc', greeting: 'Shubh Deepavali, {name}', message: 'May the light of the diya bring prosperity, peace and joy to you and your family.', caption: 'Happy Diwali', bg: ['#1b0c3d', '#4a1259', '#7a1d3c'], angle: 110, pattern: ['sunburst', '#fbbf24', 0.07, 1.2],
+    design: make({ titleFont: 'cinzel', bodyFont: 'default', edges: [{ edge: 'top', type: 'diamonds', size: 26, colors: ['#fbbf24', '#b45309'], opacity: 0.9 }], notice: { x: 60, y: 25 }, tint: '#fff4dc', greeting: 'Shubh Deepavali, {name}', message: 'May the light of the diya bring prosperity, peace and joy to you and your family.', caption: 'Happy Diwali', bg: ['#1b0c3d', '#4a1259', '#7a1d3c'], angle: 110, pattern: ['sunburst', '#fbbf24', 0.07, 1.2],
       // Royal: deep indigo melting into plum and crimson, a gold sunburst behind, and on the right a great ornate diya with a glowing
       // flame, a hanging kandil, a lotus rangoli and a marigold garland, under gold rings and stars.
       layers: () => [
@@ -180,7 +180,7 @@ export const TEMPLATES = [
   },
   {
     key: 'holi', label: 'Holi', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6'] }], tint: '#fff7fb', notice: { x: 58, y: 30 }, greeting: 'Happy Holi, {name}', message: 'Wishing you a colourful and joyful day.', caption: 'Festival of colours', bg: ['#fff1b0', '#ffc0dc', '#a9d8ff'], angle: 105, pattern: ['dots', '#ffffff', 0.4, 0.7],
+    design: make({ titleFont: 'baloo', bodyFont: 'baloo', edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6'] }], tint: '#fff7fb', notice: { x: 58, y: 30 }, greeting: 'Happy Holi, {name}', message: 'Wishing you a colourful and joyful day.', caption: 'Festival of colours', bg: ['#fff1b0', '#ffc0dc', '#a9d8ff'], angle: 105, pattern: ['dots', '#ffffff', 0.4, 0.7],
       // Festive but not crowded: bunting and a fine speckle, four soft clouds of colour, a few outlined splashes and two glossy balloons,
       // and four plates of gulal in a loose group.
       layers: () => [

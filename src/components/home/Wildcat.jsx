@@ -32,16 +32,18 @@ export function WildcatDefs() {
   )
 }
 
-// `x`, `y` is where the waterline meets the rig's centre; `scale` shrinks it.
-export function Wildcat({ x, y, scale }) {
+// `x`, `y` is where the waterline meets the rig's centre; `scale` shrinks it; `moorings` draws the faint mooring lines (a scene that draws its own turns them off).
+export function Wildcat({ x, y, scale, moorings = true }) {
   const rungs = useMemo(() => RUNGS, [])
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <g className="rig-rise">
           {/* mooring lines running out into the water, and the pontoons just under the surface */}
-          <g stroke="#cfe3f5" strokeOpacity=".35" strokeWidth="1.3" fill="none">
-            <line x1="-148" y1="-14" x2="-236" y2="30" /><line x1="148" y1="-14" x2="236" y2="30" /><line x1="-100" y1="-4" x2="-190" y2="34" /><line x1="100" y1="-4" x2="190" y2="34" />
-          </g>
+          {moorings && (
+            <g stroke="#cfe3f5" strokeOpacity=".35" strokeWidth="1.3" fill="none">
+              <line x1="-148" y1="-14" x2="-236" y2="30" /><line x1="148" y1="-14" x2="236" y2="30" /><line x1="-100" y1="-4" x2="-190" y2="34" /><line x1="100" y1="-4" x2="190" y2="34" />
+            </g>
+          )}
           <rect x="-158" y="-2" width="316" height="17" rx="8.5" fill="#151a26" fillOpacity=".9" />
 
           {/* the far row of columns, then the bracing, then the near row */}

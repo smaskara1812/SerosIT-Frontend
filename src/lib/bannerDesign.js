@@ -4,7 +4,7 @@
 export const DEFAULT_DESIGN = {
   v: 1,
   layout: 'standard',
-  text: { greeting: '', message: '', caption: '', color: null },
+  text: { greeting: '', message: '', caption: '', color: null, titleFont: 'default', bodyFont: 'default' },
   background: { type: 'gradient', colors: ['#1c448a', '#17356f', '#0f2650'], angle: 118 },
   pattern: { type: 'none', color: '#ffffff', opacity: 0.12, scale: 1 },
   contours: { on: true, color: '#ffffff', opacity: 0.13, density: 2 },

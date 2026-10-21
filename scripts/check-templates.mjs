@@ -8,6 +8,7 @@ const py = fs.readFileSync(path.resolve('../backend/core/banner_events.py'), 'ut
 const list = (name) => [...py.match(new RegExp(`${name} = \\(([\\s\\S]*?)\\n?\\)`))[1].matchAll(/"([^"]+)"/g)].map((m) => m[1])
 const SHAPES = new Set(list('SHAPES'))
 const EDGE_TYPES = new Set(list('EDGE_TYPES'))
+const FONT_KEYS = new Set([...py.match(/FONT_KEYS = \(([\s\S]*?)\)/)[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]))
 const MAX_LAYERS = Number(py.match(/MAX_LAYERS = (\d+)/)[1])
 const MAX_EDGES = Number(py.match(/MAX_EDGES = (\d+)/)[1])
 const HEX = /^#[0-9a-fA-F]{6}$/
@@ -23,6 +24,7 @@ for (const t of TEMPLATES) {
   if (d.text.greeting.length > 80) bad('greeting is over 80 characters')
   if (d.text.message.length > 200) bad('message is over 200 characters')
   if (d.text.caption.length > 40) bad('caption is over 40 characters')
+  if (!FONT_KEYS.has(d.text.titleFont) || !FONT_KEYS.has(d.text.bodyFont)) bad('unknown greeting or message font')
   if (d.background.colors.length < 1 || d.background.colors.length > 3) bad(`background has ${d.background.colors.length} colours (1 to 3 allowed)`)
   for (const c of d.background.colors) if (!HEX.test(c)) bad(`bad background colour ${c}`)
   if (d.layers.length > MAX_LAYERS) bad(`${d.layers.length} shapes (at most ${MAX_LAYERS})`)
@@ -33,6 +35,7 @@ for (const t of TEMPLATES) {
   }
   const ids = new Set()
   for (const l of d.layers) {
+    if (l.type === 'text' && l.font && !FONT_KEYS.has(l.font) && !['sans', 'serif'].includes(l.font)) bad(`text label ${l.id} uses an unknown font`)
     if (!SHAPES.has(l.type)) bad(`shape type ${l.type} is not known to the server`)
     if (!HEX.test(l.fill)) bad(`shape ${l.id} has a bad colour ${l.fill}`)
     if (ids.has(l.id)) bad(`duplicate shape id ${l.id}`)
