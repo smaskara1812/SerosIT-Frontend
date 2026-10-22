@@ -44,7 +44,7 @@ import {
 } from '@/components/icons'
 import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, X } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
-import { nextDay } from '@/lib/mastersChecks'
+import { checkCommon, nextDay } from '@/lib/mastersChecks'
 import RigLoading from '@/components/RigLoading'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
@@ -985,7 +985,8 @@ function MasterCrudPageInner() {
     setError('')
     setFieldErrors({})
     // A schema can declare `checkForm(form, original, today)` for rules the browser can check itself.
-    const found = schema.checkForm ? schema.checkForm(form, selected && snapshot ? JSON.parse(snapshot) : null, localDateStr()) : {}
+    const original = selected && snapshot ? JSON.parse(snapshot) : null
+    const found = { ...checkCommon(schema, form, original), ...(schema.checkForm ? schema.checkForm(form, original, localDateStr()) : {}) }
     if (Object.keys(found).length) {
       showFormError(formatApiError(found, schema), { setError, bannerRef })
       setFieldErrors(buildFieldErrors(found, schema))
@@ -1364,6 +1365,20 @@ function MasterCrudPageInner() {
                             next[f.labelField] = ''
                           }
                           setForm(next)
+                          // A field can fill others from the server (Alert To Users: the chosen employee's email).
+                          if (f.fillFrom && v != null) {
+                            apiFetch(`${f.fillFrom.url}?${f.fillFrom.param}=${encodeURIComponent(v)}`)
+                              .then((r) => (r.ok ? r.json() : null))
+                              .then((d) => {
+                                if (!d) return
+                                setForm((prev) => {
+                                  const filled = { ...prev }
+                                  for (const [key, target] of Object.entries(f.fillFrom.fills)) if (d[key]) filled[target] = d[key]
+                                  return filled
+                                })
+                              })
+                              .catch(() => {})
+                          }
                           setFieldErrors((prev) => (prev[f.name] ? { ...prev, [f.name]: undefined } : prev))
                         }}
                         disabled={!canWrite || f.readOnly || (f.lockOnEdit && !creating)}

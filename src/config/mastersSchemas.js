@@ -1,15 +1,4 @@
-import {
-  checkCostCentreMapping,
-  checkDocToSign,
-  checkMappingDates,
-  checkException,
-  checkTravelEligibility,
-  checkOperator,
-  checkRig,
-  checkRigCertificate,
-  checkRigCertificateSchedule,
-  checkRigSiteMapping,
-} from '@/lib/mastersChecks'
+import { checkCostCentreMapping, checkDocToSign, checkMappingDates, checkException, checkTravelEligibility, checkOperator, checkRig, checkRigCertificate, checkRigCertificateSchedule, checkRigSiteMapping, checkCompany, checkBusinessGroup, DOC_TO_SIGN_NAMES } from '@/lib/mastersChecks'
 
 // One entry per master, keyed by the URL slug used in nav.js paths
 // (/masters/<slug>). Drives the generic MasterCrudPage: which API to hit,
@@ -60,7 +49,7 @@ export const mastersSchemas = {
         labelField: 'location_name',
         required: true,
       },
-      { name: 'tel_no', label: 'Telephone' },
+      { name: 'tel_no', label: 'Telephone', phone: true },
     ],
   },
   'email-notification-types': {
@@ -442,6 +431,8 @@ export const mastersSchemas = {
         optionLabel: 'display_name',
         optionValue: 'emp_id',
         labelField: 'emp_name',
+        // Choosing an employee fills in their email (still editable): the email on their login.
+        fillFrom: { url: '/api/masters/mail-alert-to-users/employee-email/', param: 'emp', fills: { email: 'email_addr' } },
       },
       { name: 'email_addr', label: 'Email', type: 'email', required: true },
       {
@@ -590,7 +581,9 @@ export const mastersSchemas = {
         remote: '/api/masters/leaving-reasons/',
         optionLabel: 'leaving_reason',
         optionValue: 'leaving_reason_id',
-        labelField: 'leaving_reason',
+        // Not 'leaving_reason': that is this field's own name (the id), and picking an option wrote its label over the id, so the form sent
+        // "Non Reporting" instead of 8 and the server refused it.
+        labelField: 'leaving_reason_name',
         required: true,
       },
     ],
@@ -1115,8 +1108,8 @@ export const mastersSchemas = {
       { name: 'pin_code', label: 'PIN Code', section: 'Contact' },
       { name: 'fs_emp_tel_no', label: 'Telephone', section: 'Contact' },
       { name: 'fs_emp_mobile_no', label: 'Mobile', section: 'Contact' },
-      { name: 'fs_emp_email_pers', label: 'Personal Email', section: 'Contact' },
-      { name: 'fs_emp_email_official', label: 'Official Email', section: 'Contact' },
+      { name: 'fs_emp_email_pers', label: 'Personal Email', email: true, section: 'Contact' },
+      { name: 'fs_emp_email_official', label: 'Official Email', email: true, section: 'Contact' },
       { name: 'pan_no', label: 'PAN No.', section: 'Identity Documents' },
       { name: 'aadhaar_no', label: 'Aadhaar No.', section: 'Identity Documents' },
       { name: 'pp_no', label: 'Passport No.', section: 'Passport' },
@@ -1704,7 +1697,7 @@ export const mastersSchemas = {
     dateActiveField: 'sign_to',
     listSecondary: (r) => r.employee_name || '',
     fields: [
-      { name: 'doc_name', label: 'Document Name', required: true, wide: true },
+      { name: 'doc_name', label: 'Document Name', type: 'select', options: DOC_TO_SIGN_NAMES.map((n) => ({ value: n, label: n.replace(/_/g, ' ') })), required: true, wide: true },
       {
         name: 'employee',
         label: 'Employee',
@@ -2333,11 +2326,13 @@ export const mastersSchemas = {
       {
         name: 'latitude',
         label: 'Latitude',
+        dms: 'lat',
         hint: 'Legacy DMS format, e.g. 18°58\'00.00" (no trailing letter = North).',
       },
       {
         name: 'longitude',
         label: 'Longitude',
+        dms: 'lon',
         hint: 'Legacy DMS format, e.g. 072°49\'00.00"E.',
       },
       { name: 'company_loc_voip_code', label: 'VOIP Code', type: 'number' },
@@ -2386,6 +2381,7 @@ export const mastersSchemas = {
     nameField: 'business_grp_name',
     activeField: 'business_grp_active',
     listSecondary: (r) => r.business_grp_abrv,
+    checkForm: checkBusinessGroup,
     fields: [
       { name: 'business_grp_name', label: 'Business Group', required: true },
       {
@@ -2412,6 +2408,7 @@ export const mastersSchemas = {
     nameField: 'company_name',
     activeField: 'company_active',
     listSecondary: (r) => r.company_abrv,
+    checkForm: checkCompany,
     fields: [
       {
         name: 'organisational_grp',

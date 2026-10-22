@@ -114,6 +114,79 @@ export function checkException(form, original, today) {
   return e
 }
 
+// ── Rules every master form shares: email, telephone, latitude/longitude and the year of a date ───────────────────────────────────────
+// A schema field opts in with `email: true` (or `type: 'email'`), `phone: true`, `dms: 'lat' | 'lon'`; every date field gets the year check.
+// Like the rest, a value is only judged when it is new or changed, so an old record stays editable.
+export const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/
+export const EMAIL_MSG = 'Enter a valid email address, like name@company.com.'
+export const isValidEmail = (v) => EMAIL_RE.test(String(v ?? '').trim())
+
+export function phoneError(v) {
+  const tel = String(v ?? '').trim()
+  if (!/^[0-9+()/ -]+$/.test(tel)) return 'Telephone can have only digits and + - ( ) / and spaces.'
+  if ((tel.match(/\d/g) || []).length < 8) return 'Telephone must have at least 8 digits.'
+  return ''
+}
+
+// Legacy degrees-minutes-seconds, e.g. 18°58'00.00" or 072°49'00.00"E: a trailing letter is N/S for a latitude and E/W for a longitude.
+export function dmsError(v, axis) {
+  const text = String(v ?? '').trim()
+  const m = /^(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)"([A-Za-z]?)$/.exec(text)
+  const lat = axis === 'lat'
+  const example = lat ? `18°58'00.00"` : `072°49'00.00"E`
+  if (!m) return `Use degrees, minutes and seconds, like ${example}.`
+  const [, deg, min, sec, letter] = m
+  if (letter && !(lat ? 'NSns' : 'EWew').includes(letter)) return `The letter at the end must be ${lat ? 'N or S' : 'E or W'}.`
+  if (Number(deg) > (lat ? 90 : 180)) return `${lat ? 'Latitude' : 'Longitude'} can't be more than ${lat ? 90 : 180} degrees.`
+  if (Number(min) > 59 || Number(sec) >= 60) return 'Minutes and seconds must be below 60.'
+  if (Number(deg) === (lat ? 90 : 180) && (Number(min) > 0 || Number(sec) > 0)) return `${lat ? 'Latitude' : 'Longitude'} can't be more than ${lat ? 90 : 180} degrees.`
+  return ''
+}
+
+export const MIN_YEAR = 1900
+export const MAX_YEAR = 2100
+// A date whose year is not a sensible four-digit one (the browser accepts 0012 or 20260), as a message; '' when fine.
+export function yearError(iso) {
+  const m = /^(\d+)-\d{2}-\d{2}/.exec(String(iso ?? ''))
+  if (!m) return ''
+  const year = Number(m[1])
+  return year >= MIN_YEAR && year <= MAX_YEAR ? '' : `The year must be between ${MIN_YEAR} and ${MAX_YEAR}. Type it in full, like 2026.`
+}
+
+export function checkCommon(schema, form, original) {
+  const e = {}
+  for (const f of schema.fields || []) {
+    const v = form[f.name]
+    if (blank(v) || !changed(form, original, f.name)) continue
+    if ((f.type === 'email' || f.email) && !isValidEmail(v)) e[f.name] = EMAIL_MSG
+    else if (f.phone && phoneError(v)) e[f.name] = phoneError(v)
+    else if (f.dms && dmsError(v, f.dms)) e[f.name] = dmsError(v, f.dms)
+    else if (f.type === 'date' && yearError(v)) e[f.name] = yearError(v)
+  }
+  return e
+}
+
+// A company or business group can't be its own parent (the picker can still show it, so the form says so).
+export function checkCompany(form, original) {
+  const id = form.company_id ?? original?.company_id
+  return form.parent_company && id && String(form.parent_company) === String(id) ? { parent_company: "A company can't be its own parent." } : {}
+}
+export function checkBusinessGroup(form, original) {
+  const id = form.business_grp_id ?? original?.business_grp_id
+  return form.parent_business_grp && id && String(form.parent_business_grp) === String(id) ? { parent_business_grp: "A business group can't be its own parent." } : {}
+}
+
+// Document To Sign Mapping's Document Name is one of these, as in the old system (backend/core/validation_helpers.py has the same list).
+export const DOC_TO_SIGN_NAMES = [
+  'Appreciation_Ltr_Offshore', 'Appreciation_Ltr_Onshore', 'Conformation_Ltr_Offshore', 'Conformation_Ltr_Onshore',
+  'Contract_Extension_Ltr_Offshore', 'Contract_Extension_Ltr_Onshore', 'Experience_Ltr_Offshore', 'Experience_Ltr_Onshore',
+  'Increment_Ltr_Offshore', 'Increment_Ltr_Onshore', 'Joining_Contracts_Offshore', 'Joining_Contracts_Onshore',
+  'Material_Requisition', 'Material_Requisition_Onshore', 'Offer_Ltr_Offshore', 'Offer_Ltr_Onshore',
+  'Promotion_Ltr_Offshore', 'Promotion_Ltr_Onshore', 'Salary_Correction_Ltr_Offshore', 'Salary_Correction_Ltr_Onshore',
+  'Service_Requisition_Offshore', 'Service_Requisition_Onshore', 'Termination_Ltr_Offshore', 'Termination_Ltr_Onshore',
+  'User_Defined_Resume_Offshore', 'User_Defined_Resume_Onshore', 'Warning_Ltr_Offshore', 'Warning_Ltr_Onshore',
+]
+
 // The day after an ISO date, for a date picker that must start after another date.
 export function nextDay(iso) {
   if (!iso) return undefined

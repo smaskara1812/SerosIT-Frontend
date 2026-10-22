@@ -10,6 +10,7 @@ import { FieldFrame } from '@/components/FieldFrame'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import AccessDenied from '@/components/AccessDenied'
 import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
+import { EMAIL_MSG, isValidEmail } from '@/lib/mastersChecks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -64,8 +65,6 @@ function Field({ label, required, children, error, wide }) {
 }
 
 const REQUIRED = 'This field is required.'
-const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
-const EMAIL_MSG = 'Enter a valid email address.'
 
 // Browser checks, mirroring core/training_org.py (the duplicate-name and duplicate-mobile rules need the database).
 function checkOrg(org, creating) {
@@ -74,7 +73,7 @@ function checkOrg(org, creating) {
   if (!org.training_org_address.trim()) e.training_org_address = REQUIRED
   if (creating && !org.location) e.location = REQUIRED
   const mail = (org.training_org_email || '').trim()
-  if (mail && !EMAIL.test(mail)) e.training_org_email = EMAIL_MSG
+  if (mail && !isValidEmail(mail)) e.training_org_email = EMAIL_MSG
   return e
 }
 
@@ -86,7 +85,7 @@ function checkTrainer(t) {
   const mobile = (t.trainer_mobile_no || '').trim()
   if (mobile && !/^\d+$/.test(mobile)) e.trainer_mobile_no = 'Mobile number can contain digits only.'
   const mail = (t.trainer_email_id || '').trim()
-  if (mail && !EMAIL.test(mail)) e.trainer_email_id = EMAIL_MSG
+  if (mail && !isValidEmail(mail)) e.trainer_email_id = EMAIL_MSG
   return e
 }
 

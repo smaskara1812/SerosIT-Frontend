@@ -5,6 +5,7 @@ import { useUserList } from '@/hooks/useUserList'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { EMAIL_MSG, isValidEmail, yearError } from '@/lib/mastersChecks'
 import UserFilterTabs from '@/components/admin/UserFilterTabs'
 import { IconSearch } from '@/components/icons'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
@@ -112,6 +113,13 @@ export default function UserManagement() {
 
   async function handleSave() {
     setError('')
+    // An email must look like name@company.com and a date's year must be a full, sensible one (a date typed 12-01-26 is turned into 2026 by the date box).
+    const problem = (form.email && !isValidEmail(form.email) && EMAIL_MSG) || yearError(form.user_from) || yearError(form.user_to)
+    if (problem) {
+      setError(problem)
+      toast.error(problem)
+      return
+    }
     setSaving(true)
     try {
       if (creating) {
