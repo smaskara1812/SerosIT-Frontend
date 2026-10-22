@@ -32,7 +32,7 @@ const MENU_KEY = 'qhse.hazard_id_card'
 const RIG_FIELD = { type: 'select-remote', remote: '/api/masters/rigs/', optionLabel: 'rig_name', optionValue: 'rig_id', labelField: 'rig_name' }
 const WORK_LOCATION_FIELD = { type: 'select-remote', remote: '/api/masters/work-locations/', optionLabel: 'work_location', optionValue: 'work_location_id', labelField: 'work_location' }
 const HAZARD_TYPE_FIELD = { type: 'select-remote', remote: '/api/masters/hazard-types/?active=Y', optionLabel: 'haz_type_name', optionValue: 'haz_type_id', labelField: 'haz_type_name' }
-const EMPLOYEE_FIELD = { type: 'search-remote', remote: '/api/masters/employees/', optionLabel: 'display_name', optionValue: 'emp_id', labelField: 'emp_name' }
+const EMPLOYEE_FIELD = { type: 'search-remote', remote: '/api/masters/fs-employees/?active=Y', optionLabel: 'full_name', optionValue: 'fs_emp_id', labelField: 'emp_name' }
 
 const STATUS_OPTIONS = [
   { value: 'O', label: 'Open' },
@@ -439,7 +439,7 @@ export default function HazardIdCardFormPage() {
                   field={EMPLOYEE_FIELD}
                   value={form.reported_by_fs_emp}
                   labelValue={form.reported_by_fs_emp_label}
-                  onChange={(v, raw) => set({ reported_by_fs_emp: v, reported_by_fs_emp_label: raw?.display_name || '' })}
+                  onChange={(v, raw) => set({ reported_by_fs_emp: v, reported_by_fs_emp_label: raw?.full_name || '' })}
                   disabled={!writable}
                 />
               </Field>

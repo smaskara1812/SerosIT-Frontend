@@ -46,6 +46,8 @@ import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, X } from 'lucide-
 import { localDateStr } from '@/lib/naiveDateTime'
 import { checkCommon, nextDay } from '@/lib/mastersChecks'
 import RigLoading from '@/components/RigLoading'
+import PhotoBadge from '@/components/PhotoBadge'
+import FilePreview from '@/components/FilePreview'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
@@ -242,7 +244,9 @@ export function RemoteCombobox({ field, value, onChange, disabled, filterValue, 
   const selectedItem =
     value != null
       ? (items.find((i) => i.value === String(value)) ??
-        (labelValue ? { value: String(value), label: labelValue } : null))
+        // `valueIsLabel`: the stored value is itself the text to show (Document To Sign's document name), so a value that has since been switched off
+        // or is outside the loaded list still displays.
+        (labelValue || field.valueIsLabel ? { value: String(value), label: labelValue || String(value) } : null))
       : null
   const comboItems =
     selectedItem && !items.some((i) => i.value === selectedItem.value) ? [selectedItem, ...items] : items
@@ -358,6 +362,7 @@ function FileUploadField({ field, value, onChange, disabled, form }) {
           <span className="text-sm text-muted-foreground">No file chosen</span>
         )}
       </div>
+      {value && previewUrl && <FilePreview url={previewUrl} name={value} />}
       <input
         ref={inputRef}
         type="file"
@@ -367,6 +372,30 @@ function FileUploadField({ field, value, onChange, disabled, form }) {
         disabled={disabled || uploading}
       />
     </div>
+  )
+}
+
+const TILE_LIMIT = 6
+
+// A fixed list of options as a searchable dropdown, for lists too long to show as tiles.
+export function StaticCombobox({ options, value, onChange, disabled }) {
+  const items = useMemo(() => options.map((o) => ({ value: String(o.value), label: o.label })), [options])
+  const selected = value != null ? (items.find((i) => i.value === String(value)) ?? { value: String(value), label: String(value) }) : null
+  const list = selected && !items.some((i) => i.value === selected.value) ? [selected, ...items] : items
+  return (
+    <Combobox items={list} value={selected} onValueChange={(item) => onChange(item ? item.value : null)} disabled={disabled}>
+      <ComboboxInput placeholder="Search…" disabled={disabled} showClear className="w-full" />
+      <ComboboxContent>
+        <ComboboxEmpty>No results</ComboboxEmpty>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item.value} value={item}>
+              {item.label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   )
 }
 
@@ -526,7 +555,20 @@ function UniqueCodeField({ value, onChange, disabled, checkUnique, excludeId }) 
   )
 }
 
-export function FormField({ field, value, onChange, disabled, filterValue, form, recordId }) {
+export function FormField({ field, value, onChange, disabled, filterValue, form, recordId, onRecord, apiBase }) {
+  if (field.type === 'photo') {
+    // Uploaded on its own (the photo is saved the moment it is chosen), so it needs a saved record to attach to.
+    const name = [form?.fs_emp_fname, form?.fs_emp_lname].filter(Boolean).join(' ')
+    return (
+      <PhotoBadge
+        url={form?.[field.urlField]}
+        name={name}
+        endpoint={recordId ? `${apiBase}${recordId}/photo/` : null}
+        onRecord={onRecord}
+        disabled={disabled}
+      />
+    )
+  }
   if (field.type === 'active-select') {
     // Some legacy rows have '' rather than 'Y'/'N' in this column — treat
     // anything but an explicit 'N' as Active.
@@ -595,6 +637,8 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
     if (field.optionsByValue && options.length === 0) {
       return <p className="pt-2 text-xs text-muted-foreground">{field.optionsEmptyText || 'No options configured for this yet.'}</p>
     }
+    // A few choices read fastest as tiles; a long list (the 28 documents on Document To Sign) is a searchable dropdown.
+    if (options.length > TILE_LIMIT) return <StaticCombobox options={options} value={value || null} onChange={onChange} disabled={disabled} />
     return <TilePicker options={options} value={value || null} onChange={onChange} disabled={disabled} />
   }
   if (field.type === 'file') {
@@ -952,11 +996,29 @@ function MasterCrudPageInner() {
       setSelectedId(null)
       return
     }
-    const data = await res.json()
-    setRows((prev) => prev.map((r) => (r[schema.idField] === id ? data : r)))
+    applyServerRecord(await res.json(), true)
+  }
+
+  // Shows a record as the server now has it (after a restore, or a photo saved on its own) without touching what the person is typing.
+  function applyServerRecord(data, replaceAll = false) {
+    setRows((prev) => prev.map((r) => (r[schema.idField] === data[schema.idField] ? data : r)))
+    // otherwise only the photo's own keys are taken over, so anything half-typed in the form stays as it is
+    const photoKeys = schema.fields.filter((f) => f.type === 'photo').flatMap((f) => [f.name, f.urlField])
+    const pick = (obj) => Object.fromEntries(photoKeys.map((k) => [k, obj[k]]))
     const loaded = formFromRecord(data)
-    setForm(loaded)
-    setSnapshot(JSON.stringify(loaded))
+    if (replaceAll) {
+      setForm(loaded)
+      setSnapshot(JSON.stringify(loaded))
+      return
+    }
+    setForm((prev) => ({ ...prev, ...pick(loaded) }))
+    setSnapshot((prev) => {
+      try {
+        return JSON.stringify({ ...JSON.parse(prev), ...pick(loaded) })
+      } catch {
+        return prev
+      }
+    })
   }
 
   const isDirty = creating
@@ -1385,6 +1447,8 @@ function MasterCrudPageInner() {
                         filterValue={f.filterField ? form[f.filterField] : undefined}
                         form={form}
                         recordId={selected ? selected[schema.idField] : null}
+                        onRecord={(d) => applyServerRecord(d)}
+                        apiBase={schema.apiBase}
                       />
                     </FieldFrame>
                     {/* NullableDateField already says "No end date" / "Set a

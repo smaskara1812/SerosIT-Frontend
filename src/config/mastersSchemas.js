@@ -1,4 +1,5 @@
-import { checkCostCentreMapping, checkDocToSign, checkMappingDates, checkException, checkTravelEligibility, checkOperator, checkRig, checkRigCertificate, checkRigCertificateSchedule, checkRigSiteMapping, checkCompany, checkBusinessGroup, DOC_TO_SIGN_NAMES } from '@/lib/mastersChecks'
+import { IMAGE_ACCEPT, IMAGE_OR_PDF_ACCEPT } from '@/lib/mediaTypes'
+import { checkCostCentreMapping, checkDocToSign, checkMappingDates, checkException, checkTravelEligibility, checkOperator, checkRig, checkRigCertificate, checkRigCertificateSchedule, checkRigSiteMapping, checkCompany, checkBusinessGroup } from '@/lib/mastersChecks'
 
 // One entry per master, keyed by the URL slug used in nav.js paths
 // (/masters/<slug>). Drives the generic MasterCrudPage: which API to hit,
@@ -989,6 +990,7 @@ export const mastersSchemas = {
     nameField: 'full_name',
     activeField: 'fs_emp_active',
     fields: [
+      { name: 'fs_emp_photo_path', label: 'Photo', section: 'Identity', type: 'photo', urlField: 'photo_url', wide: true },
       { name: 'fs_emp_staff_id', label: 'Staff No.', section: 'Identity', type: 'number' },
       { name: 'fs_emp_fname', label: 'First Name', section: 'Identity' },
       { name: 'fs_emp_mname', label: 'Middle Name', section: 'Identity' },
@@ -1161,7 +1163,6 @@ export const mastersSchemas = {
         section: 'CDC',
       },
       { name: 'rank_to_grade_id', label: 'Rank To Grade Id', section: 'Other', type: 'number' },
-      { name: 'fs_emp_photo_path', label: 'Photo Path', section: 'Other' },
       { name: 'dms_path_resume', label: 'Resume Path', section: 'Other', wide: true },
     ],
   },
@@ -1177,7 +1178,7 @@ export const mastersSchemas = {
         name: 'fs_emp',
         label: 'Employee',
         type: 'search-remote',
-        remote: '/api/masters/fs-employees/',
+        remote: '/api/masters/fs-employees/?active=Y',
         optionLabel: 'full_name',
         optionValue: 'fs_emp_id',
         labelField: 'fs_emp_name',
@@ -1482,9 +1483,9 @@ export const mastersSchemas = {
         name: 'contact_fs_emp_1',
         label: 'Contact Person 1',
         type: 'search-remote',
-        remote: '/api/masters/employees/',
-        optionLabel: 'display_name',
-        optionValue: 'emp_id',
+        remote: '/api/masters/fs-employees/?active=Y',
+        optionLabel: 'full_name',
+        optionValue: 'fs_emp_id',
         labelField: 'contact_fs_emp_1_name',
       },
       { name: 'contact_tel_no_1', label: 'Contact Tel No 1' },
@@ -1492,9 +1493,9 @@ export const mastersSchemas = {
         name: 'contact_fs_emp_2',
         label: 'Contact Person 2',
         type: 'search-remote',
-        remote: '/api/masters/employees/',
-        optionLabel: 'display_name',
-        optionValue: 'emp_id',
+        remote: '/api/masters/fs-employees/?active=Y',
+        optionLabel: 'full_name',
+        optionValue: 'fs_emp_id',
         labelField: 'contact_fs_emp_2_name',
       },
       { name: 'contact_tel_no_2', label: 'Contact Tel No 2' },
@@ -1555,9 +1556,9 @@ export const mastersSchemas = {
         name: 'fs_emp',
         label: 'Employee',
         type: 'search-remote',
-        remote: '/api/masters/employees/',
-        optionLabel: 'display_name',
-        optionValue: 'emp_id',
+        remote: '/api/masters/fs-employees/?active=Y',
+        optionLabel: 'full_name',
+        optionValue: 'fs_emp_id',
         labelField: 'fs_emp_name',
       },
       { name: 'exception_from', label: 'From', type: 'date', required: true, maxToday: true },
@@ -1607,9 +1608,9 @@ export const mastersSchemas = {
         name: 'fs_emp',
         label: 'Employee',
         type: 'search-remote',
-        remote: '/api/masters/employees/',
-        optionLabel: 'display_name',
-        optionValue: 'emp_id',
+        remote: '/api/masters/fs-employees/?active=Y',
+        optionLabel: 'full_name',
+        optionValue: 'fs_emp_id',
         labelField: 'fs_emp_name',
       },
       { name: 'exception_from', label: 'From', type: 'date', required: true, maxToday: true },
@@ -1697,7 +1698,19 @@ export const mastersSchemas = {
     dateActiveField: 'sign_to',
     listSecondary: (r) => r.employee_name || '',
     fields: [
-      { name: 'doc_name', label: 'Document Name', type: 'select', options: DOC_TO_SIGN_NAMES.map((n) => ({ value: n, label: n.replace(/_/g, ' ') })), required: true, wide: true },
+      // Picked from the Signable Documents master (Masters > User Mapping Masters). The mapping stores the document's name as text, so the
+      // name is both the value and the label.
+      {
+        name: 'doc_name',
+        label: 'Document Name',
+        type: 'select-remote',
+        remote: '/api/masters/signable-docs/?active=Y',
+        optionLabel: 'signable_doc_name',
+        optionValue: 'signable_doc_name',
+        valueIsLabel: true,
+        required: true,
+        wide: true,
+      },
       {
         name: 'employee',
         label: 'Employee',
@@ -1708,11 +1721,35 @@ export const mastersSchemas = {
         labelField: 'employee_name',
         required: true,
       },
-      // Legacy stores this as a plain typed-in path, not an upload —
-      // matches the original /Images/Signatures/<empId>.jpg convention.
-      { name: 'sign_path', label: 'Sign Path', wide: true },
+      // The signature image is uploaded here (saved under signatures/<employee id>_<n>); an old legacy path still shows its file once the
+      // legacy images are migrated.
+      {
+        name: 'sign_path',
+        label: 'Signature',
+        type: 'file',
+        uploadUrl: '/api/masters/doc-to-sign-mapping/upload-sign/',
+        uploadKeyField: 'employee',
+        uploadKeyParam: 'emp_id',
+        uploadKeyLabel: 'employee',
+        urlField: 'sign_url',
+        accept: IMAGE_ACCEPT,
+      },
       { name: 'sign_from', label: 'From', type: 'date', required: true, maxToday: true },
       { name: 'sign_to', label: 'To', type: 'date', hint: 'Leave blank while active', minField: 'sign_from' },
+    ],
+  },
+  'signable-docs': {
+    title: 'Signable Documents',
+    menuKey: 'masters.signable_docs',
+    apiBase: '/api/masters/signable-docs/',
+    idField: 'signable_doc_id',
+    nameField: 'signable_doc_name',
+    activeField: 'signable_doc_active',
+    helpText:
+      "The documents Document To Sign Mapping can pick from. Use the document's template name with underscores (like Offer_Ltr_Onshore). A name that mappings already use can't be deleted: switch it off instead and it stops being offered.",
+    fields: [
+      { name: 'signable_doc_name', label: 'Document Name', required: true, hint: 'Letters, digits and underscores only, like Offer_Ltr_Onshore.' },
+      { name: 'signable_doc_active', label: 'Active', type: 'active-select' },
     ],
   },
   'interviewer-mapping': {
@@ -1757,7 +1794,7 @@ export const mastersSchemas = {
         uploadKeyParam: 'user_id',
         uploadKeyLabel: 'user',
         urlField: 'sign_url',
-        accept: '.jpg,.jpeg,.png,.pdf',
+        accept: IMAGE_OR_PDF_ACCEPT,
       },
       { name: 'active', label: 'Active', type: 'active-select' },
     ],
@@ -3037,7 +3074,7 @@ export const mastersSchemas = {
         uploadKeyParam: 'rig_id',
         uploadKeyLabel: 'Rig',
         urlField: 'certificate_url',
-        accept: '.jpg,.jpeg,.png,.pdf',
+        accept: IMAGE_OR_PDF_ACCEPT,
       },
     ],
   },

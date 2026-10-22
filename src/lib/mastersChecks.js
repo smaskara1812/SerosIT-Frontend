@@ -176,17 +176,6 @@ export function checkBusinessGroup(form, original) {
   return form.parent_business_grp && id && String(form.parent_business_grp) === String(id) ? { parent_business_grp: "A business group can't be its own parent." } : {}
 }
 
-// Document To Sign Mapping's Document Name is one of these, as in the old system (backend/core/validation_helpers.py has the same list).
-export const DOC_TO_SIGN_NAMES = [
-  'Appreciation_Ltr_Offshore', 'Appreciation_Ltr_Onshore', 'Conformation_Ltr_Offshore', 'Conformation_Ltr_Onshore',
-  'Contract_Extension_Ltr_Offshore', 'Contract_Extension_Ltr_Onshore', 'Experience_Ltr_Offshore', 'Experience_Ltr_Onshore',
-  'Increment_Ltr_Offshore', 'Increment_Ltr_Onshore', 'Joining_Contracts_Offshore', 'Joining_Contracts_Onshore',
-  'Material_Requisition', 'Material_Requisition_Onshore', 'Offer_Ltr_Offshore', 'Offer_Ltr_Onshore',
-  'Promotion_Ltr_Offshore', 'Promotion_Ltr_Onshore', 'Salary_Correction_Ltr_Offshore', 'Salary_Correction_Ltr_Onshore',
-  'Service_Requisition_Offshore', 'Service_Requisition_Onshore', 'Termination_Ltr_Offshore', 'Termination_Ltr_Onshore',
-  'User_Defined_Resume_Offshore', 'User_Defined_Resume_Onshore', 'Warning_Ltr_Offshore', 'Warning_Ltr_Onshore',
-]
-
 // The day after an ISO date, for a date picker that must start after another date.
 export function nextDay(iso) {
   if (!iso) return undefined

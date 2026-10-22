@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
 import { Pencil, Upload, X } from 'lucide-react'
+import { IMAGE_ACCEPT } from '@/lib/mediaTypes'
 import RigLoading from '@/components/RigLoading'
 
 // The four legacy tabs that are a plain description grid (Event also
@@ -62,10 +63,7 @@ const TABS = [
   },
 ]
 
-// Matches PHOTO_ALLOWED_EXTENSIONS in backend/core/hse_drill_record.py —
-// kept in sync manually, same convention as other duplicated-on-purpose
-// constants in this app (e.g. incident_flash_report.py's BELONGS_TO_LABELS).
-const PHOTO_ACCEPT = '.jpg,.jpeg,.bmp,.gif,.tiff,.png'
+const PHOTO_ACCEPT = IMAGE_ACCEPT
 
 function fmtTime(iso) {
   if (!iso) return ''

@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
+import FilePreview from '@/components/FilePreview'
 import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.training_log'
@@ -645,6 +646,7 @@ export default function TrainingLogFormPage() {
                           </Field>
                           <Field label="Certificate File" hint="Image, PDF or Word, up to 5 MB.">
                             <Input type="file" accept=".gif,.png,.jpeg,.jpg,.pdf,.doc,.docx" onChange={(e) => setN({ file: e.target.files?.[0] || null })} />
+                            <FilePreview file={nt.file} size="h-16" className="mt-2" />
                           </Field>
                         </>
                       )}
@@ -717,6 +719,7 @@ export default function TrainingLogFormPage() {
                             {t.certificate_url ? (
                               <>
                                 <a href={t.certificate_url} target="_blank" rel="noreferrer" className="text-primary underline">View</a>
+                                <FilePreview url={t.certificate_url} name={t.certificate_path} size="h-10" className="ml-2 inline-block align-middle p-0.5" />
                                 {writable && (
                                   <button type="button" onClick={() => removeCertificate(t)} className="ml-2 text-xs text-destructive hover:underline">Remove</button>
                                 )}

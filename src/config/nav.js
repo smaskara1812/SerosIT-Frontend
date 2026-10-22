@@ -695,6 +695,13 @@ export const navTree = [
             icon: IconUserCheck,
             menuKey: 'masters.interviewer_mapping',
           },
+          {
+            key: 'signable_docs',
+            label: 'Signable Documents',
+            path: '/masters/signable-docs',
+            icon: IconFileSignature,
+            menuKey: 'masters.signable_docs',
+          },
         ],
       },
       {

@@ -32,7 +32,7 @@ const FIELD_LABELS = {
 const MENU_KEY = 'qhse.hse_drill_record'
 
 const RIG_FIELD = { type: 'select-remote', remote: '/api/masters/rigs/', optionLabel: 'rig_name', optionValue: 'rig_id', labelField: 'rig_name' }
-const EMPLOYEE_FIELD = { type: 'search-remote', remote: '/api/masters/employees/', optionLabel: 'display_name', optionValue: 'emp_id', labelField: 'emp_name' }
+const EMPLOYEE_FIELD = { type: 'search-remote', remote: '/api/masters/fs-employees/?active=Y', optionLabel: 'full_name', optionValue: 'fs_emp_id', labelField: 'emp_name' }
 
 function emptyForm() {
   return {
@@ -443,10 +443,10 @@ export default function HseDrillRecordFormPage() {
               <TilePicker options={[{ value: 'Y', label: 'Yes' }, { value: 'N', label: 'No' }]} value={form.control_room_on_shore} onChange={(v) => set({ control_room_on_shore: v })} disabled={!canWrite} />
             </Field>
             <Field label="Initiated By - 1" required error={fieldErrors.initiated_by_fs_emp_1}>
-              <RemoteCombobox field={EMPLOYEE_FIELD} value={form.initiated_by_fs_emp_1} labelValue={form.initiated_by_fs_emp_1_name} onChange={(v, raw) => set({ initiated_by_fs_emp_1: v, initiated_by_fs_emp_1_name: raw?.display_name || '' })} disabled={!canWrite} />
+              <RemoteCombobox field={EMPLOYEE_FIELD} value={form.initiated_by_fs_emp_1} labelValue={form.initiated_by_fs_emp_1_name} onChange={(v, raw) => set({ initiated_by_fs_emp_1: v, initiated_by_fs_emp_1_name: raw?.full_name || '' })} disabled={!canWrite} />
             </Field>
             <Field label="Initiated By - 2" error={fieldErrors.initiated_by_fs_emp_2}>
-              <RemoteCombobox field={EMPLOYEE_FIELD} value={form.initiated_by_fs_emp_2} labelValue={form.initiated_by_fs_emp_2_name} onChange={(v, raw) => set({ initiated_by_fs_emp_2: v, initiated_by_fs_emp_2_name: raw?.display_name || '' })} disabled={!canWrite} />
+              <RemoteCombobox field={EMPLOYEE_FIELD} value={form.initiated_by_fs_emp_2} labelValue={form.initiated_by_fs_emp_2_name} onChange={(v, raw) => set({ initiated_by_fs_emp_2: v, initiated_by_fs_emp_2_name: raw?.full_name || '' })} disabled={!canWrite} />
             </Field>
             <Field
               label="Initial Response Time"
@@ -508,7 +508,7 @@ export default function HseDrillRecordFormPage() {
 
           <SectionCard title="Approval">
             <Field label="PIC / OIM" required wide error={fieldErrors.approved_by_oim_fs_emp}>
-              <RemoteCombobox field={EMPLOYEE_FIELD} value={form.approved_by_oim_fs_emp} labelValue={form.approved_by_oim_fs_emp_name} onChange={(v, raw) => set({ approved_by_oim_fs_emp: v, approved_by_oim_fs_emp_name: raw?.display_name || '' })} disabled={!canWrite} />
+              <RemoteCombobox field={EMPLOYEE_FIELD} value={form.approved_by_oim_fs_emp} labelValue={form.approved_by_oim_fs_emp_name} onChange={(v, raw) => set({ approved_by_oim_fs_emp: v, approved_by_oim_fs_emp_name: raw?.full_name || '' })} disabled={!canWrite} />
             </Field>
             <Field label="Company Man" wide error={fieldErrors.approved_by_companyman}>
               <Input value={form.approved_by_companyman} maxLength={20} onChange={(e) => set({ approved_by_companyman: e.target.value })} disabled={!canWrite} />
