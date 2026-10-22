@@ -244,7 +244,7 @@ export default function ItAccessoryHoldersPage() {
                 const srNo = (page - 1) * pageSize + idx + 1
                 const zebra = idx % 2 === 0 ? 'bg-card' : 'bg-muted/30'
                 const ongoing = isOngoing(r.it_accessory_holder_to)
-                const who = r.emp_name || r.it_accessory_holder_name || '—'
+                const who = r.it_accessory_holder_name || '—'
                 return (
                   <Fragment key={r.it_accessory_holder_id}>
                     <tr
@@ -331,7 +331,6 @@ export default function ItAccessoryHoldersPage() {
                             <DetailField label="Model" value={r.it_accessory_model} />
                             <DetailField label="Product No." value={r.it_accessory_product_no} />
                             <DetailField label="Holder Name" value={r.it_accessory_holder_name} />
-                            <DetailField label="Employee" value={r.emp_name} />
                             <DetailField label="Remark" value={r.it_accessory_holder_remark} wide />
                           </div>
                         </td>

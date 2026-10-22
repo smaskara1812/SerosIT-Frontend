@@ -10,6 +10,8 @@ import UserFilterTabs from '@/components/admin/UserFilterTabs'
 import { IconSearch } from '@/components/icons'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import RigLoading from '@/components/RigLoading'
+import PhotoBadge from '@/components/PhotoBadge'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 function onListScroll(e, hasMore, loadMore) {
   const el = e.currentTarget
@@ -25,7 +27,16 @@ const emptyForm = {
   user_from: '',
   user_to: '',
   password: '',
+  first_name: '',
+  middle_name: '',
+  last_name: '',
+  date_of_birth: '',
+  mobile_no: '',
+  company_id: '',
+  work_designation_id: '',
 }
+
+const PERSON_KEYS = ['first_name', 'middle_name', 'last_name', 'date_of_birth', 'mobile_no', 'company_id', 'work_designation_id']
 
 function initials(name) {
   if (!name) return '?'
@@ -56,6 +67,20 @@ export default function UserManagement() {
   const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState('')
   const [snapshot, setSnapshot] = useState(null)
+  const [companies, setCompanies] = useState([])
+  const [designations, setDesignations] = useState([])
+  const [emailPrompt, setEmailPrompt] = useState(null) // { rows, oldEmail, newEmail } while asking about alert recipients
+
+  useEffect(() => {
+    apiFetch('/api/masters/companies/?page_size=200')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setCompanies(Array.isArray(d) ? d : d.results || []))
+      .catch(() => {})
+    apiFetch('/api/admin/user-management/designations/')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setDesignations(d))
+      .catch(() => {})
+  }, [])
 
   function editableFields(f) {
     return JSON.stringify({
@@ -64,6 +89,7 @@ export default function UserManagement() {
       user_type: f.user_type,
       user_from: f.user_from,
       user_to: f.user_to,
+      ...Object.fromEntries(PERSON_KEYS.map((k) => [k, f[k]])),
     })
   }
 
@@ -90,6 +116,7 @@ export default function UserManagement() {
           user_from: data.user_from || '',
           user_to: data.user_to || '',
           password: '',
+          ...Object.fromEntries(PERSON_KEYS.map((k) => [k, data[k] ?? ''])),
         }
         setForm(loaded)
         setSnapshot(editableFields(loaded))
@@ -111,7 +138,8 @@ export default function UserManagement() {
     setError('')
   }
 
-  async function handleSave() {
+  async function handleSave(alertEmailSync) {
+    if (typeof alertEmailSync !== 'string') alertEmailSync = ''
     setError('')
     // An email must look like name@company.com and a date's year must be a full, sensible one (a date typed 12-01-26 is turned into 2026 by the date box).
     const problem = (form.email && !isValidEmail(form.email) && EMAIL_MSG) || yearError(form.user_from) || yearError(form.user_to)
@@ -136,13 +164,18 @@ export default function UserManagement() {
       } else if (selectedId) {
         const res = await apiFetch(`/api/admin/user-management/${selectedId}/update/`, {
           method: 'POST',
-          body: JSON.stringify(form),
+          body: JSON.stringify({ ...form, alert_email_sync: alertEmailSync }),
         })
         const data = await res.json()
+        if (res.status === 409 && data.needs_choice === 'alert_email') {
+          // Nothing is saved yet: ask whether the alert recipients that use this user's old email should follow it.
+          setEmailPrompt({ rows: data.alert_rows, oldEmail: data.old_email, newEmail: data.new_email })
+          return
+        }
         if (!res.ok) throw new Error(data.error || "Your changes weren't saved. Please try again.")
         setSnapshot(editableFields(form))
         await reloadUsers()
-        toast.success('Changes saved')
+        toast.success(data.alert_rows_updated ? `Changes saved, and ${data.alert_rows_updated} alert recipient${data.alert_rows_updated === 1 ? '' : 's'} updated` : 'Changes saved')
       }
     } catch (e) {
       setError(e.message)
@@ -313,6 +346,17 @@ export default function UserManagement() {
                 </p>
               )}
 
+              {!creating && detail && (
+                <div className="mb-5">
+                  <PhotoBadge
+                    url={detail.photo_url}
+                    name={detail.name}
+                    endpoint={`/api/admin/user-management/${selectedId}/photo/`}
+                    onRecord={(d) => setDetail((prev) => ({ ...prev, ...d }))}
+                  />
+                </div>
+              )}
+
               <div className="grid max-w-lg grid-cols-2 gap-4">
                 {creating && (
                   <div className="col-span-2 flex flex-col gap-1.5">
@@ -338,6 +382,55 @@ export default function UserManagement() {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
                 </div>
+                {/* person details: on the new-user form as well */}
+                <>
+                    <div className="flex flex-col gap-1.5">
+                      <Label>First name</Label>
+                      <Input value={form.first_name} maxLength={26} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label>Middle name</Label>
+                      <Input value={form.middle_name} maxLength={20} onChange={(e) => setForm({ ...form, middle_name: e.target.value })} />
+                    </div>
+                    <div className="col-span-2 flex flex-col gap-1.5">
+                      <Label>Last name</Label>
+                      <Input value={form.last_name} maxLength={35} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label>Date of birth</Label>
+                      <Input type="date" value={form.date_of_birth || ''} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label>Mobile</Label>
+                      <Input value={form.mobile_no} maxLength={16} onChange={(e) => setForm({ ...form, mobile_no: e.target.value })} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label>Company</Label>
+                      <select
+                        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                        value={form.company_id ?? ''}
+                        onChange={(e) => setForm({ ...form, company_id: e.target.value })}
+                      >
+                        <option value="">—</option>
+                        {companies.map((c) => (
+                          <option key={c.company_id} value={c.company_id}>{c.company_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label>Working designation</Label>
+                      <select
+                        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                        value={form.work_designation_id ?? ''}
+                        onChange={(e) => setForm({ ...form, work_designation_id: e.target.value })}
+                      >
+                        <option value="">—</option>
+                        {designations.map((d) => (
+                          <option key={d.id} value={d.id}>{d.name}{d.active ? '' : ' (inactive)'}</option>
+                        ))}
+                      </select>
+                    </div>
+                </>
                 <div className="flex flex-col gap-1.5">
                   <Label>From</Label>
                   <Input
@@ -359,7 +452,7 @@ export default function UserManagement() {
                     onChange={(e) => setForm({ ...form, user_to: e.target.value })}
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Leave blank while the user is active
+                    The last day, the date of leaving. Leave blank while the user is active
                   </p>
                 </div>
                 {creating && (
@@ -420,6 +513,27 @@ export default function UserManagement() {
       </div>
 
       {leaveDialog}
+      <Dialog open={Boolean(emailPrompt)} onOpenChange={(open) => !open && setEmailPrompt(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change this email on alert recipients too?</DialogTitle>
+            <DialogDescription>
+              {emailPrompt && (
+                <>
+                  {emailPrompt.rows} alert recipient{emailPrompt.rows === 1 ? '' : 's'} (Alert To Users) use this user's current email
+                  {' '}<span className="font-mono">{emailPrompt.oldEmail}</span>. Changing the email to{' '}
+                  <span className="font-mono">{emailPrompt.newEmail || '(none)'}</span> can update {emailPrompt.rows === 1 ? 'it' : 'them'} as well.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button onClick={() => { setEmailPrompt(null); handleSave('all') }}>Change in both</Button>
+            <Button variant="secondary" onClick={() => { setEmailPrompt(null); handleSave('user_only') }}>Only change this user</Button>
+            <Button variant="outline" onClick={() => setEmailPrompt(null)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

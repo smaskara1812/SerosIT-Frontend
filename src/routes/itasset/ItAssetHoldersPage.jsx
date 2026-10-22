@@ -380,7 +380,7 @@ export default function ItAssetHoldersPage() {
                 const srNo = (page - 1) * pageSize + idx + 1
                 const zebra = idx % 2 === 0 ? 'bg-card' : 'bg-muted/30'
                 const ongoing = isOngoing(r.it_asset_holder_to)
-                const who = r.holder_user_name || r.emp_name || r.holder_name || 'Common'
+                const who = r.holder_user_name || r.holder_name || 'Common'
                 return (
                   <Fragment key={r.it_asset_holder_id}>
                     <tr

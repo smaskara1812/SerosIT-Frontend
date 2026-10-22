@@ -766,7 +766,7 @@ export default function ItAssetsPage() {
                 <>
                   This device is currently used by{' '}
                   <span className="font-semibold text-foreground">
-                    {retireHolder.holder_user_name || retireHolder.emp_name || retireHolder.holder_name || 'Common'}
+                    {retireHolder.holder_user_name || retireHolder.holder_name || 'Common'}
                   </span>{' '}
                   since {retireHolder.it_asset_holder_from}. Marking it as {retireDialog?.type} will
                   close that assignment as of the date below and mark the asset Inactive and

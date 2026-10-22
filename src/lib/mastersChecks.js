@@ -117,8 +117,8 @@ export function checkException(form, original, today) {
 // ── Rules every master form shares: email, telephone, latitude/longitude and the year of a date ───────────────────────────────────────
 // A schema field opts in with `email: true` (or `type: 'email'`), `phone: true`, `dms: 'lat' | 'lon'`; every date field gets the year check.
 // Like the rest, a value is only judged when it is new or changed, so an old record stays editable.
-export const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/
-export const EMAIL_MSG = 'Enter a valid email address, like name@company.com.'
+export const EMAIL_RE = /^(?!\.)(?!.*\.\.)[A-Za-z0-9._&-]+(?<!\.)@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/
+export const EMAIL_MSG = 'Enter the full email address with its ending, like name@company.com, name@company.co or name@company.co.in.'
 export const isValidEmail = (v) => EMAIL_RE.test(String(v ?? '').trim())
 
 export function phoneError(v) {
