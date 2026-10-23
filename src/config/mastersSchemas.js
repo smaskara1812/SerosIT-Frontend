@@ -1629,7 +1629,7 @@ export const mastersSchemas = {
         remote: '/api/masters/users/',
         optionLabel: 'display_name',
         optionValue: 'user_id',
-        labelField: 'user_label',
+        labelField: 'user_name',
         required: true,
       },
       {
@@ -1664,7 +1664,7 @@ export const mastersSchemas = {
         remote: '/api/masters/users/',
         optionLabel: 'display_name',
         optionValue: 'user_id',
-        labelField: 'user_label',
+        labelField: 'user_name',
         required: true,
       },
       {
@@ -1776,7 +1776,7 @@ export const mastersSchemas = {
         remote: '/api/masters/users/',
         optionLabel: 'display_name',
         optionValue: 'user_id',
-        labelField: 'user_label',
+        labelField: 'user_name',
         required: true,
       },
       {
