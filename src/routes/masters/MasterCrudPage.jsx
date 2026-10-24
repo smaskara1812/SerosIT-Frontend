@@ -48,6 +48,7 @@ import { checkCommon, nextDay } from '@/lib/mastersChecks'
 import RigLoading from '@/components/RigLoading'
 import PhotoBadge from '@/components/PhotoBadge'
 import FilePreview from '@/components/FilePreview'
+import MediaLink from '@/components/MediaLink'
 
 // For masters with no explicit active flag, "active" is implicit: a blank
 // end date means ongoing, a past end date means it's over. today() is
@@ -347,14 +348,9 @@ function FileUploadField({ field, value, onChange, disabled, form }) {
         </Button>
         {value ? (
           previewUrl ? (
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="truncate text-sm text-primary underline underline-offset-2"
-            >
+            <MediaLink url={previewUrl} className="truncate text-sm text-primary underline underline-offset-2">
               {value.split('/').pop()}
-            </a>
+            </MediaLink>
           ) : (
             <span className="truncate text-sm text-muted-foreground">{value.split('/').pop()}</span>
           )

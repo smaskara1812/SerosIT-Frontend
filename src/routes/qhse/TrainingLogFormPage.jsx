@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconTrash } from '@/components/icons'
 import FilePreview from '@/components/FilePreview'
+import MediaLink from '@/components/MediaLink'
 import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.training_log'
@@ -718,7 +719,7 @@ export default function TrainingLogFormPage() {
                           <td className="px-3 py-2 whitespace-nowrap">
                             {t.certificate_url ? (
                               <>
-                                <a href={t.certificate_url} target="_blank" rel="noreferrer" className="text-primary underline">View</a>
+                                <MediaLink url={t.certificate_url} className="text-primary underline">View</MediaLink>
                                 <FilePreview url={t.certificate_url} name={t.certificate_path} size="h-10" className="ml-2 inline-block align-middle p-0.5" />
                                 {writable && (
                                   <button type="button" onClick={() => removeCertificate(t)} className="ml-2 text-xs text-destructive hover:underline">Remove</button>

@@ -1215,6 +1215,7 @@ export const navTree = [
           { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
           { key: 'history_revert', label: 'History and Revert', path: '/admin/history-revert', icon: IconHistory },
           { key: 'email_log', label: 'Email Log', path: '/admin/email-log', icon: IconMail },
+          { key: 'login_security', label: 'Login Security', path: '/admin/login-security', icon: IconShield },
           {
             key: 'approval_codes',
             label: 'Approval Code',

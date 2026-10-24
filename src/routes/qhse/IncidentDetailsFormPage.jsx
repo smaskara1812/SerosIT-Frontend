@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { X } from 'lucide-react'
 import { IMAGE_ACCEPT } from '@/lib/mediaTypes'
+import MediaImage from '@/components/MediaImage'
+import MediaLink from '@/components/MediaLink'
 import RigLoading from '@/components/RigLoading'
 
 const FIELD_LABELS = {
@@ -667,9 +669,9 @@ export default function IncidentDetailsFormPage() {
               <div className="flex flex-wrap gap-3 sm:col-span-2">
                 {photos.map((p) => (
                   <div key={p.incident_photo_id} className="relative">
-                    <a href={p.url} target="_blank" rel="noreferrer" className="block h-20 w-20 overflow-hidden rounded-lg border border-border bg-muted">
-                      <img src={p.url} alt="" className="h-full w-full object-cover" />
-                    </a>
+                    <MediaLink url={p.url} className="block h-20 w-20 overflow-hidden rounded-lg border border-border bg-muted">
+                      <MediaImage url={p.url} alt="" className="h-full w-full object-cover" />
+                    </MediaLink>
                     {canWrite && (
                       <button
                         type="button"

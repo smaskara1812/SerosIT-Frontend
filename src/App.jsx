@@ -14,6 +14,7 @@ const UserManagement = lazy(() => import('@/routes/admin/UserManagement'))
 const AuditTrail = lazy(() => import('@/routes/admin/AuditTrail'))
 const HistorySettings = lazy(() => import('@/routes/admin/HistorySettings'))
 const EmailLog = lazy(() => import('@/routes/admin/EmailLog'))
+const LoginSecurity = lazy(() => import('@/routes/admin/LoginSecurity'))
 const NoticeBoardPage = lazy(() => import('@/routes/admin/NoticeBoardPage'))
 const BannerEventsPage = lazy(() => import('@/routes/admin/BannerEventsPage'))
 const BannerEventEditorPage = lazy(() => import('@/routes/admin/BannerEventEditorPage'))
@@ -107,6 +108,7 @@ function App() {
             <Route path="/admin/audit-trail" element={<AuditTrail />} />
             <Route path="/admin/history-revert" element={<HistorySettings />} />
             <Route path="/admin/email-log" element={<EmailLog />} />
+            <Route path="/admin/login-security" element={<LoginSecurity />} />
           </Route>
           <Route element={<MastersRoute />}>
             <Route path="/masters" element={<MastersHub />} />

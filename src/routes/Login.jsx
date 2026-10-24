@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { IconEye, IconEyeOff, IconAlertCircle } from '@/components/icons'
 import { pickLoginQuip } from '@/lib/rigLines'
 import { EASTER_EGGS } from '@/config/easterEggs'
+import { SIGNED_OUT_REASON } from '@/lib/idle'
 
 const SEEN_KEY = 'serosit.has_signed_in'
 
@@ -16,6 +17,21 @@ export default function Login() {
   const [error, setError] = useState('')
   const [quip, setQuip] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [wait, setWait] = useState(0) // seconds the server asked us to wait after too many wrong passwords
+  const [notice] = useState(() => {
+    try {
+      const why = sessionStorage.getItem(SIGNED_OUT_REASON)
+      sessionStorage.removeItem(SIGNED_OUT_REASON)
+      return why === 'idle' ? 'You were signed out because of inactivity.' : why === 'expired' ? 'Your session ended. Please sign in again.' : ''
+    } catch {
+      return ''
+    }
+  })
+  useEffect(() => {
+    if (wait <= 0) return undefined
+    const id = setInterval(() => setWait((w) => Math.max(0, w - 1)), 1000)
+    return () => clearInterval(id)
+  }, [wait > 0]) // eslint-disable-line react-hooks/exhaustive-deps
   const { login, isAuthenticated, isLoading } = useAuth()
   const navigate = useNavigate()
   let returning = false
@@ -33,9 +49,14 @@ export default function Login() {
       await login(username, password)
       try { localStorage.setItem(SEEN_KEY, '1') } catch { /* private mode */ }
       navigate('/', { replace: true })
-    } catch {
-      setError('Invalid username or password')
-      if (EASTER_EGGS.loginQuips) setQuip(pickLoginQuip())
+    } catch (err) {
+      if (err.retryAfter) {
+        setWait(err.retryAfter)
+        setError('')
+      } else {
+        setError(err.message || 'Invalid username or password')
+        if (EASTER_EGGS.loginQuips) setQuip(pickLoginQuip())
+      }
     } finally {
       setSubmitting(false)
     }
@@ -80,6 +101,17 @@ export default function Login() {
             Sign in to continue to SerosIT
           </p>
 
+          {notice && !error && !wait && (
+            <div className="mb-5 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2.5 text-sm text-white/85">{notice}</div>
+          )}
+          {wait > 0 && (
+            <div className="mb-5 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/15 px-3.5 py-2.5 text-sm text-amber-200">
+              <IconAlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                Too many wrong passwords. You can try again in {Math.floor(wait / 60)}:{String(wait % 60).padStart(2, '0')}.
+              </span>
+            </div>
+          )}
           {error && (
             <div className="mb-5 flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2.5 text-sm text-red-300">
               <IconAlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -145,10 +177,10 @@ export default function Login() {
 
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || wait > 0}
               className="mt-2 h-[46px] rounded-xl bg-[linear-gradient(90deg,#1a3f7a_0%,#2563eb_50%,#1a3f7a_100%)] bg-[length:200%_auto] text-[0.9rem] font-bold tracking-wide text-white shadow-[0_4px_20px_rgba(37,99,235,0.45)] transition-all hover:-translate-y-px hover:shadow-[0_6px_28px_rgba(37,99,235,0.6)] hover:bg-[position:100%_center]"
             >
-              {submitting ? 'Signing in…' : 'Sign in'}
+              {submitting ? 'Signing in…' : wait > 0 ? `Try again in ${Math.floor(wait / 60)}:${String(wait % 60).padStart(2, '0')}` : 'Sign in'}
             </Button>
           </form>
 

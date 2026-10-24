@@ -17,6 +17,8 @@ import {
 import { IconTrash } from '@/components/icons'
 import { Pencil, Upload, X } from 'lucide-react'
 import { IMAGE_ACCEPT } from '@/lib/mediaTypes'
+import MediaImage from '@/components/MediaImage'
+import MediaLink from '@/components/MediaLink'
 import RigLoading from '@/components/RigLoading'
 
 // The four legacy tabs that are a plain description grid (Event also
@@ -281,9 +283,9 @@ export default function HseDrillRecordChildPanel({ hdrId, drillDate, canAdd, can
               {photos.map((p) => (
                 <div key={p.drill_rec_photo_upload_id} className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
                   {p.url ? (
-                    <a href={p.url} target="_blank" rel="noreferrer" className="block h-full w-full">
-                      <img src={p.url} alt="" className="h-full w-full object-cover" />
-                    </a>
+                    <MediaLink url={p.url} className="block h-full w-full">
+                      <MediaImage url={p.url} alt="" className="h-full w-full object-cover" />
+                    </MediaLink>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center p-2 text-center text-[10px] text-muted-foreground">
                       Image file not available

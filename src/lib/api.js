@@ -1,3 +1,5 @@
+import { encryptLogin } from '@/lib/loginCrypto'
+
 const ACCESS_KEY = 'serosit.access'
 const REFRESH_KEY = 'serosit.refresh'
 
@@ -48,6 +50,7 @@ export const tokenStore = {
   },
   clear: () => {
     lookupCache.clear()
+    window.dispatchEvent(new Event('seros:signed-out'))
     localStorage.removeItem(ACCESS_KEY)
     localStorage.removeItem(REFRESH_KEY)
   },
@@ -77,7 +80,11 @@ async function doRefresh() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh }),
   })
-  if (!res.ok) return false
+  if (!res.ok) {
+    // the session ended (idle, or its 2 days are over): the app signs the user out
+    if (res.status === 401) window.dispatchEvent(new CustomEvent('seros:session-ended'))
+    return false
+  }
 
   const data = await res.json()
   tokenStore.setTokens({ access: data.access, refresh: data.refresh })
@@ -119,11 +126,30 @@ export async function apiFetch(path, options = {}) {
 }
 
 export async function loginRequest(username, password) {
+  // The password is encrypted before it leaves the form (lib/loginCrypto.js). Only a browser that cannot encrypt (not a secure page) falls back to the plain form.
+  let body
+  try {
+    const enc = await encryptLogin(apiUrl, username, password)
+    body = enc ? { enc } : { username, password }
+  } catch {
+    body = { username, password }
+  }
   const res = await fetch(apiUrl('/api/auth/token/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify(body),
   })
+  if (res.status === 429) {
+    // too many wrong passwords: the server says how long to wait
+    const data = await res.json().catch(() => ({}))
+    const err = new Error(data.detail || 'Too many sign-in attempts. Try again later.')
+    err.retryAfter = Number(data.retry_after_seconds || res.headers.get('Retry-After') || 0)
+    throw err
+  }
+  if (res.status === 400) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail || 'Could not sign in. Reload the page and try again.')
+  }
   if (!res.ok) {
     throw new Error('Invalid username or password')
   }

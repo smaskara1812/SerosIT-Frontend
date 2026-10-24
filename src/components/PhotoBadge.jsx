@@ -3,6 +3,7 @@ import { Camera, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import MediaImage from '@/components/MediaImage'
 import { IMAGE_ACCEPT, IMAGE_TYPES_TEXT } from '@/lib/mediaTypes'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -12,7 +13,7 @@ function Round({ url, initials, size, label }) {
   return (
     <div className="shrink-0 overflow-hidden rounded-full bg-muted ring-2 ring-border ring-offset-2 ring-offset-background" style={{ width: size, height: size }}>
       {url ? (
-        <img src={url} alt={label} className="h-full w-full object-cover" />
+        <MediaImage url={url} alt={label} className="h-full w-full object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary" style={{ fontSize: size / 3 }}>
           {initials || <Camera className="h-1/3 w-1/3" />}

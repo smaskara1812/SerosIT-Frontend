@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { tokenStore, loginRequest, fetchCurrentUser, logoutRequest } from '@/lib/api'
+import IdleGuard from '@/components/IdleGuard'
+import { SIGNED_OUT_REASON } from '@/lib/idle'
 
 const AuthContext = createContext(null)
 
@@ -52,6 +54,40 @@ export function AuthProvider({ children }) {
     setStatus('unauthenticated')
   }, [])
 
+  // Why the user was signed out, shown on the sign-in page.
+  const endSession = useCallback((reason) => {
+    try {
+      sessionStorage.setItem(SIGNED_OUT_REASON, reason)
+    } catch {
+      /* ignore */
+    }
+    tokenStore.clear()
+    setUser(null)
+    setStatus('unauthenticated')
+  }, [])
+
+  const signOutIdle = useCallback(async () => {
+    await logoutRequest()
+    endSession('idle')
+  }, [endSession])
+
+  useEffect(() => {
+    // another tab signed out, or the server refused the session (idle, or its 2 days are over)
+    const onStorage = (e) => {
+      if (e.key === 'serosit.access' && e.newValue === null) {
+        setUser(null)
+        setStatus('unauthenticated')
+      }
+    }
+    const onEnded = () => endSession('expired')
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('seros:session-ended', onEnded)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('seros:session-ended', onEnded)
+    }
+  }, [endSession])
+
   const value = {
     user,
     status,
@@ -61,7 +97,12 @@ export function AuthProvider({ children }) {
     logout,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {status === 'authenticated' && <IdleGuard minutes={user?.idle_timeout_minutes || 30} onIdle={signOutIdle} />}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {
