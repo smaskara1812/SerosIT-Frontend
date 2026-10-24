@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { navSections } from '@/config/nav'
 import { useTopbarSubtitle } from '@/context/TopbarContext'
@@ -26,6 +27,12 @@ export default function Topbar() {
   const subtitle = useTopbarSubtitle()
   const active = findActiveNavItem(pathname)
   const isSubPage = active && active.path && pathname !== active.path
+  const pageName = active?.label ?? 'Dashboard'
+
+  // The browser tab, history list and bookmarks show document.title; the page is a single-page app, so it has to be set on every route change.
+  useEffect(() => {
+    document.title = `${pageName} · SerosIT`
+  }, [pageName])
 
   return (
     <header

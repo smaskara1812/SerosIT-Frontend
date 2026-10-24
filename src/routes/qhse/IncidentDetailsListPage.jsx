@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import usePersistedState from '@/hooks/usePersistedState'
 import { toast } from 'sonner'
 import { apiFetch, cachedGet } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -121,20 +122,27 @@ export default function IncidentDetailsListPage() {
   // A link from elsewhere (for example Safety Performance) can open the list already filtered:
   // ?year=2026&rig=3&severity=H&person_injured=Y
   const [linkParams] = useSearchParams()
-  const [filters, setFilters] = useState(() => ({
-    year: linkParams.get('year') || '',
-    rig: linkParams.get('rig') || '',
-    severity: linkParams.get('severity') || '',
-    person_injured: linkParams.get('person_injured') || '',
-  }))
+  // Filters, search and sort are remembered for the tab (see usePersistedState); a link's own filters win over them.
+  const [filters, setFilters] = usePersistedState(
+    'qhse.incident-details.filters',
+    { year: '', rig: '', severity: '', person_injured: '' },
+    linkParams.toString()
+      ? {
+          year: linkParams.get('year') || '',
+          rig: linkParams.get('rig') || '',
+          severity: linkParams.get('severity') || '',
+          person_injured: linkParams.get('person_injured') || '',
+        }
+      : undefined,
+  )
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState('')
-  const [ordering, setOrdering] = useState('-incident_date')
+  const [query, setQuery] = usePersistedState('qhse.incident-details.query', '')
+  const [ordering, setOrdering] = usePersistedState('qhse.incident-details.ordering', '-incident_date')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [openRow, setOpenRow] = useState(null)

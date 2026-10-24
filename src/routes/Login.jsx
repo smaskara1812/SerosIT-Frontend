@@ -17,6 +17,10 @@ export default function Login() {
   const [error, setError] = useState('')
   const [quip, setQuip] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    document.title = 'Sign in · SerosIT'
+  }, [])
   const [wait, setWait] = useState(0) // seconds the server asked us to wait after too many wrong passwords
   const [notice] = useState(() => {
     try {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { usePageSubtitle } from '@/context/TopbarContext'
@@ -49,12 +50,12 @@ export default function IncidentRegisterPage() {
   const canExport = can(user, MENU_KEY, 'export')
 
   const [meta, setMeta] = useState({ categories: [], rigs: [], incident_types: [] })
-  const [category, setCategory] = useState('')
-  const [selectedRigIds, setSelectedRigIds] = useState(() => new Set())
-  const [selectedTypeIds, setSelectedTypeIds] = useState(() => new Set())
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [search, setSearch] = useState('')
+  const [category, setCategory] = usePersistedState('qhse.incident-register.category', '')
+  const [selectedRigIds, setSelectedRigIds] = usePersistedState('qhse.incident-register.rigs', new Set())
+  const [selectedTypeIds, setSelectedTypeIds] = usePersistedState('qhse.incident-register.types', new Set())
+  const [dateFrom, setDateFrom] = usePersistedState('qhse.incident-register.from', '')
+  const [dateTo, setDateTo] = usePersistedState('qhse.incident-register.to', '')
+  const [search, setSearch] = usePersistedState('qhse.incident-register.search', '')
   // Neither date can be in the future, and From can't be after To (the legacy report rules); a blank date is fine.
   const today = localDateStr()
   const dateError =
@@ -69,7 +70,7 @@ export default function IncidentRegisterPage() {
   // always newest incident first.
   const ordering = '-date'
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = usePersistedState('qhse.incident-register.pagesize', 50)
 
   const [loadedRows, setRows] = useState([])
   const [loadedCount, setCount] = useState(0)
@@ -112,7 +113,7 @@ export default function IncidentRegisterPage() {
           return next.size === prev.size ? prev : next
         })
       })
-  }, [category])
+  }, [category, setSelectedRigIds])
 
   useEffect(() => {
     if (dateError) {
