@@ -532,7 +532,10 @@ export const mastersSchemas = {
         // anywhere). Add the new option here in the SAME change that adds
         // a new trigger() call in code, so this list never offers a
         // trigger point that doesn't actually exist yet.
-        options: [{ value: 'qhse.incident_details', label: 'QHSE → Incident Details' }],
+        options: [
+          { value: 'qhse.incident_details', label: 'QHSE → Incident Details' },
+          { value: 'automation.birthday', label: 'Automation → Birthday Mailer' },
+        ],
         required: true,
         wide: true,
       },
@@ -546,6 +549,7 @@ export const mastersSchemas = {
         optionsEmptyText: 'No actions are wired up for this trigger point yet.',
         optionsByValue: {
           'qhse.incident_details': [{ value: 'create', label: 'Create' }],
+          'automation.birthday': [{ value: 'send', label: 'Send the birthday mail' }],
         },
         required: true,
       },

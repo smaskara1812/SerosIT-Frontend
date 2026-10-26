@@ -129,6 +129,7 @@ export default function EmailLog() {
               <th className="px-4 py-2.5 font-medium">Sent By</th>
               <th className="px-4 py-2.5 font-medium">Status</th>
               <th className="px-4 py-2.5 font-medium">Trigger</th>
+              <th className="px-4 py-2.5 font-medium">From</th>
               <th className="px-4 py-2.5 font-medium">Subject</th>
               <th className="px-4 py-2.5 font-medium">Recipients</th>
             </tr>
@@ -136,14 +137,14 @@ export default function EmailLog() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
                   No emails found.
                 </td>
               </tr>
@@ -181,6 +182,7 @@ export default function EmailLog() {
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{r.trigger || '—'}</td>
+                    <td className="max-w-[200px] truncate px-4 py-2.5 font-mono text-xs" title={r.from_address}>{r.from_address || '—'}</td>
                     <td className="px-4 py-2.5 text-foreground">
                       <span className="inline-flex items-center gap-1.5">
                         {r.subject}
@@ -199,8 +201,12 @@ export default function EmailLog() {
                   {expanded && (
                     <tr className="border-b border-border/60 bg-muted/30">
                       <td></td>
-                      <td colSpan={6} className="px-4 py-3">
+                      <td colSpan={7} className="px-4 py-3">
                         <div className="flex flex-col gap-2 text-xs">
+                          <div>
+                            <span className="font-medium text-foreground">From: </span>
+                            <span className="text-muted-foreground">{r.from_address || '—'}</span>
+                          </div>
                           <div>
                             <span className="font-medium text-foreground">Recipients: </span>
                             <span className="text-muted-foreground">{r.recipients}</span>
