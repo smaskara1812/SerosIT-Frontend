@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList, cachedGet } from '@/lib/api'
@@ -18,7 +19,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil, X, UserMinus, Repeat } from 'lucide-react'
+import { X, UserMinus, Repeat } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
 
 const STATUS_OPTIONS = [
@@ -413,17 +414,17 @@ export default function ItAssetHoldersPage() {
                       </td>
                       <td className="px-2 py-2.5">
                         <div className="flex items-center justify-end gap-1">
-                          {canEdit && (
+                          {(
                             <button
                               type="button"
-                              title="Edit"
+                              title={canEdit ? 'Edit' : 'View'}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 navigate(`/it-asset/it-asset-holders/${r.it_asset_holder_id}/edit`)
                               }}
                               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                             </button>
                           )}
                           {canDelete && (
@@ -449,14 +450,14 @@ export default function ItAssetHoldersPage() {
                       <tr className={`${zebra} border-b border-border/60`}>
                         <td colSpan={9} className="px-5 py-4">
                           <div className="mb-3 flex items-center gap-2">
-                            {canEdit && (
+                            {(
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => navigate(`/it-asset/it-asset-holders/${r.it_asset_holder_id}/edit`)}
                               >
-                                <Pencil className="h-3.5 w-3.5" />
-                                Edit
+                                <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
+                                {canEdit ? 'Edit' : 'View'}
                               </Button>
                             )}
                             <HistoryButton

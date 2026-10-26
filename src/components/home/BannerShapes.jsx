@@ -1,11 +1,25 @@
 import { FONTS, shapeInfo, shapeSpec } from '@/lib/bannerShapes'
 import { fillTokens } from '@/lib/bannerDesign'
 import { ARTBOX, artPieces, isArt } from '@/lib/bannerArt'
+import { useBannerPicture } from '@/lib/bannerAssets'
+
+// An uploaded picture: centred on its position like every other layer, drawn to fill its box (the editor keeps the box in the picture's
+// own proportions). While it loads, or if it cannot be loaded, nothing is drawn and the rest of the banner shows as usual.
+function PictureLayer({ layer }) {
+  const src = useBannerPicture(layer.asset)
+  if (!src) return null
+  return (
+    <g transform={`translate(${layer.x} ${layer.y}) rotate(${layer.rot || 0})`} opacity={layer.opacity ?? 1}>
+      <image href={src} x={-layer.w / 2} y={-layer.h / 2} width={layer.w} height={layer.h} preserveAspectRatio="none" />
+    </g>
+  )
+}
 
 // One shape of a design, drawn on the banner's 1200 x 360 canvas. All numbers come from a validated design. A shape can be
 // a blend of two colours and can have an outline; a text label is drawn as real text. `uid` keeps the blend's id unique
 // when several banners are on one page.
 export function LayerShape({ layer, uid = 'x' }) {
+  if (layer.type === 'picture') return <PictureLayer layer={layer} />
   if (isArt(layer.type)) {
     const box = ARTBOX[layer.type]
     const pieces = artPieces(layer.type).map((p, i) => {

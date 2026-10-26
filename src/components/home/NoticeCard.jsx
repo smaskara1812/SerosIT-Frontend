@@ -9,15 +9,16 @@ import { kindOf } from '@/lib/notices'
 // when it rotates (fading the whole card made its glass go see-through and snap back). The panel eases between the
 // looks of two kinds. The admin page's preview uses the combined NoticeCard.
 
-export function NoticePanel({ kind: code, tone = 'dark', children }) {
+export function NoticePanel({ kind: code, tone = 'dark', look = null, children }) {
   const kind = kindOf(code)
   const light = tone === 'light'
   return (
     <div
       className={`relative h-full rounded-2xl px-5 py-4 shadow-lg shadow-black/10 backdrop-blur-sm ${light ? 'text-[#0f2650]' : 'text-white'}`}
       style={{
-        background: light ? (kind.loud ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.6)') : kind.loud ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.085)',
-        boxShadow: `inset 0 0 0 1px ${kind.loud ? `${light ? kind.ink : kind.accent}66` : light ? 'rgba(15,38,80,0.16)' : 'rgba(255,255,255,0.16)'}`,
+        // A design can give the card its own look (see noticeLook); otherwise it follows the banner's tone.
+        background: look?.background || (light ? (kind.loud ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.6)') : kind.loud ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.085)'),
+        boxShadow: `inset 0 0 0 1px ${look?.border || (kind.loud ? `${light ? kind.ink : kind.accent}66` : light ? 'rgba(15,38,80,0.16)' : 'rgba(255,255,255,0.16)')}`,
         transition: 'background-color 600ms ease, box-shadow 600ms ease',
       }}
     >
@@ -59,9 +60,9 @@ export function NoticeContent({ notice, onOpen, pinnedLabel = true, tone = 'dark
   )
 }
 
-export default function NoticeCard({ notice, onOpen, pinnedLabel = true, tone = 'dark' }) {
+export default function NoticeCard({ notice, onOpen, pinnedLabel = true, tone = 'dark', look = null }) {
   return (
-    <NoticePanel kind={notice.kind} tone={tone}>
+    <NoticePanel kind={notice.kind} tone={tone} look={look}>
       <NoticeContent notice={notice} onOpen={onOpen} pinnedLabel={pinnedLabel} tone={tone} />
     </NoticePanel>
   )

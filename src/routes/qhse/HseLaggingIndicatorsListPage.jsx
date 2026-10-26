@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconSearch, IconTrash } from '@/components/icons'
-import { Pencil } from 'lucide-react'
+import RowOpenIcon from '@/components/RowOpenIcon'
 import RigLoading from '@/components/RigLoading'
 
 function SelectField({ label, value, onChange, options, width }) {
@@ -48,6 +48,7 @@ export default function HseLaggingIndicatorsListPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const canAdd = can(user, kind.menuKey, 'add')
+  const canEdit = can(user, kind.menuKey, 'edit')
   const canDelete = can(user, kind.menuKey, 'delete')
   const canExport = can(user, kind.menuKey, 'export')
 
@@ -221,11 +222,11 @@ export default function HseLaggingIndicatorsListPage() {
                   <div className="flex justify-end gap-1">
                     <button
                       type="button"
-                      title="Open"
+                      title={canEdit ? 'Open' : 'View'}
                       onClick={() => navigate(`${kind.basePath}/${r.id}/edit`)}
                       className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                     </button>
                     {canDelete && (
                       <button

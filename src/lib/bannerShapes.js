@@ -10,8 +10,11 @@ export const CATEGORIES = [
   { key: 'nature', label: 'Nature' },
   { key: 'work', label: 'Industry' },
   { key: 'festive', label: 'Festive and national' },
+  { key: 'pictures', label: 'Pictures' },
 ]
 export const SHAPES = [
+  // An uploaded picture: not drawn from this list (the Pictures library adds it) but it needs an entry for its name and starting size.
+  { key: 'picture', cat: 'pictures-layer', label: 'Picture', w: 240, h: 160 },
   { key: 'rect', cat: 'basic', label: 'Rectangle', w: 160, h: 90, p: 0.15 },
   { key: 'circle', cat: 'basic', label: 'Circle', w: 100, h: 100 },
   { key: 'ring', cat: 'basic', label: 'Ring', w: 110, h: 110, p: 0.25 },
@@ -637,6 +640,16 @@ export function defaultLayer(type, id, fill, nth = 0) {
   if (info.p !== undefined) layer.p = info.p
   return layer
 }
+
+// A picture layer for a library picture, sized to fit a 320 x 200 box without changing its proportions.
+export function pictureLayer(asset, id, nth = 0) {
+  const k = Math.min(320 / asset.width, 200 / asset.height, 1.6)
+  const w = Math.max(16, Math.round(asset.width * k))
+  const h = Math.max(16, Math.round(asset.height * k))
+  return { id, type: 'picture', asset: asset.id, x: 640 + (nth % 6) * 36, y: 150 + (nth % 4) * 24, w, h, rot: 0, fill: '#ffffff', opacity: 1 }
+}
+
+export const MAX_PICTURES = 6
 
 export const newLayerId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`
 

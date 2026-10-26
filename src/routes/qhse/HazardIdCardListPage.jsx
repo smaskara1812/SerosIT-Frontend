@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, cachedGet } from '@/lib/api'
@@ -19,7 +20,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil, Printer } from 'lucide-react'
+import { Printer } from 'lucide-react'
 import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.hazard_id_card'
@@ -427,17 +428,17 @@ export default function HazardIdCardListPage() {
                     </td>
                     <td className="px-2 py-2.5">
                       <div className="flex items-center justify-end gap-1">
-                        {canEdit && (
+                        {(
                           <button
                             type="button"
-                            title="Edit"
+                            title={canEdit ? 'Edit' : 'View'}
                             onClick={(e) => {
                               e.stopPropagation()
                               navigate(`/qhse/hazard-id-card/${r.haz_card_id}/edit`)
                             }}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                           </button>
                         )}
                         {canDelete && (

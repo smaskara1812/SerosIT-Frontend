@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, asList, cachedGet } from '@/lib/api'
@@ -18,7 +19,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil, History, Archive, ArchiveRestore, SearchX, Undo2 } from 'lucide-react'
+import { History, Archive, ArchiveRestore, SearchX, Undo2 } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
 
 const ACTIVE_OPTIONS = [
@@ -537,17 +538,17 @@ export default function ItAssetsPage() {
                           >
                             <History className="h-3.5 w-3.5" />
                           </button>
-                          {canEdit && (
+                          {(
                             <button
                               type="button"
-                              title="Edit"
+                              title={canEdit ? 'Edit' : 'View'}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 navigate(`/it-asset/it-assets/${r.it_asset_id}/edit`)
                               }}
                               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                             </button>
                           )}
                           {canDelete && (
@@ -573,14 +574,14 @@ export default function ItAssetsPage() {
                       <tr className={`${zebra} border-b border-border/60`}>
                         <td colSpan={7} className="px-5 py-4">
                           <div className="mb-3 flex items-center gap-2">
-                            {canEdit && (
+                            {(
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => navigate(`/it-asset/it-assets/${r.it_asset_id}/edit`)}
                               >
-                                <Pencil className="h-3.5 w-3.5" />
-                                Edit
+                                <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
+                                {canEdit ? 'Edit' : 'View'}
                               </Button>
                             )}
                             <HistoryButton

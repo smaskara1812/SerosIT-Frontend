@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { isArt } from '@/lib/bannerArt'
 import { Choice, ColorField, Section, SliderField } from '@/components/admin/banner/controls'
+import PicturesLibrary from '@/components/admin/banner/PicturesLibrary'
 
-const SCATTERABLE = SHAPES.filter((s) => s.key !== 'line' && s.key !== 'wave')
+const SCATTERABLE = SHAPES.filter((s) => s.key !== 'line' && s.key !== 'wave' && s.key !== 'picture')
 
 // The Shapes tab: add a shape or a text label, pick one to change, scatter a handful, and tidy the stack. Dragging on the
 // preview does the same by hand.
-export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAddText, onUpdate, onRemove, onDuplicate, onMove, onScatter, zones, onZones, keepRatio, onKeepRatio }) {
+export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAddText, onAddPicture, onUpdate, onRemove, onDuplicate, onMove, onScatter, zones, onZones, keepRatio, onKeepRatio }) {
   const [cat, setCat] = useState('basic')
   const [sc, setSc] = useState({ type: 'star', count: 12, minW: 18, maxW: 46, mix: true, color: '#fde68a', rotate: true, vary: true, avoid: true })
   const sel = layers.find((l) => l.id === selectedId)
@@ -20,11 +21,13 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
   const full = room <= 0
   const settings = sel ? SHAPE_SETTINGS[sel.type] || [] : []
   const isText = sel?.type === 'text'
-  const picture = !!sel && isArt(sel.type)
+  const uploaded = sel?.type === 'picture' // a picture an administrator uploaded
+  const picture = !!sel && (isArt(sel.type) || uploaded) // either kind: its colours are fixed
+  const pictureCount = layers.filter((l) => l.type === 'picture').length
   const set = (patch, key) => onUpdate(sel.id, patch, key ? `${key}-${sel.id}` : undefined)
   const setSize = (key, v) => {
-    if (keepRatio && key === 'w') set({ w: v, h: Math.max(2, Math.round((sel.h * v) / sel.w)) }, 'size')
-    else if (keepRatio && key === 'h') set({ h: v, w: Math.max(2, Math.round((sel.w * v) / sel.h)) }, 'size')
+    if ((keepRatio || uploaded) && key === 'w') set({ w: v, h: Math.max(2, Math.round((sel.h * v) / sel.w)) }, 'size')
+    else if ((keepRatio || uploaded) && key === 'h') set({ h: v, w: Math.max(2, Math.round((sel.w * v) / sel.h)) }, 'size')
     else set({ [key]: v }, 'size')
   }
   const shown = SHAPES.filter((s) => s.cat === cat)
@@ -40,7 +43,8 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-5 gap-1.5">
+        {cat === 'pictures' && <PicturesLibrary used={pictureCount} onAdd={onAddPicture} />}
+        <div className={`grid grid-cols-5 gap-1.5 ${cat === 'pictures' ? 'hidden' : ''}`}>
           {shown.map((s) => (
             <button key={s.key} type="button" disabled={full} onClick={() => onAdd(s.key)} title={s.label} className="flex flex-col items-center gap-0.5 rounded-lg border border-border p-1.5 text-[10px] font-medium text-muted-foreground outline-none transition-colors hover:border-foreground/40 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40">
               <ShapeGlyph type={s.key} size={34} />
@@ -48,7 +52,7 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
             </button>
           ))}
         </div>
-        <Button type="button" variant="outline" size="sm" className="self-start" disabled={full} onClick={onAddText}><Type /> Add some text</Button>
+        {cat !== 'pictures' && <Button type="button" variant="outline" size="sm" className="self-start" disabled={full} onClick={onAddText}><Type /> Add some text</Button>}
         {full && <p className="text-xs text-amber-700 dark:text-amber-300">That is the most a banner can hold ({MAX_LAYERS}). Remove one to add another.</p>}
         <p className="text-xs text-muted-foreground">On the preview: drag to move, drag a corner to resize, drag the round handle to turn. Arrow keys nudge (Shift for bigger steps), Delete removes.</p>
         <label className="inline-flex items-center gap-2 text-sm">
@@ -79,7 +83,7 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
             </>
           )}
 
-          {picture && <p className="text-xs text-muted-foreground">This is a ready-made picture, so its colours are fixed. You can move, resize, turn and fade it.</p>}
+          {picture && <p className="text-xs text-muted-foreground">{uploaded ? 'This is an uploaded picture, so its colours are as they were in the file.' : 'This is a ready-made picture, so its colours are fixed.'} You can move, resize, turn and fade it.</p>}
           {!picture && (<>
           <Choice label="Fill" value={sel.fill2 ? 'blend' : 'solid'} onChange={(v) => set(v === 'blend' ? { fill2: '#ec4899', grad: sel.grad ?? 90 } : { fill2: undefined, grad: undefined })} options={[{ key: 'solid', label: 'One colour' }, { key: 'blend', label: 'Blend of two' }]} />
           <ColorField label={sel.fill2 ? 'First colour' : 'Colour'} value={sel.fill} onChange={(c) => set({ fill: c }, 'fill')} />
@@ -108,9 +112,11 @@ export default function ShapesPanel({ layers, selectedId, onSelect, onAdd, onAdd
             <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
               <SliderField label="Width" value={sel.w} min={4} max={1200} step={1} onChange={(v) => setSize('w', v)} lo="Narrow" hi="Wide" />
               <SliderField label="Height" value={sel.h} min={2} max={600} step={1} onChange={(v) => setSize('h', v)} lo="Short" hi="Tall" />
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={keepRatio} onChange={(e) => onKeepRatio(e.target.checked)} /> Keep the shape’s proportions
-              </label>
+              {uploaded ? <p className="text-xs text-muted-foreground">A picture always keeps its proportions.</p> : (
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={keepRatio} onChange={(e) => onKeepRatio(e.target.checked)} /> Keep the shape’s proportions
+                </label>
+              )}
             </div>
           )}
           <SliderField label="Turn" value={sel.rot} min={-180} max={180} step={1} onChange={(v) => set({ rot: v }, 'rot')} lo="Left" hi="Right" />

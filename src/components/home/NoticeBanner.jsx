@@ -15,7 +15,7 @@ const REFRESH_MS = 5 * 60 * 1000
 // Every notice sits in the same grid cell inside one panel and only the current one is visible, so the card is always
 // as tall as the tallest notice and never changes size when it rotates. Its height is reported through `onHeight`, so the banner can
 // keep room for it (and only grows when it genuinely has none).
-export default function NoticeBanner({ onHeight, tone = 'dark', widthClass = 'xl:w-[23rem] xl:shrink-0' }) {
+export default function NoticeBanner({ onHeight, tone = 'dark', look = null, widthClass = 'xl:w-[23rem] xl:shrink-0' }) {
   const navigate = useNavigate()
   const [notices, setNotices] = useState([])
   const [at, setAt] = useState(0)
@@ -91,7 +91,7 @@ export default function NoticeBanner({ onHeight, tone = 'dark', widthClass = 'xl
     >
       {/* One panel stays put; only the words inside it fade. The old words leave quickly, then the new ones come in, so
           the two are never on screen at once and the glass never goes see-through. */}
-      <NoticePanel kind={current.kind} tone={tone}>
+      <NoticePanel kind={current.kind} tone={tone} look={look}>
         <div className="grid">
           {notices.map((n, i) => (
             <div

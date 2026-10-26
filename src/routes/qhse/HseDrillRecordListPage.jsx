@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, cachedGet } from '@/lib/api'
@@ -17,7 +18,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { IconSearch, IconChevronDown, IconTrash } from '@/components/icons'
-import { Pencil, Printer, ClipboardList } from 'lucide-react'
+import { Printer, ClipboardList } from 'lucide-react'
 import RigLoading from '@/components/RigLoading'
 
 const MENU_KEY = 'qhse.hse_drill_record'
@@ -81,6 +82,7 @@ export default function HseDrillRecordListPage() {
   const canAdd = can(user, MENU_KEY, 'add')
   const canEdit = can(user, MENU_KEY, 'edit')
   const canDelete = can(user, MENU_KEY, 'delete')
+  const canExport = can(user, MENU_KEY, 'export') // printing the drill report counts as an export
 
   const [meta, setMeta] = useState({ years: [], drill_types: [] })
   const [rigs, setRigs] = useState([])
@@ -282,22 +284,24 @@ export default function HseDrillRecordListPage() {
                       >
                         <ClipboardList className="h-3.5 w-3.5" />
                       </button>
-                      <button
-                        type="button"
-                        title="Print"
-                        onClick={() => printReport(r)}
-                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Printer className="h-3.5 w-3.5" />
-                      </button>
-                      {canEdit && (
+                      {canExport && (
                         <button
                           type="button"
-                          title="Edit"
+                          title="Print"
+                          onClick={() => printReport(r)}
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {(
+                        <button
+                          type="button"
+                          title={canEdit ? 'Edit' : 'View'}
                           onClick={() => navigate(`/qhse/hse-drill-record/${r.drill_record_hdr_id}/edit`)}
                           className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                         </button>
                       )}
                       {canDelete && (

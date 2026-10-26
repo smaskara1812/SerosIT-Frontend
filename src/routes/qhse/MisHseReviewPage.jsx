@@ -262,9 +262,11 @@ export default function MisHseReviewPage() {
           <Button variant="outline" onClick={handleClear}>
             Clear
           </Button>
-          <Button onClick={handlePrint} disabled={!ready || printing}>
-            {printing ? 'Preparing…' : 'Print'}
-          </Button>
+          {can(user, MENU_KEY, 'export') && (
+            <Button onClick={handlePrint} disabled={!ready || printing}>
+              {printing ? 'Preparing…' : 'Print'}
+            </Button>
+          )}
         </div>
       </div>
 

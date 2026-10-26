@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api'
 import { pickGreeting } from '@/lib/greeting'
 import { setCustomBanner } from '@/lib/easter'
 import { localDateStr } from '@/lib/naiveDateTime'
-import { toneOf, withDefaults } from '@/lib/bannerDesign'
+import { noticeLook, toneOf, withDefaults } from '@/lib/bannerDesign'
 import HomeHero from '@/components/home/HomeHero'
 import NoticeBanner from '@/components/home/NoticeBanner'
 import PageSearch from '@/components/PageSearch'
@@ -74,7 +74,8 @@ export default function HomeBanner({ firstName, info, scene, hint, onCustomChang
   if (answer === null) return placeholder
   if (!event) return <HomeHero firstName={firstName} info={info} scene={scene} hint={hint} />
 
-  const tone = toneOf(design)
+  const bannerTone = toneOf(design)
+  const look = noticeLook(design.notice, bannerTone)
   return (
     <Suspense fallback={placeholder}>
     <BannerView
@@ -86,7 +87,7 @@ export default function HomeBanner({ firstName, info, scene, hint, onCustomChang
       lastSigned={formatTime(info?.last_login)}
       previewBadge={event.preview ? `Preview: ${event.name}. Only you can see this.` : null}
       search={<PageSearch variant="hero" />}
-      notice={<NoticeBanner tone={tone} widthClass="" />}
+      notice={<NoticeBanner tone={look.tone} look={look} widthClass="" />}
     />
     </Suspense>
   )

@@ -10,7 +10,7 @@ export const DEFAULT_DESIGN = {
   contours: { on: true, color: '#ffffff', opacity: 0.13, density: 2 },
   showLastSignIn: true,
   search: { tint: '#ffffff' },
-  notice: { x: null, y: 0 }, // across and down, 0 to 100 (null across = the side the layout puts it on)
+  notice: { x: null, y: 0, look: 'auto', color: null, strength: 0.85 }, // across and down, 0 to 100 (null across = the side the layout puts it on); look: auto | dark | light | custom
   frame: { mode: 'auto', color: null }, // the edge around the banner: auto (a light banner gets one), on, or off; colour null = from the banner
   edges: [], // border strips along the top or bottom: { edge, type, size, colors, opacity }
   layers: [],
@@ -204,4 +204,22 @@ export function bannerFrame(design) {
   if (!light) return '0 0 0 1.5px rgba(255,255,255,0.32), 0 14px 30px -16px rgba(15,23,42,0.55)'
   const [r, g, b] = channels(colors[colors.length - 1]).map((v) => Math.round(v * 0.62))
   return `0 0 0 1.5px rgba(${r},${g},${b},0.38), 0 14px 30px -16px rgba(${r},${g},${b},0.55)`
+}
+
+// How the notice card looks. "auto" follows the banner (the card is frosted glass whose words are light on a dark banner and dark on a light one). When a
+// picture or a bright area sits behind the card that can make it hard to read, so a design can choose a dark card, a light card, or its own colour; the
+// words then follow the card (light words on a dark card), not the banner. Returns the tone of the words and, unless auto, the card's own look.
+export function noticeLook(n = {}, bannerTone = 'dark') {
+  const strength = Math.min(1, Math.max(0.3, n.strength ?? 0.85))
+  const rgba = (hex, a) => {
+    const v = parseInt(hex.slice(1), 16)
+    return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`
+  }
+  if (n.look === 'dark') return { tone: 'dark', background: rgba('#091636', strength), border: 'rgba(255,255,255,0.2)' }
+  if (n.look === 'light') return { tone: 'light', background: rgba('#ffffff', strength), border: 'rgba(15,38,80,0.18)' }
+  if (n.look === 'custom' && /^#[0-9a-fA-F]{6}$/.test(n.color || '')) {
+    const light = luminance(n.color) >= 0.5 // a light card needs dark words
+    return { tone: light ? 'light' : 'dark', background: rgba(n.color, strength), border: light ? 'rgba(15,38,80,0.18)' : 'rgba(255,255,255,0.2)' }
+  }
+  return { tone: bannerTone, background: null, border: null }
 }

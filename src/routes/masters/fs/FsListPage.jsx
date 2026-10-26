@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { IconSearch, IconTrash, IconChevronDown } from '@/components/icons'
-import { Pencil, UserCheck, UserRound } from 'lucide-react'
+import { UserCheck, UserRound } from 'lucide-react'
 import { FS_KINDS } from './fsKinds'
 import { openEmployeeStatus } from './openStatus'
 import RigLoading from '@/components/RigLoading'
@@ -262,17 +263,17 @@ export default function FsListPage({ kind: kindKey }) {
                             <OtherIcon className="h-3.5 w-3.5" />
                           </button>
                         )}
-                        {canEdit && (
+                        {(
                           <button
                             type="button"
-                            title="Edit"
+                            title={canEdit ? 'Edit' : 'View'}
                             onClick={(e) => {
                               e.stopPropagation()
                               navigate(kind.editPath(id))
                             }}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                           </button>
                         )}
                         {canDelete && (
@@ -296,9 +297,9 @@ export default function FsListPage({ kind: kindKey }) {
                     <tr className={`${zebra} border-b border-border/60`}>
                       <td colSpan={kind.columns.length + 2} className="px-5 py-4">
                         <div className="mb-3 flex flex-wrap items-center gap-2">
-                          {(canEdit || canAdd) && (
+                          {(
                             <Button size="sm" variant="outline" onClick={() => navigate(kind.editPath(id))}>
-                              <Pencil className="h-3.5 w-3.5" />
+                              <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                               {canEdit ? 'Edit' : 'Open'}
                             </Button>
                           )}

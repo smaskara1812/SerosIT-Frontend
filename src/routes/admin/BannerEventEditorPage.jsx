@@ -8,7 +8,7 @@ import { can } from '@/lib/permissions'
 import { buildFieldErrors } from '@/lib/errors'
 import { localDateStr } from '@/lib/naiveDateTime'
 import { pickGreeting } from '@/lib/greeting'
-import { DEFAULT_DESIGN, LAYOUTS, PATTERNS, PRESETS, SOFT_TINTS, applyPreset, autoTextColor, backgroundCss, cloneDesign, readability, shapesAlign, softenTint, toneOf, withDefaults } from '@/lib/bannerDesign'
+import { DEFAULT_DESIGN, LAYOUTS, PATTERNS, PRESETS, SOFT_TINTS, applyPreset, autoTextColor, backgroundCss, cloneDesign, readability, shapesAlign, noticeLook, softenTint, toneOf, withDefaults } from '@/lib/bannerDesign'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,7 +26,7 @@ import ShapeCanvas from '@/components/admin/banner/ShapeCanvas'
 import ShapesPanel from '@/components/admin/banner/ShapesPanel'
 import TemplatesDialog from '@/components/admin/banner/TemplatesDialog'
 import { templateDates } from '@/lib/bannerTemplates'
-import { MAX_LAYERS, defaultLayer, defaultText, newLayerId, scatterLayers, textBox } from '@/lib/bannerShapes'
+import { MAX_LAYERS, MAX_PICTURES, defaultLayer, defaultText, newLayerId, pictureLayer, scatterLayers, textBox } from '@/lib/bannerShapes'
 
 const MENU_KEY = 'admin.banner_events'
 const SIZES = [
@@ -95,6 +95,26 @@ function PatternChip({ pattern, design, active, onPick }) {
       </div>
       <div className="px-2 py-1.5">{pattern.label}</div>
     </button>
+  )
+}
+
+const NOTICE_LOOKS = [
+  { key: 'auto', label: 'Automatic' },
+  { key: 'dark', label: 'Dark card' },
+  { key: 'light', label: 'Light card' },
+  { key: 'custom', label: 'My own colour' },
+]
+
+// What the notice card looks like. Automatic follows the banner. When a picture or a bright area sits behind the card and makes it hard to read, give
+// the card its own dark, light or chosen colour; the words on it follow the card.
+function NoticeLookControls({ design, edit }) {
+  const n = design.notice
+  return (
+    <div className="flex flex-col gap-3">
+      <Choice label="Card" value={n.look || 'auto'} onChange={(v) => edit((d) => { d.notice.look = v; if (v === 'custom' && !d.notice.color) d.notice.color = '#0f2650' })} options={NOTICE_LOOKS} />
+      {n.look === 'custom' && <ColorField label="Card colour" value={n.color || '#0f2650'} onChange={(c) => edit((d) => { d.notice.color = c }, 'nc')} />}
+      {(n.look || 'auto') !== 'auto' && <SliderField label="How solid" value={n.strength ?? 0.85} min={0.3} max={1} step={0.05} onChange={(v) => edit((d) => { d.notice.strength = v }, 'ns')} lo="See-through" hi="Solid" />}
+    </div>
   )
 }
 
@@ -206,6 +226,13 @@ export default function BannerEventEditorPage() {
     edit((d) => { d.layers.push(defaultLayer(type, id, fill, d.layers.length)) })
     setSelectedId(id)
   }, [edit])
+  const addPicture = useCallback((asset) => {
+    const cur = docRef.current.design
+    if (cur.layers.length >= MAX_LAYERS || cur.layers.filter((l) => l.type === 'picture').length >= MAX_PICTURES) return
+    const id = newLayerId()
+    edit((d) => { d.layers.push(pictureLayer(asset, id, d.layers.length)) })
+    setSelectedId(id)
+  }, [edit])
   const addText = useCallback(() => {
     const cur = docRef.current.design
     if (cur.layers.length >= MAX_LAYERS) return
@@ -313,6 +340,7 @@ export default function BannerEventEditorPage() {
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const read = readability(design)
   const tone = toneOf(design)
+  const look = noticeLook(design.notice, tone) // the notice card's own look, if the design gives it one
   // Wide screen shows the banner at the width the home page really gives it
   // (the window minus the collapsed sidebar and the page margins), scaled to fit.
   const [winW, setWinW] = useState(() => window.innerWidth)
@@ -426,7 +454,7 @@ export default function BannerEventEditorPage() {
                 fallbackSub={greeting.sub}
                 lastSigned="15 Oct, 11:53"
                 search={<FakeSearch />}
-                notice={showNotice ? <NoticeCard notice={SAMPLE_NOTICE} tone={tone} /> : null}
+                notice={showNotice ? <NoticeCard notice={SAMPLE_NOTICE} tone={look.tone} look={look} /> : null}
                 zones={tab === 'shapes' && zones}
                 overlay={tab === 'shapes' ? <ShapeCanvas layers={design.layers} selectedId={selectedId} onSelect={setSelectedId} onStart={() => { gesture.current = false }} onLive={liveLayer} align={shapesAlign(design.layout)} /> : null}
               />
@@ -642,6 +670,7 @@ export default function BannerEventEditorPage() {
                 onSelect={setSelectedId}
                 onAdd={addLayer}
                 onAddText={addText}
+                onAddPicture={addPicture}
                 onScatter={scatter}
                 onUpdate={updateLayer}
                 onRemove={removeLayer}
@@ -666,6 +695,9 @@ export default function BannerEventEditorPage() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">{LAYOUTS.find((l) => l.key === design.layout)?.hint}</p>
+                </Section>
+                <Section title="What the notice card looks like" hint="Use a dark or light card when a picture behind the notice makes it hard to read. The words on the card change to suit it.">
+                  <NoticeLookControls design={design} edit={edit} />
                 </Section>
                 <Section title="Where the notice sits" hint={design.layout === 'centred' ? 'In the Centred layout the notice goes underneath, so this does not apply.' : 'Move the notice anywhere on the banner to keep it clear of the artwork. Pick a spot below, or fine-tune with the sliders.'}>
                   <NoticePlacer design={design} edit={edit} />

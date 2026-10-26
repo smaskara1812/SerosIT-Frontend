@@ -86,7 +86,7 @@ export default function HseDrillRecordDetailsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">{hdr ? `Drill Record ${hdr.drill_record_no}` : 'Drill Details'}</h1>
         <div className="flex items-center gap-2">
-          {!loading && hdr && (
+          {!loading && hdr && can(user, MENU_KEY, 'export') && (
             <Button variant="outline" onClick={printReport}>
               Print
             </Button>
