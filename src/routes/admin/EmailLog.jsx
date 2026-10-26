@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -42,13 +43,15 @@ function EmailBodyPreview({ body }) {
 
 export default function EmailLog() {
   const [facets, setFacets] = useState({ users: [], triggers: [] })
-  const [filters, setFilters] = useState({ status: '', trigger: '', q: '' })
+  const [params] = useSearchParams()
+  const oneId = params.get('id') || '' // a link from Scheduled Mails opens straight to one email
+  const [filters, setFilters] = useState({ status: '', trigger: '', q: '', id: oneId })
   const [rows, setRows] = useState([])
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [expandedId, setExpandedId] = useState(null)
+  const [expandedId, setExpandedId] = useState(oneId ? Number(oneId) : null)
 
   useEffect(() => {
     apiFetch('/api/admin/email-log/facets/')
@@ -113,6 +116,7 @@ export default function EmailLog() {
             </option>
           ))}
         </select>
+        {filters.id && <button type="button" onClick={() => updateFilter('id', '')} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">Showing email #{filters.id} ×</button>}
         <span className="ml-auto text-xs text-muted-foreground">{total} emails</span>
       </div>
 

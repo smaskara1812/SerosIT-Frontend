@@ -70,6 +70,13 @@ export function checkCostCentreMapping(form, original, today) {
 // User Rig Mapping and User Category Mapping share the same From/To pair as the cost centre mapping.
 export const checkMappingDates = checkCostCentreMapping
 
+// Alert To Users: a recipient gets the alert from the From date until the To date. A From date in the future is fine (start receiving later).
+export function checkMailAlertToUser(form, original) {
+  const e = {}
+  if (form.mail_alert_from && form.mail_alert_to && form.mail_alert_to < form.mail_alert_from && (changed(form, original, 'mail_alert_from') || changed(form, original, 'mail_alert_to'))) e.mail_alert_to = "To date can't be before the From date."
+  return e
+}
+
 export function checkDocToSign(form, original, today) {
   const e = {}
   checkFromTo(form, original, today, 'sign_from', 'sign_to', e)

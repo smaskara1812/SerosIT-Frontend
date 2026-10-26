@@ -63,6 +63,8 @@ import {
   Radar,
   ShieldPlus,
   Fuel,
+  Cake,
+  CalendarClock,
 } from 'lucide-react'
 
 // Two-tier nav: leaf items render directly in the primary sidebar; a parent
@@ -1212,6 +1214,8 @@ export const navTree = [
             menuKey: 'admin.user_management'},
           { key: 'notice_board', label: 'Notice Board', path: '/admin/notice-board', icon: IconMegaphone, menuKey: 'admin.notice_board', openToRights: true },
           { key: 'banner_events', label: 'Banner Events', path: '/admin/banner-events', icon: IconPalette, menuKey: 'admin.banner_events', openToRights: true },
+          { key: 'birthday_mailer', label: 'Birthday Mailer', path: '/admin/birthday-mailer', icon: Cake, menuKey: 'admin.birthday_mailer', openToRights: true },
+          { key: 'scheduled_mails', label: 'Scheduled Mails', path: '/admin/scheduled-mails', icon: CalendarClock, menuKey: 'admin.scheduled_mails', openToRights: true },
           { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
           { key: 'history_revert', label: 'History and Revert', path: '/admin/history-revert', icon: IconHistory },
           { key: 'email_log', label: 'Email Log', path: '/admin/email-log', icon: IconMail },

@@ -1,5 +1,5 @@
 import { IMAGE_ACCEPT, IMAGE_OR_PDF_ACCEPT } from '@/lib/mediaTypes'
-import { checkCostCentreMapping, checkDocToSign, checkMappingDates, checkException, checkTravelEligibility, checkOperator, checkRig, checkRigCertificate, checkRigCertificateSchedule, checkRigSiteMapping, checkCompany, checkBusinessGroup } from '@/lib/mastersChecks'
+import { checkCostCentreMapping, checkMailAlertToUser, checkDocToSign, checkMappingDates, checkException, checkTravelEligibility, checkOperator, checkRig, checkRigCertificate, checkRigCertificateSchedule, checkRigSiteMapping, checkCompany, checkBusinessGroup } from '@/lib/mastersChecks'
 
 // One entry per master, keyed by the URL slug used in nav.js paths
 // (/masters/<slug>). Drives the generic MasterCrudPage: which API to hit,
@@ -398,6 +398,9 @@ export const mastersSchemas = {
     // Recipient Mapping's own remote-search).
     nameField: 'display_label',
     activeField: null,
+    // A recipient gets the alert from the From date until the To date (blank = still receiving); the list shows which are receiving it now.
+    dateActiveField: 'mail_alert_to',
+    checkForm: checkMailAlertToUser,
     // Backs the Alert Details page's "View recipients" deep link
     // (/masters/mail-alert-to-users?alert=<id>&alertName=<name>) — `field`
     // is the real backend filter param (BaseMasterViewSet.filterable_fields
@@ -444,7 +447,8 @@ export const mastersSchemas = {
       { name: 'mail_alert_order', label: 'Order', type: 'number', required: true },
       // Checked stores 'Y', unchecked is NULL.
       { name: 'read_receipt', label: 'Read Receipt', type: 'flag-id', checkedValue: 'Y' },
-      { name: 'mail_alert_from', label: 'From', type: 'date', required: true },
+      { name: 'mail_alert_from', label: 'From', type: 'date', required: true, hint: 'The first day this person receives the alert' },
+      { name: 'mail_alert_to', label: 'To', type: 'date', hint: 'The last day this person receives the alert. Leave blank while they should keep receiving it.' },
     ],
   },
   'mail-recipient-mappings': {
