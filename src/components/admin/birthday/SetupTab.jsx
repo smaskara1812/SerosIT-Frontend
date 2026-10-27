@@ -51,7 +51,8 @@ export default function SetupTab({ mayEdit, refreshKey }) {
     try {
       const res = await apiFetch('/api/admin/birthday-mailer/test-send/', { method: 'POST', body: JSON.stringify({ email }) })
       const d = await res.json().catch(() => ({}))
-      if (res.ok) toast.success(`A test mail went to ${email} (picture: ${d.template}, ${d.smtp_used} account).`)
+      if (res.ok && d.fell_back) toast.warning(`A test mail went to ${email}, but not through the first account: it failed and the ${d.smtp_used} account was used. Check Alert Senders and the Email Log.`)
+      else if (res.ok) toast.success(`A test mail went to ${email} (picture: ${d.template}, ${d.smtp_used} account).`)
       else toast.error(d.error || d.detail || 'The test mail could not be sent.')
     } catch {
       toast.error('Could not reach the server. Please try again.')
@@ -93,8 +94,11 @@ export default function SetupTab({ mayEdit, refreshKey }) {
             <Row label="Bcc"><Chips list={r.bcc} empty="Nobody" /></Row>
             <Row label="Not sent to">The person whose birthday it is.</Row>
             <Row label="Sending account">
-              {setup.smtp.designated ? <>The birthday account (<code className="text-xs">{setup.smtp.designated_host}</code>). If that fails the default account (<code className="text-xs">{setup.smtp.default_host}</code>) is used straight away.</>
-                : <>The default account (<code className="text-xs">{setup.smtp.default_host}</code>). No separate birthday account is set on the server.</>}
+              {setup.smtp.sender
+                ? <>The sender set for this alert (<code className="text-xs">{setup.smtp.sender.from_address}</code> through <code className="text-xs">{setup.smtp.sender.host}</code>). If that fails, {setup.smtp.designated ? <>the birthday account (<code className="text-xs">{setup.smtp.designated_host}</code>) and then </> : null}the default account (<code className="text-xs">{setup.smtp.default_host}</code>) is used straight away.</>
+                : setup.smtp.designated ? <>The birthday account (<code className="text-xs">{setup.smtp.designated_host}</code>). If that fails the default account (<code className="text-xs">{setup.smtp.default_host}</code>) is used straight away.</>
+                  : <>The default account (<code className="text-xs">{setup.smtp.default_host}</code>). No sender is set for this alert and no separate birthday account is set on the server.</>}
+              {' '}<Link to="/masters/alert-senders" className="text-primary hover:underline">Alert Senders</Link>
             </Row>
             <Row label="If it fails">It is tried again at the next hourly run, at most twice more. After that it shows as Failed on Scheduled Mails, where it can be sent again by hand.</Row>
           </dl>

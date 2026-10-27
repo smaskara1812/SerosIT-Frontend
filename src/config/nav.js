@@ -64,6 +64,7 @@ import {
   ShieldPlus,
   Fuel,
   Cake,
+  PartyPopper,
   CalendarClock,
 } from 'lucide-react'
 
@@ -567,6 +568,13 @@ export const navTree = [
             path: '/masters/notification-triggers',
             icon: IconLink,
             menuKey: 'masters.notification_triggers',
+          },
+          {
+            key: 'alert_senders',
+            label: 'Alert Senders',
+            path: '/masters/alert-senders',
+            icon: IconLink,
+            menuKey: 'masters.alert_senders',
           },
         ],
       },
@@ -1215,6 +1223,7 @@ export const navTree = [
           { key: 'notice_board', label: 'Notice Board', path: '/admin/notice-board', icon: IconMegaphone, menuKey: 'admin.notice_board', openToRights: true },
           { key: 'banner_events', label: 'Banner Events', path: '/admin/banner-events', icon: IconPalette, menuKey: 'admin.banner_events', openToRights: true },
           { key: 'birthday_mailer', label: 'Birthday Mailer', path: '/admin/birthday-mailer', icon: Cake, menuKey: 'admin.birthday_mailer', openToRights: true },
+          { key: 'holiday_mailer', label: 'Holiday Mailer', path: '/admin/holiday-mailer', icon: PartyPopper, menuKey: 'admin.holiday_mailer', openToRights: true },
           { key: 'scheduled_mails', label: 'Scheduled Mails', path: '/admin/scheduled-mails', icon: CalendarClock, menuKey: 'admin.scheduled_mails', openToRights: true },
           { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
           { key: 'history_revert', label: 'History and Revert', path: '/admin/history-revert', icon: IconHistory },
