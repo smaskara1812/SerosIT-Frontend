@@ -427,11 +427,11 @@ export const mastersSchemas = {
         optionLabel: 'display_name',
         optionValue: 'user_id',
         labelField: 'user_label',
-        hint: 'Pick a user to fill their name and email in, or leave it empty and type a name and email below',
+        hint: 'Pick a user to fill their email in, or leave it empty and type an email below. A name is optional',
         // Choosing a user fills in their email (still editable): the email on that user.
         fillFrom: { url: '/api/masters/mail-alert-to-users/user-email/', param: 'user', fills: { email: 'email_addr' } },
       },
-      { name: 'recipient_name', label: 'Name (when not a user)' },
+      { name: 'recipient_name', label: 'Name (optional)', hint: 'Not needed: the email address is enough' },
       { name: 'email_addr', label: 'Email', type: 'email', required: true },
       {
         name: 'addressee_type',
@@ -520,7 +520,7 @@ export const mastersSchemas = {
     activeField: 'is_active',
     listSecondary: (r) => `${r.alert_name || ''} · ${r.mail_host || ''}`,
     helpText:
-      "The mail account an alert is sent from. When an alert has an active sender here, its mail goes out through this account; if the account refuses, the account set on the server and then the default account are tried. An alert with no sender here is sent exactly as before. The password is stored encrypted and is never shown again: leave it blank when editing to keep the saved one. One active sender per alert.",
+      "The mail account an alert is sent from. When an alert has an active sender here, its mail goes out through this account; if the account refuses, the account set on the server and then the default account are tried. An alert with no sender here is sent exactly as before. The Display Name is the sender name recipients see next to the From address (blank = the address only). The password is stored encrypted and is never shown again: leave it blank when editing to keep the saved one. One active sender per alert.",
     fields: [
       {
         name: 'alert',
@@ -550,6 +550,7 @@ export const mastersSchemas = {
       { name: 'mail_user_name', label: 'User Name', hint: 'Leave blank if the server needs no sign-in' },
       { name: 'password', label: 'Password', type: 'password', hint: 'Stored encrypted. Leave blank when editing to keep the saved password.' },
       { name: 'from_address', label: 'From Address', type: 'email', required: true },
+      { name: 'display_name', label: 'Sent As (Display Name)', wide: true, hint: 'The sender name recipients see, for example Human Resource – Seros. Leave blank to show only the From address.' },
       { name: 'is_active', label: 'Active', type: 'active-select' },
     ],
   },

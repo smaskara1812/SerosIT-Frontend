@@ -93,7 +93,7 @@ export default function SetupTab({ mayEdit, refreshKey }) {
           <h2 className="text-sm font-semibold">How the mail is set up</h2>
           <p className="mb-1 text-xs text-muted-foreground">This is read from the alert and its trigger. It is shown here so you can see it at a glance; it is changed where it always is.</p>
           <dl className="divide-y divide-border/60">
-            <Row label="Sent as">{setup.from_name || '—'}</Row>
+            <Row label="Sent as">{setup.from_name || <span className="text-muted-foreground">No name: the mail shows only the From address. Add a Display Name on the alert’s sender (Alert Senders) to show one.</span>}</Row>
             <Row label="Subject">Each event has its own subject. {setup.subject ? <>When an event has none, the alert’s is used: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{setup.subject}</code></> : 'When an event has none, “Happy <event name>” is used.'}</Row>
             <Row label="When">On the dates set on each event, at {String(setup.send_hour).padStart(2, '0')}:00. The scheduler checks once an hour, so it goes out at that hour.</Row>
             <Row label="To"><Chips list={r.to} empty="Nobody" /></Row>
