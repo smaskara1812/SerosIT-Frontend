@@ -343,7 +343,7 @@ export const mastersSchemas = {
     apiBase: '/api/masters/mail-alerts/',
     idField: 'alert_id',
     nameField: 'alert_name',
-    activeField: null,
+    activeField: 'alert_active',
     listSecondary: (r) => r.mail_subject || '',
     // "View recipients" shortcut on each row — jumps to the Alert To Users
     // page pre-filtered to this alert, so you don't have to copy the alert
@@ -385,6 +385,9 @@ export const mastersSchemas = {
       { name: 'next_mail_dt', label: 'Next Mail', type: 'date', required: true },
       // Checked stores 'Y', unchecked is NULL.
       { name: 'additional_alert', label: 'Additional Alert', type: 'flag-id', checkedValue: 'Y' },
+      // Checked stores 'Y', unchecked is NULL (as in the legacy data). An alert that is not ticked sends nothing: the automatic mailers (birthday,
+      // holiday) refuse to send for it and say so on Scheduled Mails.
+      { name: 'alert_active', label: 'Active', type: 'flag-id', checkedValue: 'Y', default: 'Y', hint: 'Untick to stop the automatic mails that use this alert' },
     ],
   },
   'mail-alert-to-users': {

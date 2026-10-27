@@ -1215,20 +1215,16 @@ export const navTree = [
     adminOnly: true,
     sections: [
       {
+        label: 'Access & Security',
         items: [
           { key: 'user_rights', label: 'User Rights', path: '/admin/user-rights', icon: IconShield },
-          {
-            key: 'user_management', label: 'User Management', path: '/admin/user-management', icon: IconUsers, 
-            menuKey: 'admin.user_management'},
-          { key: 'notice_board', label: 'Notice Board', path: '/admin/notice-board', icon: IconMegaphone, menuKey: 'admin.notice_board', openToRights: true },
-          { key: 'banner_events', label: 'Banner Events', path: '/admin/banner-events', icon: IconPalette, menuKey: 'admin.banner_events', openToRights: true },
-          { key: 'birthday_mailer', label: 'Birthday Mailer', path: '/admin/birthday-mailer', icon: Cake, menuKey: 'admin.birthday_mailer', openToRights: true },
-          { key: 'holiday_mailer', label: 'Holiday Mailer', path: '/admin/holiday-mailer', icon: PartyPopper, menuKey: 'admin.holiday_mailer', openToRights: true },
-          { key: 'scheduled_mails', label: 'Scheduled Mails', path: '/admin/scheduled-mails', icon: CalendarClock, menuKey: 'admin.scheduled_mails', openToRights: true },
-          { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
-          { key: 'history_revert', label: 'History and Revert', path: '/admin/history-revert', icon: IconHistory },
-          { key: 'email_log', label: 'Email Log', path: '/admin/email-log', icon: IconMail },
+          { key: 'user_management', label: 'User Management', path: '/admin/user-management', icon: IconUsers, menuKey: 'admin.user_management' },
           { key: 'login_security', label: 'Login Security', path: '/admin/login-security', icon: IconShield },
+        ],
+      },
+      {
+        label: 'Approvals',
+        items: [
           {
             key: 'approval_codes',
             label: 'Approval Code',
@@ -1245,6 +1241,29 @@ export const navTree = [
             menuKey: 'admin.approver_mapping',
             openToRights: true,
           },
+        ],
+      },
+      {
+        label: 'Home Page',
+        items: [
+          { key: 'notice_board', label: 'Notice Board', path: '/admin/notice-board', icon: IconMegaphone, menuKey: 'admin.notice_board', openToRights: true },
+          { key: 'banner_events', label: 'Banner Events', path: '/admin/banner-events', icon: IconPalette, menuKey: 'admin.banner_events', openToRights: true },
+        ],
+      },
+      {
+        label: 'Automatic Mails',
+        items: [
+          { key: 'birthday_mailer', label: 'Birthday Mailer', path: '/admin/birthday-mailer', icon: Cake, menuKey: 'admin.birthday_mailer', openToRights: true },
+          { key: 'holiday_mailer', label: 'Holiday Mailer', path: '/admin/holiday-mailer', icon: PartyPopper, menuKey: 'admin.holiday_mailer', openToRights: true },
+          { key: 'scheduled_mails', label: 'Scheduled Mails', path: '/admin/scheduled-mails', icon: CalendarClock, menuKey: 'admin.scheduled_mails', openToRights: true },
+        ],
+      },
+      {
+        label: 'Logs & History',
+        items: [
+          { key: 'audit_trail', label: 'Audit Trail', path: '/admin/audit-trail', icon: IconHistory },
+          { key: 'history_revert', label: 'History and Revert', path: '/admin/history-revert', icon: IconHistory },
+          { key: 'email_log', label: 'Email Log', path: '/admin/email-log', icon: IconMail },
         ],
       },
     ],
