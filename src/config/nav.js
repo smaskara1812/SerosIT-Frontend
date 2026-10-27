@@ -65,6 +65,7 @@ import {
   Fuel,
   Cake,
   PartyPopper,
+  FileSpreadsheet,
   CalendarClock,
 } from 'lucide-react'
 
@@ -1255,6 +1256,7 @@ export const navTree = [
         items: [
           { key: 'birthday_mailer', label: 'Birthday Mailer', path: '/admin/birthday-mailer', icon: Cake, menuKey: 'admin.birthday_mailer', openToRights: true },
           { key: 'holiday_mailer', label: 'Holiday Mailer', path: '/admin/holiday-mailer', icon: PartyPopper, menuKey: 'admin.holiday_mailer', openToRights: true },
+          { key: 'report_mails', label: 'Report Mails', path: '/admin/report-mails', icon: FileSpreadsheet, menuKey: 'admin.report_mails', openToRights: true },
           { key: 'scheduled_mails', label: 'Scheduled Mails', path: '/admin/scheduled-mails', icon: CalendarClock, menuKey: 'admin.scheduled_mails', openToRights: true },
         ],
       },

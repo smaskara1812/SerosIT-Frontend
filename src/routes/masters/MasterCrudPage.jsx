@@ -764,6 +764,10 @@ function MasterCrudPageInner() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [deleteInfo, setDeleteInfo] = useState(null)
   const [snapshot, setSnapshot] = useState(null)
+  // A date field whose record carries a date AND time (for example Alert Details > Next Mail): the form shows the date part, because a date box cannot
+  // show a time (Safari fills in today's date instead of the stored one, Chrome shows it blank). The full value is kept here and sent back unchanged when the
+  // person has not changed the date, so saving a record does not reset its time.
+  const dateTimesRef = useRef({})
   const listRef = useRef(null)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
@@ -961,8 +965,13 @@ function MasterCrudPageInner() {
 
   function formFromRecord(rec) {
     const loaded = {}
+    dateTimesRef.current = {}
     for (const f of schema.fields) {
       loaded[f.name] = rec[f.name]
+      if (f.type === 'date' && typeof rec[f.name] === 'string' && rec[f.name].length > 10) {
+        dateTimesRef.current[f.name] = rec[f.name]
+        loaded[f.name] = rec[f.name].slice(0, 10)
+      }
       // Shadow fields (a resolved display label / media URL alongside an id
       // or path) aren't part of the schema's own field list but ride along
       // in the API response — carry them into form state too so a
@@ -1065,6 +1074,8 @@ function MasterCrudPageInner() {
         if ((f.type === 'date' || f.type === 'number') && payload[f.name] === '') {
           payload[f.name] = null
         }
+        const kept = dateTimesRef.current[f.name]
+        if (f.type === 'date' && kept && payload[f.name] === kept.slice(0, 10)) payload[f.name] = kept // the date was not changed: send the stored date and time back
       }
       const res = await apiFetch(url, {
         method: isEdit ? 'PATCH' : 'POST',
@@ -1088,6 +1099,10 @@ function MasterCrudPageInner() {
       } else {
         setRows((prev) => prev.map((r) => (r[schema.idField] === data[schema.idField] ? data : r)))
         setSnapshot(JSON.stringify(form))
+        for (const f of schema.fields) {
+          if (f.type === 'date' && typeof data[f.name] === 'string' && data[f.name].length > 10) dateTimesRef.current[f.name] = data[f.name]
+          else delete dateTimesRef.current[f.name]
+        }
       }
       toast.success(isEdit ? 'Changes saved' : `${data[schema.nameField]} created`)
     } catch {

@@ -562,11 +562,11 @@ export const mastersSchemas = {
     menuKey: 'masters.notification_triggers',
     apiBase: '/api/masters/notification-triggers/',
     idField: 'notification_trigger_id',
-    nameField: 'entity_key',
+    nameField: 'trigger_label',
     activeField: 'notification_trigger_active',
-    listSecondary: (r) => `${r.action || ''} → ${r.alert_name || ''}`,
+    listSecondary: (r) => `${r.action_label || r.action || ''} → ${r.alert_name || ''}`,
     helpText:
-      "For simple event notifications (e.g. 'email people when a QHSE Incident is created') — anywhere with no approval chain. Each row here just says 'when this happens, use this Alert's recipient list.' There is no automatic base list: whoever receives the email is 100% whoever you've added under Alert To Users for the chosen Alert — add or remove people there, not here. This is unrelated to Mail Recipient Mapping, which only handles approval-workflow emails (Drilling Report today, more workflows later).",
+      "For simple event notifications (e.g. 'email people when a QHSE Incident is created', or which alert an automatic mail such as the birthday, holiday or HAZ ID register mail uses) — anywhere with no approval chain. Each row here just says 'when this happens, use this Alert's recipient list.' There is no automatic base list: whoever receives the email is 100% whoever you've added under Alert To Users for the chosen Alert — add or remove people there, not here. This is unrelated to Mail Recipient Mapping, which only handles approval-workflow emails (Drilling Report today, more workflows later).",
     fields: [
       {
         name: 'entity_key',
@@ -580,8 +580,7 @@ export const mastersSchemas = {
         // trigger point that doesn't actually exist yet.
         options: [
           { value: 'qhse.incident_details', label: 'QHSE → Incident Details' },
-          { value: 'automation.birthday', label: 'Automation → Birthday Mailer' },
-          { value: 'automation.holiday', label: 'Automation → Holiday Mailer' },
+          { value: 'automation', label: 'Automation' },
         ],
         required: true,
         wide: true,
@@ -596,8 +595,12 @@ export const mastersSchemas = {
         optionsEmptyText: 'No actions are wired up for this trigger point yet.',
         optionsByValue: {
           'qhse.incident_details': [{ value: 'create', label: 'Create' }],
-          'automation.birthday': [{ value: 'send', label: 'Send the birthday mail' }],
-          'automation.holiday': [{ value: 'send', label: 'Send the holiday mail' }],
+          automation: [
+            { value: 'send_birthday_mail', label: 'Send birthday mail' },
+            { value: 'send_holiday_mail', label: 'Send holiday mail' },
+            { value: 'send_haz_id_register_mail', label: 'Send HAZ ID register mail' },
+            { value: 'send_rig_rate_breakup_mail', label: 'Send Rig Rate Break-Up mail' },
+          ],
         },
         required: true,
       },

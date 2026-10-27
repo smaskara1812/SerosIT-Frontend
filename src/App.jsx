@@ -19,6 +19,7 @@ const NoticeBoardPage = lazy(() => import('@/routes/admin/NoticeBoardPage'))
 const BannerEventsPage = lazy(() => import('@/routes/admin/BannerEventsPage'))
 const BirthdayMailerPage = lazy(() => import('@/routes/admin/BirthdayMailerPage'))
 const HolidayMailerPage = lazy(() => import('@/routes/admin/HolidayMailerPage'))
+const ReportMailsPage = lazy(() => import('@/routes/admin/ReportMailsPage'))
 const ScheduledMailsPage = lazy(() => import('@/routes/admin/ScheduledMailsPage'))
 const BannerEventEditorPage = lazy(() => import('@/routes/admin/BannerEventEditorPage'))
 const MastersHub = lazy(() => import('@/routes/masters/MastersHub'))
@@ -105,6 +106,7 @@ function App() {
           <Route path="/admin/banner-events" element={<BannerEventsPage />} />
           <Route path="/admin/birthday-mailer" element={<BirthdayMailerPage />} />
           <Route path="/admin/holiday-mailer" element={<HolidayMailerPage />} />
+          <Route path="/admin/report-mails" element={<ReportMailsPage />} />
           <Route path="/admin/scheduled-mails" element={<ScheduledMailsPage />} />
           <Route path="/admin/banner-events/:id" element={<BannerEventEditorPage />} />
           <Route path="/admin/approver-mapping" element={<ApproverMappingPage />} />

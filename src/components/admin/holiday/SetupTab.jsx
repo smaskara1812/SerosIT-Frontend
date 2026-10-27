@@ -6,6 +6,7 @@ import { apiFetch } from '@/lib/api'
 import { agoText, fmtDay, inDays } from '@/lib/scheduledMail'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import SentAs from '@/components/admin/SentAs'
 
 function Chips({ list, empty }) {
   if (!list.length) return <span className="text-muted-foreground">{empty}</span>
@@ -93,7 +94,7 @@ export default function SetupTab({ mayEdit, refreshKey }) {
           <h2 className="text-sm font-semibold">How the mail is set up</h2>
           <p className="mb-1 text-xs text-muted-foreground">This is read from the alert and its trigger. It is shown here so you can see it at a glance; it is changed where it always is.</p>
           <dl className="divide-y divide-border/60">
-            <Row label="Sent as">{setup.from_name || <span className="text-muted-foreground">No name: the mail shows only the From address. Add a Display Name on the alert’s sender (Alert Senders) to show one.</span>}</Row>
+            <Row label="Sent as"><SentAs name={setup.from_name} address={setup.from_address} /></Row>
             <Row label="Subject">Each event has its own subject. {setup.subject ? <>When an event has none, the alert’s is used: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{setup.subject}</code></> : 'When an event has none, “Happy <event name>” is used.'}</Row>
             <Row label="When">On the dates set on each event, at {String(setup.send_hour).padStart(2, '0')}:00. The scheduler checks once an hour, so it goes out at that hour.</Row>
             <Row label="To"><Chips list={r.to} empty="Nobody" /></Row>
@@ -120,8 +121,8 @@ export default function SetupTab({ mayEdit, refreshKey }) {
             <h2 className="text-sm font-semibold">The scheduler</h2>
             <p className="mt-1 text-sm">
               {scheduler.state === 'running' && <>Running. Last run {agoText(scheduler.minutes_ago)}.</>}
-              {scheduler.state === 'stale' && <span className="text-amber-700 dark:text-amber-300">Has not run for {agoText(scheduler.minutes_ago).replace(' ago', '')}. Check the service on the server.</span>}
-              {scheduler.state === 'never' && <span className="text-muted-foreground">Has not run yet.</span>}
+              {scheduler.state === 'stale' && <span className="text-amber-700 dark:text-amber-300">The service last ran {agoText(scheduler.minutes_ago)}. Check it on the server.</span>}
+              {scheduler.state === 'never' && <span className="text-amber-700 dark:text-amber-300">The scheduler service is not running: nothing goes out by itself until it is started on the server.</span>}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">{counts.active} of {counts.events} events in use</p>
           </section>
