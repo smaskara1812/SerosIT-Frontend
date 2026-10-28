@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
 import { navItemVisible } from '@/lib/permissions'
+import { apiFetch } from '@/lib/api'
 import { IconChevronLeft, IconChevronRight, IconChevronDown } from '@/components/icons'
 
 const COLLAPSE_KEY = 'serosit.secondary_sidebar_collapsed'
@@ -14,6 +15,31 @@ function readCollapsedSections() {
   } catch {
     return {}
   }
+}
+
+const DOT = { ok: 'bg-emerald-500', warning: 'bg-amber-500', critical: 'bg-red-500' }
+
+// A small status dot beside "Scheduled Mails": green when the scheduler is healthy, amber when something needs a look, red when it has a problem.
+// Checked once a minute while the section menu is on screen; nothing is shown to someone without the View right (the server says no).
+function SchedulerDot() {
+  const [status, setStatus] = useState(null)
+  useEffect(() => {
+    let live = true
+    async function check() {
+      try {
+        const res = await apiFetch('/api/admin/scheduler-status/')
+        if (live) setStatus(res.ok ? await res.json() : null)
+      } catch {
+        if (live) setStatus(null)
+      }
+    }
+    check()
+    const t = setInterval(check, 60000)
+    return () => { live = false; clearInterval(t) }
+  }, [])
+  if (!status) return null
+  const title = status.problems?.length ? `${status.title}: ${status.problems.map((p) => p.title).join('; ')}` : status.title
+  return <span role="img" aria-label={title} title={title} className={`ml-auto mt-[7px] h-2 w-2 shrink-0 rounded-full ${DOT[status.level] || DOT.ok}`} />
 }
 
 function SectionGroup({ section, items }) {
@@ -79,6 +105,7 @@ function SectionGroup({ section, items }) {
             >
               {Icon && <Icon className="mt-[3px] h-[13.5px] w-[13.5px] shrink-0" />}
               <span className="min-w-0 break-words leading-snug">{label}</span>
+              {key === 'scheduled_mails' && <SchedulerDot />}
             </NavLink>
           ))}
         </nav>

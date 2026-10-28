@@ -123,6 +123,7 @@ export default function SetupTab({ mayEdit, refreshKey }) {
               {scheduler.state === 'running' && <>Running. Last run {agoText(scheduler.minutes_ago)}.</>}
               {scheduler.state === 'stale' && <span className="text-amber-700 dark:text-amber-300">The service last ran {agoText(scheduler.minutes_ago)}. Check it on the server.</span>}
               {scheduler.state === 'never' && <span className="text-amber-700 dark:text-amber-300">The scheduler service is not running: nothing goes out by itself until it is started on the server.</span>}
+              {scheduler.state === 'stopped' && <span className="text-amber-700 dark:text-amber-300">The scheduler service was stopped {agoText(scheduler.minutes_ago)}. Start it on the server.</span>}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">{counts.active} of {counts.events} events in use</p>
           </section>

@@ -29,30 +29,132 @@ function StatusPill({ row }) {
   )
 }
 
-// Whether the hourly scheduler is alive. It runs at the top of every hour, so a long silence means the service has stopped.
-function HealthBanner({ health, mayRun, onRun, running }) {
-  const stale = health.state === 'stale'
-  const never = health.state === 'never'
-  const tone = stale || !health.ok ? 'border-amber-500/40 bg-amber-500/10' : never ? 'border-border bg-muted/40' : 'border-emerald-500/30 bg-emerald-500/8'
-  const Icon = stale || !health.ok ? AlertTriangle : never ? CalendarClock : CheckCircle2
+const LEVEL_TONE = {
+  ok: ['border-emerald-500/30 bg-emerald-500/8', CheckCircle2, 'text-emerald-600'],
+  warning: ['border-amber-500/40 bg-amber-500/10', AlertTriangle, 'text-amber-600'],
+  critical: ['border-red-500/40 bg-red-500/10', AlertTriangle, 'text-red-600'],
+}
+const KIND_NAME = { service_down: 'Service stopped', overdue: 'Mail overdue', smtp_down: 'Mail server unreachable' }
+
+function Fact({ label, children }) {
   return (
-    <div className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 ${tone}`}>
-      <Icon className={`h-5 w-5 shrink-0 ${stale || !health.ok ? 'text-amber-600' : never ? 'text-muted-foreground' : 'text-emerald-600'}`} />
-      <div className="min-w-0 flex-1 text-sm">
-        {never && <p className="font-medium">The scheduler service is not running.</p>}
-        {health.state === 'running' && <p className="font-medium">The scheduler is running. Last run {agoText(health.minutes_ago)} ({fmtWhen(health.last_run)}).</p>}
-        {stale && <p className="font-medium">The scheduler service last ran {agoText(health.minutes_ago)}. It should run at the top of every hour.</p>}
-        <p className="text-xs text-muted-foreground">
-          {stale || never
-            ? 'Nothing goes out by itself until the scheduler service is running on the server (python manage.py run_scheduler, or the Windows service). “Run it now” sends what is due, once.'
-            : health.ok ? 'It looks after every automatic mail, once an hour on the hour.' : `The last run had a problem: ${health.message}`}
-          {health.manual_at && (stale || never) ? ` The last run was started by hand ${agoText(health.manual_minutes_ago)} (${fmtWhen(health.manual_at)}).` : ''}
-        </p>
+    <div className="min-w-0">
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="truncate text-sm">{children}</dd>
+    </div>
+  )
+}
+
+function upFor(minutes) {
+  if (minutes == null) return '—'
+  const d = Math.floor(minutes / 1440)
+  const h = Math.floor((minutes % 1440) / 60)
+  return d ? `${d} d ${h} h` : h ? `${h} h ${minutes % 60} min` : `${minutes} min`
+}
+
+// Whether the scheduler is alive and well: the service's heartbeat, mail that is overdue, the mail server, and the recent outages.
+function HealthPanel({ health, events, mayRun, onRun, running, onChecked }) {
+  const [tone, Icon, iconCls] = LEVEL_TONE[health.level] || LEVEL_TONE.ok
+  const hb = health.heartbeat || {}
+  const smtp = health.smtp || {}
+  const c = health.counts || {}
+  const [checking, setChecking] = useState(false)
+  const checkingRef = useRef(false)
+  const [open, setOpen] = useState(false)
+
+  async function checkServer() {
+    if (checkingRef.current) return
+    checkingRef.current = true
+    setChecking(true)
+    try {
+      const res = await apiFetch('/api/admin/scheduler-health/smtp-check/', { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      if (res.status === 429) toast.info(body.detail || 'It was checked a moment ago.')
+      else if (!res.ok) toast.error(body.detail || 'It could not be checked.')
+      else if (body.ok === null) toast.info('Nothing to check: this machine prints mails instead of sending them.')
+      else if (body.ok) toast.success('The mail server answered.')
+      else toast.error(`The mail server did not answer: ${body.error}`)
+    } catch {
+      toast.error('Could not reach the server. Please try again.')
+    } finally {
+      checkingRef.current = false
+      setChecking(false)
+      onChecked()
+    }
+  }
+
+  const stateText = {
+    running: `Running · last sign of life ${agoText(health.age)}`,
+    stale: `Not responding · last sign of life ${agoText(health.age)}`,
+    stopped: `Stopped on purpose ${agoText(health.age)}`,
+    never: 'Has never run',
+  }[health.state]
+
+  return (
+    <div className={`rounded-xl border ${tone}`}>
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+        <Icon className={`h-5 w-5 shrink-0 ${iconCls}`} />
+        <div className="min-w-0 flex-1 text-sm">
+          <p className="font-medium">{health.title}</p>
+          <p className="text-xs text-muted-foreground">{stateText}{health.mode === 'task' ? ' · hourly task mode' : ''}</p>
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>{open ? 'Hide details' : 'Details'}</Button>
+        {mayRun && (
+          <Button type="button" variant="outline" size="sm" onClick={onRun} disabled={running}>
+            <RefreshCw className={running ? 'animate-spin' : ''} /> {running ? 'Running…' : 'Run it now'}
+          </Button>
+        )}
       </div>
-      {mayRun && (
-        <Button type="button" variant="outline" size="sm" onClick={onRun} disabled={running}>
-          <RefreshCw className={running ? 'animate-spin' : ''} /> {running ? 'Running…' : 'Run it now'}
-        </Button>
+
+      {health.problems?.length > 0 && (
+        <ul className="space-y-1.5 border-t border-border/60 px-4 py-3">
+          {health.problems.map((p) => (
+            <li key={p.kind} className="text-sm">
+              <span className="font-semibold">{p.title}.</span> <span className="text-muted-foreground">{p.detail}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {open && (
+        <div className="space-y-4 border-t border-border/60 px-4 py-3">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 xl:grid-cols-5">
+            <Fact label="Started">{hb.started_at ? fmtWhen(hb.started_at) : '—'}</Fact>
+            <Fact label="Up for">{upFor(hb.uptime_minutes)}</Fact>
+            <Fact label="Last run">{hb.last_run_at ? `${fmtWhen(hb.last_run_at)}${hb.last_run_ok === false ? ' · had a problem' : ''}` : '—'}</Fact>
+            <Fact label="Server">{hb.host ? `${hb.host}${hb.pid ? ` · pid ${hb.pid}` : ''}` : '—'}</Fact>
+            <Fact label="Started by hand">{hb.last_manual_at ? fmtWhen(hb.last_manual_at) : '—'}</Fact>
+            <Fact label="Overdue">{c.overdue ?? 0}</Fact>
+            <Fact label="Failed (7 days)">{c.failed ?? 0}</Fact>
+            <Fact label="Missed (7 days)">{c.missed ?? 0}</Fact>
+            <Fact label="Mail server">
+              {smtp.ok === true && <span className="text-emerald-700 dark:text-emerald-300">Answers · {fmtWhen(smtp.checked_at)}</span>}
+              {smtp.ok === false && <span className="text-red-700 dark:text-red-300" title={smtp.error}>Not answering · {fmtWhen(smtp.checked_at)}</span>}
+              {smtp.ok == null && <span className="text-muted-foreground">{smtp.checked_at ? 'Nothing to check here' : 'Not checked yet'}</span>}
+            </Fact>
+            {mayRun && (
+              <div className="flex items-end">
+                <Button type="button" variant="outline" size="sm" onClick={checkServer} disabled={checking}>{checking ? 'Checking…' : 'Check mail server now'}</Button>
+              </div>
+            )}
+          </dl>
+
+          <div>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recent problems</h3>
+            {events?.length ? (
+              <ul className="divide-y divide-border/60 rounded-lg border border-border/60 bg-card/50 text-sm">
+                {events.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-1.5">
+                    <span className="font-medium">{KIND_NAME[e.kind] || e.kind}</span>
+                    <span className="text-muted-foreground">{fmtWhen(e.started_at)}{e.ended_at ? ` → ${fmtWhen(e.ended_at)}` : ''}</span>
+                    {!e.ended_at && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:text-red-300">Still open</span>}
+                    {e.alerted && <span className="text-xs text-muted-foreground">IT was told</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-muted-foreground">None recorded.</p>}
+          </div>
+        </div>
       )}
     </div>
   )
@@ -322,7 +424,7 @@ export default function ScheduledMailsPage() {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
-        {data && <HealthBanner health={data.health} mayRun={mayEdit} onRun={runNow} running={running} />}
+        {data && <HealthPanel health={data.health} events={data.health_events} mayRun={mayEdit} onRun={runNow} running={running} onChecked={load} />}
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
         {data && (
