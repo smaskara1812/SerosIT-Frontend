@@ -600,6 +600,8 @@ export const mastersSchemas = {
             { value: 'send_holiday_mail', label: 'Send holiday mail' },
             { value: 'send_haz_id_register_mail', label: 'Send HAZ ID register mail' },
             { value: 'send_rig_rate_breakup_mail', label: 'Send Rig Rate Break-Up mail' },
+            { value: 'send_activity_monitor_mail', label: 'Send Activity Monitor mail' },
+            { value: 'send_open_incident_actions_mail', label: 'Send Open Incident Actions mail' },
           ],
         },
         required: true,
@@ -696,7 +698,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -748,7 +750,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -761,7 +763,7 @@ export const mastersSchemas = {
         name: 'reporting_rank',
         label: 'Reports To',
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'reporting_rank_name',
@@ -1021,7 +1023,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'search-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -1113,7 +1115,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'search-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -1255,7 +1257,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'search-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -1331,7 +1333,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -1415,7 +1417,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -1425,7 +1427,7 @@ export const mastersSchemas = {
         name: 'reliever_rank',
         label: "Reliever's Rank",
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'reliever_rank_name',
@@ -1600,7 +1602,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -1652,7 +1654,7 @@ export const mastersSchemas = {
         name: 'rank',
         label: 'Rank',
         type: 'select-remote',
-        remote: '/api/masters/ranks/',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // only Oilfield Services ranks (Business System 6 = 'Y'); the Ranks page lists all
         optionLabel: 'rank_name',
         optionValue: 'rank_id',
         labelField: 'rank_name',
@@ -2165,6 +2167,7 @@ export const mastersSchemas = {
         name: 'it_asset_holder_to',
         label: 'To',
         type: 'date',
+        minField: 'it_asset_holder_from',
         hint: 'Leave blank while ongoing.',
         section: 'Period',
       },
@@ -2361,7 +2364,7 @@ export const mastersSchemas = {
         required: true,
         section: 'IT Accessory Holder Information',
       },
-      { name: 'it_accessory_holder_to', label: 'To', type: 'date', section: 'IT Accessory Holder Information' },
+      { name: 'it_accessory_holder_to', label: 'To', type: 'date', minField: 'it_accessory_holder_from', section: 'IT Accessory Holder Information' },
     ],
   },
   'company-locations': {

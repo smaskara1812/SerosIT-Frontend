@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { AlertTriangle, CalendarClock, CheckCircle2, Eye, FastForward, RefreshCw, RotateCw, Search, SkipForward, Undo2, Users, X } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CheckCircle2, Eye, FastForward, RefreshCw, RotateCw, Search, SkipForward, Undo2, Users } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { apiFetch } from '@/lib/api'
 import { can } from '@/lib/permissions'
@@ -160,6 +160,23 @@ function HealthPanel({ health, events, mayRun, onRun, running, onChecked }) {
   )
 }
 
+// What one run did, said per automation by name, and only for those that did something: "Activity Monitor: 1 planned." Paused ones are named;
+// when nothing happened at all it says so.
+function runSummary(results, jobs) {
+  const names = Object.fromEntries((jobs || []).map((j) => [j.key, j.name]))
+  const parts = []
+  for (const [key, j] of Object.entries(results || {})) {
+    const name = names[key] || key
+    if (j.paused) {
+      parts.push(`${name} is paused.`)
+      continue
+    }
+    const did = [['planned', j.planned], ['sent', j.sent], ['failed', j.failed]].filter(([, n]) => n > 0).map(([w, n]) => `${n} ${w}`)
+    if (did.length) parts.push(`${name}: ${did.join(', ')}.`)
+  }
+  return `The scheduler ran. ${parts.length ? parts.join(' ') : 'Nothing was due.'}`
+}
+
 // The on/off switch of one automation. On = it is planned and sent every hour; Paused = nothing is planned or sent for it (what is already planned stays as it is).
 // Someone without the Edit right sees the state as a plain label.
 function RunSwitch({ job, editable, busy, onSwitch }) {
@@ -306,6 +323,7 @@ export default function ScheduledMailsPage() {
   const [section, setSection] = useState('upcoming')
   const [status, setStatus] = useState('')
   const [jobFilter, setJobFilter] = useState('')
+  const [view, setView] = useState('mails') // 'mails' (the list) or 'automations' (the switches and schedules), so neither pushes the other below the fold
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
   const [data, setData] = useState(null)
@@ -389,7 +407,7 @@ export default function ScheduledMailsPage() {
     try {
       const res = await apiFetch('/api/admin/scheduled-mails/run-now/', { method: 'POST' })
       const body = await res.json().catch(() => ({}))
-      if (res.ok) toast.success('The scheduler ran. ' + Object.values(body.jobs || {}).map((j) => (j.paused ? 'Paused.' : `Planned ${j.planned || 0}, sent ${j.sent || 0}, failed ${j.failed || 0}.`)).join(' '))
+      if (res.ok) toast.success(runSummary(body.jobs, data?.jobs))
       else toast.error(body.errors?.[0] || body.detail || 'It could not run.')
     } finally {
       acting.current = false
@@ -407,8 +425,7 @@ export default function ScheduledMailsPage() {
     skip: ['Skip this mail?', 'It will not be sent. You can undo this until its day has passed.'],
   }
 
-  const pick = (key) => { setJobFilter((cur) => (cur === key ? '' : key)); setPage(1) }
-  const picked = (data?.jobs || []).find((j) => j.key === jobFilter)
+  const openMailsOf = (key) => { setJobFilter(key); setPage(1); setView('mails') }
   const groups = []
   for (const r of rows) {
     const last = groups[groups.length - 1]
@@ -427,16 +444,26 @@ export default function ScheduledMailsPage() {
         {data && <HealthPanel health={data.health} events={data.health_events} mayRun={mayEdit} onRun={runNow} running={running} onChecked={load} />}
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-        {data && (
+        <div className="flex gap-1 border-b border-border" role="tablist" aria-label="Scheduled Mails sections">
+          {[['mails', 'Mails', 'What is coming, what went today and before'], ['automations', 'Automations', 'Switch each automation on or off and see its schedule']].map(([key, label, hint]) => (
+            <button key={key} type="button" role="tab" aria-selected={view === key} title={hint} onClick={() => setView(key)}
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${view === key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              {label}
+              {key === 'automations' && data && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{data.jobs.length}</span>}
+            </button>
+          ))}
+        </div>
+
+        {view === 'automations' && data && (
           <section aria-label="Automations">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Automations <span className="font-normal normal-case">· click one to see only its mails</span></h2>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Automations <span className="font-normal normal-case">· click one to see its mails</span></h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {data.jobs.map((j) => <JobTile key={j.key} job={j} active={jobFilter === j.key} mayEdit={mayEdit} switching={!!switching} onSwitch={setSwitchAsk} onPick={pick} />)}
+              {data.jobs.map((j) => <JobTile key={j.key} job={j} active={jobFilter === j.key} mayEdit={mayEdit} switching={!!switching} onSwitch={setSwitchAsk} onPick={openMailsOf} />)}
             </div>
           </section>
         )}
 
-        <section className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-xl border border-border" aria-label="Mails">
+        {view === 'mails' && <section className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-xl border border-border" aria-label="Mails">
           <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
             <div className="flex gap-1" role="tablist" aria-label="Which mails">
               {TABS.map(([key, label, hint]) => (
@@ -447,11 +474,10 @@ export default function ScheduledMailsPage() {
                 </button>
               ))}
             </div>
-            {picked && (
-              <button type="button" onClick={() => pick(picked.key)} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15" title="Show every automation again">
-                {picked.name} <X className="h-3 w-3" />
-              </button>
-            )}
+            <select value={jobFilter} onChange={(e) => { setJobFilter(e.target.value); setPage(1) }} aria-label="Automation" className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm">
+              <option value="">All automations</option>
+              {(data?.jobs || []).map((j) => <option key={j.key} value={j.key}>{j.name}</option>)}
+            </select>
             <div className="relative ml-auto">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search name or error…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1) }} className="h-9 w-60 pl-8" aria-label="Search" />
@@ -515,7 +541,7 @@ export default function ScheduledMailsPage() {
               </div>
             </div>
           )}
-        </section>
+        </section>}
       </div>
 
       <EmailDialog item={email} onClose={() => setEmail(null)} isAdmin={!!user?.is_app_admin} />

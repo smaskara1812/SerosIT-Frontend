@@ -1025,6 +1025,7 @@ export const navTree = [
     icon: IconShieldCheck,
     sections: [
       {
+        label: 'Rig Certificates',
         items: [
           {
             key: 'rig_certificates',
@@ -1040,6 +1041,11 @@ export const navTree = [
             icon: IconClipboard,
             menuKey: 'qhse.rig_certificate_schedule',
           },
+        ],
+      },
+      {
+        label: 'Activities & Actions',
+        items: [
           {
             key: 'activity_monitor',
             label: 'Activity Monitor',
@@ -1054,6 +1060,18 @@ export const navTree = [
             icon: IconTrendingUp,
             menuKey: 'qhse.activity_closure_analysis',
           },
+          {
+            key: 'corrective_actions',
+            label: 'Corrective Actions Reporting',
+            path: '/qhse/corrective-actions',
+            icon: IconClipboard,
+            menuKey: 'qhse.corrective_actions',
+          },
+        ],
+      },
+      {
+        label: 'Incidents',
+        items: [
           {
             key: 'incident_details',
             label: 'Incident Details',
@@ -1082,6 +1100,11 @@ export const navTree = [
             icon: IconClipboard,
             menuKey: 'qhse.incident_register',
           },
+        ],
+      },
+      {
+        label: 'Hazard & Monthly Reports',
+        items: [
           {
             key: 'hazard_id_card',
             label: 'Hazard ID Card',
@@ -1103,6 +1126,11 @@ export const navTree = [
             icon: IconTrendingUp,
             menuKey: 'qhse.mis_hse_review',
           },
+        ],
+      },
+      {
+        label: 'Drills & Indicators',
+        items: [
           {
             key: 'hse_drill_record',
             label: 'HSE Drills / Exercises',
@@ -1138,13 +1166,11 @@ export const navTree = [
             icon: IconTrendingUp,
             menuKey: 'qhse.lagging_indicators',
           },
-          {
-            key: 'corrective_actions',
-            label: 'Corrective Actions Reporting',
-            path: '/qhse/corrective-actions',
-            icon: IconClipboard,
-            menuKey: 'qhse.corrective_actions',
-          },
+        ],
+      },
+      {
+        label: 'Training',
+        items: [
           {
             key: 'training_group',
             label: 'Training Group',

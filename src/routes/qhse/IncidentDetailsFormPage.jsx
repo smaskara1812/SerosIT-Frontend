@@ -74,7 +74,7 @@ const WORK_LOCATION_FIELD = { type: 'select-remote', remote: '/api/masters/work-
 const CONTACT_EXPO_FIELD = { type: 'select-remote', remote: '/api/masters/contact-exposure-types/', optionLabel: 'contact_expo_type_name', optionValue: 'contact_expo_type_id', labelField: 'contact_expo_type_name' }
 const CONTRACTOR_FIELD = { type: 'select-remote', remote: '/api/masters/contractors/', optionLabel: 'contractor_name', optionValue: 'contractor_id', labelField: 'contractor_name' }
 const EMPLOYEE_FIELD = { type: 'search-remote', remote: '/api/masters/fs-employees/?active=Y', optionLabel: 'full_name', optionValue: 'fs_emp_id', labelField: 'emp_name', derives: { rank_id: 'rank', rank_name: 'rank_name' } }
-const RANK_FIELD = { type: 'select-remote', remote: '/api/masters/ranks/', optionLabel: 'rank_name', optionValue: 'rank_id', labelField: 'rptd_by_rank_name' }
+const RANK_FIELD = { type: 'select-remote', remote: '/api/masters/ranks/?business_system_id_6=Y', optionLabel: 'rank_name', optionValue: 'rank_id', labelField: 'rptd_by_rank_name' }
 const CURRENCY_FIELD = { type: 'select-remote', remote: '/api/masters/currencies/', optionLabel: 'currency_name', optionValue: 'currency_id', labelField: 'financial_loss_currency_name' }
 const PART_OF_BODY_FIELD = { type: 'select-remote', remote: '/api/masters/parts-of-body/', optionLabel: 'part_of_body_name', optionValue: 'part_of_body_id' }
 

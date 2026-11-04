@@ -371,7 +371,7 @@ function FileUploadField({ field, value, onChange, disabled, form }) {
   )
 }
 
-const TILE_LIMIT = 6
+const TILE_LIMIT = 3 // up to this many choices show as tiles; four or more become a dropdown
 
 // A fixed list of options as a searchable dropdown, for lists too long to show as tiles.
 export function StaticCombobox({ options, value, onChange, disabled }) {
@@ -633,7 +633,7 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
     if (field.optionsByValue && options.length === 0) {
       return <p className="pt-2 text-xs text-muted-foreground">{field.optionsEmptyText || 'No options configured for this yet.'}</p>
     }
-    // A few choices read fastest as tiles; a long list (the 28 documents on Document To Sign) is a searchable dropdown.
+    // One to three choices read fastest as tiles; four or more (and the 28 documents on Document To Sign) are a searchable dropdown.
     if (options.length > TILE_LIMIT) return <StaticCombobox options={options} value={value || null} onChange={onChange} disabled={disabled} />
     return <TilePicker options={options} value={value || null} onChange={onChange} disabled={disabled} />
   }

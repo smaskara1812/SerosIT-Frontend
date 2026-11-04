@@ -4,6 +4,8 @@ import OffshoreScene from '@/components/home/OffshoreScene'
 import { lowPowerDevice } from '@/lib/perf'
 import PageSearch from '@/components/PageSearch'
 import NoticeBanner from '@/components/home/NoticeBanner'
+import EggBoundary from '@/components/EggBoundary'
+import { EASTER_EGGS } from '@/config/easterEggs'
 
 const CrewChangeScene = lazy(() => import('@/components/home/CrewChangeScene')) // fetched only when the code is typed
 const RigMoveScene = lazy(() => import('@/components/home/RigMoveScene'))
@@ -11,6 +13,7 @@ const FracJobScene = lazy(() => import('@/components/home/FracJobScene'))
 const ConvoyScene = lazy(() => import('@/components/home/ConvoyScene'))
 const DeskScene = lazy(() => import('@/components/home/DeskScene'))
 const TerminalScene = lazy(() => import('@/components/home/TerminalScene'))
+const HomeSero = lazy(() => import('@/components/home/HomeSero')) // Sero and his drawing are fetched with the home page, after it has painted
 
 // Quiet contour lines and sonar rings, drawn once from a formula: a nod to charts and offshore survey work
 // without competing with the greeting. Pure decoration, hidden from assistive technology. The arrow keys make the
@@ -145,12 +148,19 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
           </Suspense>
         )}
       </div>
+      {EASTER_EGGS.sero && (
+        <EggBoundary>
+          <Suspense fallback={null}>
+            <HomeSero hidden={playing} hint={hint} layoutKey={noticeH} />
+          </Suspense>
+        </EggBoundary>
+      )}
       <div
         className={`relative z-10 px-8 pb-10 pt-11 text-white sm:px-10 xl:min-h-[var(--notice-min)] ${term ? 'pointer-events-none opacity-0' : ''}`}
         style={{ '--notice-min': noticeH ? `${noticeH + 84}px` : '0px' }}
       >
         <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
-          <div>
+          <div data-sero-avoid>
             <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[#8fe6da]">{today}</p>
             <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
               {greeting.title}
@@ -159,12 +169,13 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
               {drilling ? 'Seros vessel alongside the Wildcat… permission to come aboard?' : crew ? 'Crew change on the Wildcat. Three on, three off.' : move ? 'Wildcat on location… tugs away, anchors going down.' : frac ? 'Frac job on the pad. Three stages, pumps at rate.' : convoy ? 'First light, and the convoy is already rolling.' : desk ? 'Still here. One more commit.' : hint ?? greeting.sub}
             </p>
           </div>
-          <div className={`transition-opacity duration-500 empty:hidden xl:absolute xl:right-10 xl:top-11 ${playing ? 'pointer-events-none opacity-0' : ''}`} inert={playing}>
+          <div data-sero-avoid className={`transition-opacity duration-500 empty:hidden xl:absolute xl:right-10 xl:top-11 ${playing ? 'pointer-events-none opacity-0' : ''}`} inert={playing}>
             <NoticeBanner onHeight={setNoticeH} />
           </div>
         </div>
 
         <div
+          data-sero-avoid
           className={`mt-7 max-w-2xl transition-opacity duration-500 ${playing ? 'pointer-events-none opacity-0' : ''}`}
           inert={playing}
         >

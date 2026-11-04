@@ -1,0 +1,602 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="sero" viewBox="0 0 300 340" role="img" aria-labelledby="sero-title">
+<title id="sero-title">Sero, the Seros mascot</title>
+<defs>
+<linearGradient id="sero-g-teal" gradientUnits="userSpaceOnUse" x1="0" y1="19" x2="0" y2="263"><stop offset="0" stop-color="#6DBFAC"/><stop offset="1" stop-color="#4C9686"/></linearGradient>
+<linearGradient id="sero-g-blue" gradientUnits="userSpaceOnUse" x1="0" y1="61" x2="0" y2="301"><stop offset="0" stop-color="#1F3B7A"/><stop offset="1" stop-color="#2F66AE"/></linearGradient>
+<radialGradient id="sero-g-glow"><stop offset="0" stop-color="#FFD98A" stop-opacity=".95"/><stop offset=".55" stop-color="#FFB45C" stop-opacity=".45"/><stop offset="1" stop-color="#FFB45C" stop-opacity="0"/></radialGradient>
+</defs>
+<style>
+/* =====================================================================
+   SERO  ·  v8  ·  the Seros mascot
+   One SVG, pure CSS. The character is a rig of nested groups; every
+   animation is a class on the root svg.sero element. Nothing here
+   needs JavaScript except adding/removing those classes (see sero.js).
+
+   Class families
+     .sero-x-*       expression only (face), no motion. Safe under reduced motion.
+     one-shots       play once, remove the class after their duration:
+                     sero-wave sero-tip sero-nod sero-shake sero-blink sero-wink
+                     sero-look-left sero-look-right sero-jump sero-celebrate
+                     sero-show sero-point sero-alert sero-peek sero-peek-corner
+     states          stay until removed (looping, with a static fallback pose):
+                     sero-think sero-work sero-sleep sero-sorry sero-confused
+                     sero-stroll [sero-stroll-left] sero-hidden sero-hidden-corner
+     modifiers       sero-flip (face the other way)  sero-static (no motion at all)
+   ===================================================================== */
+
+/* ---- 0. Expression variables. A state or expression only changes these. ---- */
+.sero{--m-smile:1;--m-flat:0;--m-o:0;--m-grin:0;--m-sad:0;--m-wavy:0;
+      --brows:0;--brow-l:none;--brow-r:none;--eye-l:none;--eye-r:none;--gaze:none;
+      --glow:0;--tip:#F58220}
+
+/* ---- 1. Pivots. transform-box:view-box = origins are in the drawing's own coordinates. ---- */
+.sero g,.sero path,.sero rect,.sero circle,.sero ellipse,.sero line,.sero text{transform-box:view-box}
+.sero-shadow,.sero-spark,.sero-z,.sero-qmark,.sero-bang,.sero-tip-glow{transform-box:fill-box;transform-origin:center}
+.sero-bar{transform-box:fill-box;transform-origin:50% 100%}
+.sero-root{transform-origin:150px 170px}
+.sero-wrap{transform-origin:150px 184px}
+.sero-body-bob{transform-origin:150px 300px}
+.sero-torso{transform-origin:150px 290px}
+.sero-head,.sero-head-pose{transform-origin:150px 184px}
+.sero-head-shape{transform-origin:150px 132px}
+.sero-hat{transform-origin:150px 105px}
+.sero-face{transform-origin:150px 141px}
+.sero-eyes,.sero-gaze{transform-origin:150px 136px}
+.sero-eye-l{transform-origin:126px 136px}
+.sero-eye-r{transform-origin:174px 136px}
+.sero-brows{transform-origin:150px 119px}
+.sero-brow-l{transform-origin:126px 119px}
+.sero-brow-r{transform-origin:174px 119px}
+.sero-mouth{transform-origin:150px 158px}
+.sero-antenna{transform-origin:230px 122px}
+.sero-arm-l{transform-origin:108px 214px}
+.sero-arm-r{transform-origin:192px 214px}
+.sero-fore-l,.sero-fore-l-loop,.sero-fore-l-seg,.sero-hand-l,.sero-fore-r,.sero-fore-r-loop,.sero-fore-r-seg,.sero-hand-r,.sero-tablet{transform-origin:0px 0px}
+.sero-foot-l{transform-origin:131px 300px}
+.sero-foot-r{transform-origin:169px 300px}
+
+/* ---- 2. Expression plumbing ---- */
+.sero-m{opacity:0;transition:opacity .18s ease}
+.sero-m-smile{opacity:var(--m-smile)}.sero-m-flat{opacity:var(--m-flat)}.sero-m-o{opacity:var(--m-o)}
+.sero-m-grin{opacity:var(--m-grin)}.sero-m-sad{opacity:var(--m-sad)}.sero-m-wavy{opacity:var(--m-wavy)}
+.sero-brows{opacity:var(--brows);transition:opacity .25s ease,transform .45s cubic-bezier(.3,.8,.25,1.15)}
+.sero-brow-l{transform:var(--brow-l)}.sero-brow-r{transform:var(--brow-r)}
+.sero-eye-l{transform:var(--eye-l)}.sero-eye-r{transform:var(--eye-r)}
+.sero-gaze{transform:var(--gaze)}
+.sero-tip{fill:var(--tip);transition:fill .3s}
+.sero-tip-glow{opacity:var(--glow)}
+.sero-arcs,.sero-peek-hands,.sero-spark,.sero-z,.sero-qmark,.sero-bang{opacity:0}
+
+/* Poses ease in and out (the one-shots are keyframed and ignore this). */
+.sero-head,.sero-hat,.sero-face,.sero-eyes,.sero-eye-l,.sero-eye-r,.sero-gaze,.sero-brow-l,.sero-brow-r,.sero-antenna,
+.sero-arm-l,.sero-arm-r,.sero-fore-l,.sero-fore-r,.sero-tablet,.sero-torso{transition:transform .45s cubic-bezier(.3,.8,.25,1.15)}
+
+/* ---- 3. Idle life (always on, overridden by whatever plays) ---- */
+.sero-body-bob{animation:sero-bob 4s ease-in-out infinite}
+.sero-head{animation:sero-idle-head 14s ease-in-out infinite}
+.sero-eyes{animation:sero-idle-blink 7.3s ease-in-out infinite}
+.sero-gaze{animation:sero-idle-gaze 19s ease-in-out infinite}
+.sero-antenna{animation:sero-idle-antenna 13s ease-in-out infinite}
+@keyframes sero-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+@keyframes sero-idle-head{0%,38%,62%,100%{transform:rotate(0)}44%,56%{transform:rotate(1.5deg)}}
+@keyframes sero-idle-blink{0%,38%,41.5%,84%,86.5%,88%,90.5%,100%{transform:scaleY(1)}39.7%,85.2%,89.2%{transform:scaleY(.08)}}
+@keyframes sero-idle-gaze{0%,30%,41%,66%,76%,100%{transform:translate(0,0)}33%,38%{transform:translate(-3px,0)}69%,73%{transform:translate(3px,-1px)}}
+@keyframes sero-idle-antenna{0%,90%,100%{transform:rotate(0)}92%{transform:rotate(-7deg)}94.5%{transform:rotate(5deg)}97%{transform:rotate(-2deg)}}
+
+/* ---- 4. Expressions (face only) ---- */
+.sero-x-happy{--m-smile:0;--m-grin:1}
+.sero-x-neutral{--m-smile:0;--m-flat:1}
+.sero-x-surprised{--m-smile:0;--m-o:1;--brows:1;--brow-l:translateY(-3px);--brow-r:translateY(-3px);--eye-l:scale(1.12);--eye-r:scale(1.12)}
+.sero-x-sad{--m-smile:0;--m-sad:1;--brows:1;--brow-l:rotate(-12deg) translateY(-1px);--brow-r:rotate(12deg) translateY(-1px)}
+.sero-x-confused{--m-smile:0;--m-wavy:1;--brows:1;--brow-l:translateY(-4px) rotate(-8deg);--brow-r:translateY(1px) rotate(4deg)}
+.sero-x-focused{--m-smile:0;--m-flat:1;--eye-l:scaleY(.8);--eye-r:scaleY(.8)}
+
+/* ---- 5. One-shots ---- */
+/* blink / wink */
+.sero-blink .sero-eyes,.sero-blink .sero-side-eye{animation:sero-blink .5s ease-in-out 2}
+.sero-wink{--m-smile:0;--m-grin:1}
+.sero-wink .sero-eye-r{animation:sero-wink .7s ease-in-out}
+.sero-wink .sero-head{animation:sero-wink-head .7s ease-in-out}
+@keyframes sero-blink{0%,100%{transform:scaleY(1)}40%,60%{transform:scaleY(.08)}}
+@keyframes sero-wink{0%,100%{transform:scaleY(1)}25%,70%{transform:scaleY(.08)}}
+@keyframes sero-wink-head{0%,100%{transform:rotate(0)}30%,70%{transform:rotate(3deg)}}
+
+/* wave (2.4s): anticipation dip, arm up, the wave comes from the elbow, head leans in, antenna follows through */
+.sero-wave{--m-smile:0;--m-grin:1}
+.sero-wave .sero-arm-r{animation:sero-wave-arm 2.4s ease-in-out}
+.sero-wave .sero-fore-r{animation:sero-wave-fore 2.4s ease-in-out}
+.sero-wave .sero-head{animation:sero-wave-head 2.4s ease-in-out}
+.sero-wave .sero-antenna{animation:sero-wave-antenna 2.4s ease-in-out}
+.sero-wave .sero-arcs{animation:sero-arcs 2.4s ease-in-out}
+@keyframes sero-wave-arm{0%{transform:rotate(0)}8%{transform:rotate(10deg)}22%{transform:rotate(-100deg)}80%{transform:rotate(-100deg)}100%{transform:rotate(0)}}
+@keyframes sero-wave-fore{0%{transform:rotate(0)}8%{transform:rotate(6deg)}22%{transform:rotate(-24deg)}32%{transform:rotate(-58deg)}44%{transform:rotate(2deg)}56%{transform:rotate(-58deg)}68%{transform:rotate(2deg)}80%{transform:rotate(-30deg)}100%{transform:rotate(0)}}
+@keyframes sero-wave-head{0%,100%{transform:rotate(0)}25%,78%{transform:rotate(3deg)}}
+@keyframes sero-wave-antenna{0%,18%{transform:rotate(0)}26%{transform:rotate(-9deg)}34%{transform:rotate(6deg)}42%{transform:rotate(-3deg)}50%,80%{transform:rotate(0)}88%{transform:rotate(-6deg)}95%{transform:rotate(3deg)}100%{transform:rotate(0)}}
+@keyframes sero-arcs{0%,20%{opacity:0}30%{opacity:1}44%{opacity:.3}56%{opacity:1}68%{opacity:.3}80%{opacity:1}100%{opacity:0}}
+
+/* tip (1.9s): a salute to the brim (the forearm telescopes a little), the hat lifts, a small bow */
+.sero-tip .sero-arm-r{animation:sero-tip-arm 1.9s ease-in-out}
+.sero-tip .sero-fore-r{animation:sero-tip-fore 1.9s ease-in-out}
+.sero-tip .sero-fore-r-seg{animation:sero-tip-seg 1.9s ease-in-out}
+.sero-tip .sero-hand-r{animation:sero-tip-hand 1.9s ease-in-out}
+.sero-tip .sero-hat{animation:sero-tip-hat 1.9s ease-in-out}
+.sero-tip .sero-head{animation:sero-tip-head 1.9s ease-in-out}
+.sero-tip .sero-brows{animation:sero-tip-brows 1.9s ease-in-out}
+.sero-tip .sero-antenna{animation:sero-tip-antenna 1.9s ease-in-out}
+@keyframes sero-tip-arm{0%{transform:rotate(0)}10%{transform:rotate(10deg)}30%,65%{transform:rotate(-116deg)}85%{transform:rotate(-8deg)}100%{transform:rotate(0)}}
+@keyframes sero-tip-fore{0%{transform:rotate(0)}10%{transform:rotate(4deg)}30%,65%{transform:rotate(-24deg)}100%{transform:rotate(0)}}
+@keyframes sero-tip-seg{0%,12%{transform:scale(1,1)}32%,65%{transform:scale(1,1.6)}85%,100%{transform:scale(1,1)}}
+@keyframes sero-tip-hand{0%,12%{transform:translateY(0)}32%,65%{transform:translateY(19px)}85%,100%{transform:translateY(0)}}
+@keyframes sero-tip-hat{0%,30%{transform:translate(0,0) rotate(0)}40%,62%{transform:translate(2px,-9px) rotate(-10deg)}74%{transform:translate(0,1px) rotate(1deg)}100%{transform:translate(0,0) rotate(0)}}
+@keyframes sero-tip-head{0%,30%{transform:translateY(0) rotate(0)}40%,62%{transform:translateY(3px) rotate(-2deg)}76%,100%{transform:translateY(0) rotate(0)}}
+@keyframes sero-tip-brows{0%,28%,72%,100%{opacity:0;transform:translateY(0)}36%,64%{opacity:1;transform:translateY(-3px)}}
+@keyframes sero-tip-antenna{0%,34%{transform:rotate(0)}40%{transform:rotate(-8deg)}48%{transform:rotate(5deg)}56%{transform:rotate(-2deg)}62%,100%{transform:rotate(0)}}
+
+/* nod (1.2s) and shake (1.3s): yes and no. The hat lags the head by a beat. */
+.sero-nod .sero-head{animation:sero-nod 1.2s ease-in-out}
+.sero-nod .sero-hat{animation:sero-nod-hat 1.2s ease-in-out}
+.sero-nod .sero-antenna{animation:sero-nod-antenna 1.2s ease-in-out}
+@keyframes sero-nod{0%,100%{transform:translateY(0)}22%{transform:translateY(5px)}45%{transform:translateY(0)}66%{transform:translateY(5px)}88%{transform:translateY(0)}}
+@keyframes sero-nod-hat{0%,100%{transform:translateY(0)}12%{transform:translateY(-2px)}30%{transform:translateY(3px)}50%{transform:translateY(-2px)}72%{transform:translateY(3px)}92%{transform:translateY(-1px)}}
+@keyframes sero-nod-antenna{0%,100%{transform:rotate(0)}22%{transform:rotate(6deg)}45%{transform:rotate(-4deg)}66%{transform:rotate(6deg)}88%{transform:rotate(-3deg)}}
+.sero-shake{--m-smile:0;--m-flat:1}
+.sero-shake .sero-face{animation:sero-shake-face 1.3s ease-in-out}
+.sero-shake .sero-head-shape{animation:sero-shake-shape 1.3s ease-in-out}
+.sero-shake .sero-hat{animation:sero-shake-hat 1.3s ease-in-out}
+.sero-shake .sero-antenna{animation:sero-shake-antenna 1.3s ease-in-out}
+@keyframes sero-shake-face{0%,100%{transform:translateX(0)}18%{transform:translateX(-9px)}45%{transform:translateX(9px)}72%{transform:translateX(-6px)}90%{transform:translateX(2px)}}
+@keyframes sero-shake-shape{0%,100%{transform:scaleX(1)}18%,45%,72%{transform:scaleX(.96)}}
+@keyframes sero-shake-hat{0%,100%{transform:translateX(0)}18%{transform:translateX(-5px)}45%{transform:translateX(5px)}72%{transform:translateX(-3px)}}
+@keyframes sero-shake-antenna{0%,100%{transform:rotate(0)}18%{transform:rotate(-10deg)}45%{transform:rotate(10deg)}72%{transform:rotate(-6deg)}90%{transform:rotate(2deg)}}
+
+/* look left / right (2s) */
+.sero-look-left .sero-face{animation:sero-look-face-l 2s ease-in-out}
+.sero-look-left .sero-hat{animation:sero-look-hat-l 2s ease-in-out}
+.sero-look-left .sero-head-shape{animation:sero-look-shape 2s ease-in-out}
+.sero-look-left .sero-gaze{animation:sero-look-gaze-l 2s ease-in-out}
+.sero-look-left .sero-head{animation:sero-look-head-l 2s ease-in-out}
+.sero-look-right .sero-face{animation:sero-look-face-r 2s ease-in-out}
+.sero-look-right .sero-hat{animation:sero-look-hat-r 2s ease-in-out}
+.sero-look-right .sero-head-shape{animation:sero-look-shape 2s ease-in-out}
+.sero-look-right .sero-gaze{animation:sero-look-gaze-r 2s ease-in-out}
+.sero-look-right .sero-head{animation:sero-look-head-r 2s ease-in-out}
+@keyframes sero-look-face-l{0%,100%{transform:translateX(0) scaleX(1)}22%,72%{transform:translateX(-14px) scaleX(.9)}}
+@keyframes sero-look-face-r{0%,100%{transform:translateX(0) scaleX(1)}22%,72%{transform:translateX(14px) scaleX(.9)}}
+@keyframes sero-look-hat-l{0%,100%{transform:translateX(0)}22%,72%{transform:translateX(-7px)}}
+@keyframes sero-look-hat-r{0%,100%{transform:translateX(0)}22%,72%{transform:translateX(7px)}}
+@keyframes sero-look-shape{0%,100%{transform:scaleX(1)}22%,72%{transform:scaleX(.96)}}
+@keyframes sero-look-gaze-l{0%,100%{transform:translateX(0)}22%,72%{transform:translateX(-3px)}}
+@keyframes sero-look-gaze-r{0%,100%{transform:translateX(0)}22%,72%{transform:translateX(3px)}}
+@keyframes sero-look-head-l{0%,100%{transform:rotate(0)}22%,72%{transform:rotate(-2deg)}}
+@keyframes sero-look-head-r{0%,100%{transform:rotate(0)}22%,72%{transform:rotate(2deg)}}
+
+/* jump (1.1s): squash, leap, stretch, land. celebrate (2.3s) = jump + arm pumps + sparkles. */
+.sero.sero-jump,.sero.sero-celebrate{overflow:visible}
+.sero-jump,.sero-celebrate{--m-smile:0;--m-grin:1}
+.sero-jump .sero-wrap,.sero-celebrate .sero-wrap{transform-origin:150px 314px;animation:sero-jump 1.1s}
+.sero-jump .sero-arm-l{animation:sero-jump-arm-l 1.1s}
+.sero-jump .sero-arm-r{animation:sero-jump-arm-r 1.1s}
+.sero-jump .sero-fore-l{animation:sero-jump-fore-l 1.1s}
+.sero-jump .sero-fore-r{animation:sero-jump-fore-r 1.1s}
+.sero-jump .sero-hat,.sero-celebrate .sero-hat{animation:sero-jump-hat 1.1s}
+.sero-jump .sero-brows,.sero-celebrate .sero-brows{animation:sero-jump-brows 1.1s}
+.sero-jump .sero-shadow,.sero-celebrate .sero-shadow{animation:sero-jump-shadow 1.1s}
+.sero-jump .sero-antenna,.sero-celebrate .sero-antenna{animation:sero-jump-antenna 1.1s}
+.sero-stroll.sero-jump .sero-side-bob{transform-origin:150px 314px;animation:sero-jump 1.1s}
+@keyframes sero-jump{0%{transform:translateY(0) scale(1,1);animation-timing-function:ease-out}10%{transform:translateY(0) scale(1.08,.88);animation-timing-function:ease-out}24%{transform:translateY(-70px) scale(.94,1.1);animation-timing-function:ease-out}42%{transform:translateY(-82px) scale(1,1);animation-timing-function:ease-in}60%{transform:translateY(-8px) scale(.97,1.05);animation-timing-function:ease-in}66%{transform:translateY(0) scale(1.12,.84);animation-timing-function:ease-out}76%{transform:translateY(-18px) scale(.98,1.04);animation-timing-function:ease-in}84%{transform:translateY(0) scale(1.06,.93);animation-timing-function:ease-out}90%{transform:translateY(-4px) scale(1,1.01);animation-timing-function:ease-in}94%{transform:translateY(0) scale(1.02,.98)}100%{transform:translateY(0) scale(1,1)}}
+@keyframes sero-jump-arm-l{0%,12%{transform:rotate(0)}28%{transform:rotate(95deg)}50%{transform:rotate(85deg)}74%{transform:rotate(20deg)}100%{transform:rotate(0)}}
+@keyframes sero-jump-arm-r{0%,12%{transform:rotate(0)}28%{transform:rotate(-95deg)}50%{transform:rotate(-85deg)}74%{transform:rotate(-20deg)}100%{transform:rotate(0)}}
+@keyframes sero-jump-fore-l{0%,12%{transform:rotate(0)}28%,50%{transform:rotate(24deg)}74%{transform:rotate(6deg)}100%{transform:rotate(0)}}
+@keyframes sero-jump-fore-r{0%,12%{transform:rotate(0)}28%,50%{transform:rotate(-24deg)}74%{transform:rotate(-6deg)}100%{transform:rotate(0)}}
+@keyframes sero-jump-hat{0%,10%{transform:translateY(0)}26%{transform:translateY(5px)}42%{transform:translateY(0)}66%{transform:translateY(-7px)}74%{transform:translateY(2px)}84%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+@keyframes sero-jump-brows{0%,12%,86%,100%{opacity:0;transform:translateY(0)}28%,70%{opacity:1;transform:translateY(-4px)}}
+@keyframes sero-jump-shadow{0%,10%,66%,84%,100%{transform:scaleX(1);opacity:.14}24%,60%{transform:scaleX(.6);opacity:.06}76%{transform:scaleX(.85);opacity:.1}}
+@keyframes sero-jump-antenna{0%,10%{transform:rotate(0)}26%{transform:rotate(14deg)}46%{transform:rotate(-6deg)}66%{transform:rotate(-12deg)}76%{transform:rotate(6deg)}84%{transform:rotate(-7deg)}92%{transform:rotate(3deg)}100%{transform:rotate(0)}}
+.sero-celebrate .sero-arm-l{animation:sero-cel-arm-l 2.3s ease-in-out}
+.sero-celebrate .sero-arm-r{animation:sero-cel-arm-r 2.3s ease-in-out}
+.sero-celebrate .sero-fore-l{animation:sero-cel-fore-l 2.3s ease-in-out}
+.sero-celebrate .sero-fore-r{animation:sero-cel-fore-r 2.3s ease-in-out}
+.sero-celebrate .sero-head{animation:sero-cel-head 2.3s ease-in-out}
+.sero-celebrate .sero-spark{animation:sero-spark 1.1s ease-out var(--d) both}
+@keyframes sero-cel-arm-l{0%,6%{transform:rotate(0)}14%{transform:rotate(100deg)}24%{transform:rotate(88deg)}36%{transform:rotate(60deg)}48%{transform:rotate(70deg)}58%{transform:rotate(100deg)}68%{transform:rotate(80deg)}78%{transform:rotate(100deg)}100%{transform:rotate(0)}}
+@keyframes sero-cel-arm-r{0%,6%{transform:rotate(0)}14%{transform:rotate(-100deg)}24%{transform:rotate(-88deg)}36%{transform:rotate(-60deg)}48%{transform:rotate(-70deg)}58%{transform:rotate(-100deg)}68%{transform:rotate(-80deg)}78%{transform:rotate(-100deg)}100%{transform:rotate(0)}}
+@keyframes sero-cel-fore-l{0%,6%{transform:rotate(0)}14%,78%{transform:rotate(24deg)}100%{transform:rotate(0)}}
+@keyframes sero-cel-fore-r{0%,6%{transform:rotate(0)}14%,78%{transform:rotate(-24deg)}100%{transform:rotate(0)}}
+@keyframes sero-cel-head{0%,100%{transform:rotate(0)}30%{transform:rotate(-3deg)}60%{transform:rotate(3deg)}80%{transform:rotate(-2deg)}}
+@keyframes sero-spark{0%{opacity:0;transform:scale(0) rotate(0)}30%{opacity:1;transform:scale(1.2) rotate(20deg)}100%{opacity:0;transform:scale(.4) rotate(90deg)}}
+
+/* show (2.6s): holds the tablet out to the left, looks at it, the bars redraw */
+.sero-show .sero-arm-l{animation:sero-show-arm 2.6s ease-in-out}
+.sero-show .sero-fore-l{animation:sero-show-fore 2.6s ease-in-out}
+.sero-show .sero-tablet{animation:sero-show-tablet 2.6s ease-in-out}
+.sero-show .sero-face{animation:sero-show-face 2.6s ease-in-out}
+.sero-show .sero-hat{animation:sero-look-hat-l 2.6s ease-in-out}
+.sero-show .sero-head-shape{animation:sero-look-shape 2.6s ease-in-out}
+.sero-show .sero-head{animation:sero-look-head-l 2.6s ease-in-out}
+.sero-show .sero-gaze{animation:sero-show-gaze 2.6s ease-in-out}
+.sero-show .sero-bar{animation:sero-bar-grow 2.6s ease-in-out var(--d)}
+.sero-show .sero-screen{animation:sero-screen 2.6s ease-in-out}
+@keyframes sero-show-arm{0%{transform:rotate(0)}10%{transform:rotate(-6deg)}25%,75%{transform:rotate(48deg)}100%{transform:rotate(0)}}
+@keyframes sero-show-fore{0%{transform:rotate(0)}25%,75%{transform:rotate(24deg)}100%{transform:rotate(0)}}
+@keyframes sero-show-tablet{0%{transform:rotate(0)}25%,75%{transform:rotate(-72deg)}100%{transform:rotate(0)}}
+@keyframes sero-show-face{0%,100%{transform:translateX(0) scaleX(1)}25%,75%{transform:translateX(-12px) scaleX(.92)}}
+@keyframes sero-show-gaze{0%,100%{transform:translate(0,0)}25%,75%{transform:translate(-3px,2px)}}
+@keyframes sero-bar-grow{0%,22%{transform:scaleY(1)}30%{transform:scaleY(.1)}45%,100%{transform:scaleY(1)}}
+@keyframes sero-screen{0%,100%{fill:#1F6FB5}50%{fill:#2A86D6}}
+
+/* point (2s): right arm straight out, looks that way. Use sero-flip to point the other way. */
+.sero-point .sero-arm-r{animation:sero-point-arm 2s ease-in-out}
+.sero-point .sero-fore-r{animation:sero-point-fore 2s ease-in-out}
+.sero-point .sero-fore-r-seg{animation:sero-point-seg 2s ease-in-out}
+.sero-point .sero-hand-r{animation:sero-point-hand 2s ease-in-out}
+.sero-point .sero-face{animation:sero-look-face-r 2s ease-in-out}
+.sero-point .sero-hat{animation:sero-look-hat-r 2s ease-in-out}
+.sero-point .sero-head-shape{animation:sero-look-shape 2s ease-in-out}
+.sero-point .sero-gaze{animation:sero-look-gaze-r 2s ease-in-out}
+@keyframes sero-point-arm{0%{transform:rotate(0)}10%{transform:rotate(8deg)}25%,75%{transform:rotate(-48deg)}100%{transform:rotate(0)}}
+@keyframes sero-point-fore{0%{transform:rotate(0)}25%,75%{transform:rotate(-24deg)}100%{transform:rotate(0)}}
+@keyframes sero-point-seg{0%,15%{transform:scale(1,1)}30%,70%{transform:scale(1,1.25)}85%,100%{transform:scale(1,1)}}
+@keyframes sero-point-hand{0%,15%{transform:translateY(0)}30%,70%{transform:translateY(8px)}85%,100%{transform:translateY(0)}}
+
+/* alert (1.6s): head pops, antenna flashes, "!" */
+.sero-alert{--m-smile:0;--m-o:1;--brows:1;--brow-l:translateY(-3px);--brow-r:translateY(-3px);--eye-l:scale(1.12);--eye-r:scale(1.12);--tip:#FFE29A}
+.sero-alert .sero-head{animation:sero-alert-head 1.6s ease-out}
+.sero-alert .sero-hat{animation:sero-alert-hat 1.6s ease-out}
+.sero-alert .sero-bang{animation:sero-pop 1.6s ease-out}
+.sero-alert .sero-tip-glow{animation:sero-flash 1.6s ease-out}
+.sero-alert .sero-antenna{animation:sero-alert-antenna 1.6s ease-out}
+@keyframes sero-alert-head{0%{transform:translateY(0)}12%{transform:translateY(-6px)}26%{transform:translateY(1px)}36%,100%{transform:translateY(0)}}
+@keyframes sero-alert-hat{0%{transform:translateY(0)}10%{transform:translateY(2px)}22%{transform:translateY(-6px)}36%{transform:translateY(1px)}46%,100%{transform:translateY(0)}}
+@keyframes sero-pop{0%{opacity:0;transform:scale(.3) translateY(6px)}14%{opacity:1;transform:scale(1.2) translateY(-2px)}22%{transform:scale(1) translateY(0)}78%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:scale(.8) translateY(-8px)}}
+@keyframes sero-flash{0%,8%,24%,40%,56%,100%{opacity:0}16%,32%,48%{opacity:1}}
+@keyframes sero-alert-antenna{0%{transform:rotate(0)}12%{transform:rotate(-14deg)}26%{transform:rotate(10deg)}40%{transform:rotate(-5deg)}54%,100%{transform:rotate(0)}}
+
+/* ---- 6. States (held until the class is removed) ---- */
+/* think: hand to chin, head tilted, eyes up and right, antenna pulsing */
+.sero-think{--m-smile:0;--m-flat:1;--brows:1;--brow-l:translateY(1px) rotate(4deg);--brow-r:translateY(-3px) rotate(-8deg);--gaze:translate(3px,-3px);--eye-l:scaleY(.85);--eye-r:scaleY(.85);--glow:1;--tip:#FFB45C}
+.sero-think .sero-gaze,.sero-think .sero-antenna{animation:none}
+.sero-think .sero-head{animation:none;transform:rotate(4deg)}
+.sero-think .sero-head-pose{animation:sero-think-sway 3.2s ease-in-out infinite}
+.sero-think .sero-arm-r{animation:none;transform:rotate(-83deg)}
+.sero-think .sero-fore-r{animation:none;transform:rotate(-104deg)}
+.sero-think .sero-fore-r-loop{animation:sero-think-tap 1.6s ease-in-out infinite}
+.sero-think .sero-tip-glow{animation:sero-glow 1.2s ease-in-out infinite}
+@keyframes sero-think-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(1.5deg)}}
+@keyframes sero-think-tap{0%,100%{transform:rotate(0)}50%{transform:rotate(5deg)}}
+@keyframes sero-glow{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.25)}}
+
+/* work: reads the tablet (loading / fetching), the chart redraws on a loop */
+.sero-work{--m-smile:0;--m-flat:1;--gaze:translate(-3px,4px);--eye-l:scaleY(.88);--eye-r:scaleY(.88);--glow:1;--tip:#FFB45C}
+.sero-work .sero-gaze,.sero-work .sero-antenna{animation:none}
+.sero-work .sero-head{animation:none;transform:rotate(-5deg) translateY(2px)}
+.sero-work .sero-head-pose{animation:sero-work-nod 2.8s ease-in-out infinite}
+.sero-work .sero-face{transform:translateX(-7px) scaleX(.95)}
+.sero-work .sero-hat{transform:translateX(-3px)}
+.sero-work .sero-fore-l{transform:rotate(-28deg)}
+.sero-work .sero-tablet{transform:rotate(28deg)}
+.sero-work .sero-bar{animation:sero-bar-cycle 1.4s ease-in-out var(--d) infinite}
+.sero-work .sero-screen{animation:sero-screen 1.4s ease-in-out infinite}
+.sero-work .sero-tip-glow{animation:sero-glow 1.2s ease-in-out infinite}
+@keyframes sero-work-nod{0%,100%{transform:translateY(0)}50%{transform:translateY(1.5px)}}
+@keyframes sero-bar-cycle{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+
+/* sleep: slumped, eyes shut, antenna drooping, slow breathing, zzz */
+.sero-sleep{--m-smile:0;--m-flat:1}
+.sero-sleep .sero-gaze{animation:none}
+.sero-sleep .sero-eyes{animation:none;transform:scaleY(.08)}
+.sero-sleep .sero-head{animation:none;transform:translateY(5px) rotate(7deg)}
+.sero-sleep .sero-head-pose{animation:sero-sleep-breathe 4.5s ease-in-out infinite}
+.sero-sleep .sero-hat{transform:translate(2px,3px) rotate(3deg)}
+.sero-sleep .sero-antenna{animation:none;transform:rotate(32deg)}
+.sero-sleep .sero-body-bob{animation:sero-sleep-bob 4.5s ease-in-out infinite}
+.sero-sleep .sero-arm-r{transform:rotate(-6deg)}.sero-sleep .sero-arm-l{transform:rotate(6deg)}
+.sero-sleep .sero-z{animation:sero-zz 3s ease-out var(--d) infinite}
+@keyframes sero-sleep-breathe{0%,100%{transform:rotate(0)}50%{transform:rotate(1.5deg)}}
+@keyframes sero-sleep-bob{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(2px) scaleY(.99)}}
+@keyframes sero-zz{0%{opacity:0;transform:translate(0,6px) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translate(10px,-26px) scale(1.15)}}
+
+/* sorry: a shrug, sad brows, antenna down (errors, "couldn't find that") */
+.sero-sorry{--m-smile:0;--m-sad:1;--brows:1;--brow-l:rotate(-12deg) translateY(-1px);--brow-r:rotate(12deg) translateY(-1px);--gaze:translate(0,2px)}
+.sero-sorry .sero-gaze,.sero-sorry .sero-antenna{animation:none}
+.sero-sorry .sero-head{animation:none;transform:translateY(4px) rotate(-3deg)}
+.sero-sorry .sero-head-pose{animation:sero-sorry-sway 3s ease-in-out infinite}
+.sero-sorry .sero-antenna{transform:rotate(26deg)}
+.sero-sorry .sero-arm-l{transform:rotate(30deg)}.sero-sorry .sero-fore-l{transform:rotate(70deg)}
+.sero-sorry .sero-arm-r{transform:rotate(-30deg)}.sero-sorry .sero-fore-r{transform:rotate(-70deg)}
+.sero-sorry .sero-tablet{transform:rotate(-100deg)}
+@keyframes sero-sorry-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-1.5deg)}}
+
+/* confused: head cocked, one brow up, "?" (ambiguous question, not sure what was meant) */
+.sero-confused{--m-smile:0;--m-wavy:1;--brows:1;--brow-l:translateY(-4px) rotate(-8deg);--brow-r:translateY(1px) rotate(4deg);--gaze:translate(-2px,0);--eye-r:scaleY(.8)}
+.sero-confused .sero-gaze{animation:none}
+.sero-confused .sero-head{animation:none;transform:rotate(-8deg)}
+.sero-confused .sero-hat{transform:translate(-2px,1px) rotate(-2deg)}
+.sero-confused .sero-arm-r{transform:rotate(-15deg)}.sero-confused .sero-fore-r{transform:rotate(-60deg)}
+.sero-confused .sero-qmark{animation:sero-qmark 2.4s ease-in-out infinite}
+.sero-confused .sero-antenna{animation:sero-confused-antenna 2.4s ease-in-out infinite}
+@keyframes sero-qmark{0%{opacity:0;transform:translateY(6px) scale(.6) rotate(-8deg)}15%{opacity:1;transform:translateY(0) scale(1.1) rotate(4deg)}25%{transform:translateY(0) scale(1) rotate(0)}80%{opacity:1;transform:translateY(-2px) scale(1) rotate(0)}100%{opacity:0;transform:translateY(-10px) scale(.9)}}
+@keyframes sero-confused-antenna{0%,100%{transform:rotate(0)}15%{transform:rotate(-10deg)}25%{transform:rotate(6deg)}35%,100%{transform:rotate(0)}}
+
+/* hidden / peek (edge) / peek-corner. Peeks end hidden: swap to sero-hidden before removing the class. */
+.sero-hidden .sero-wrap{transform:translateY(310px)}
+.sero-hidden-corner .sero-wrap{transform:translate(150px,340px)}
+.sero-peek .sero-shadow,.sero-peek-corner .sero-shadow,.sero-hidden .sero-shadow,.sero-hidden-corner .sero-shadow{opacity:0}
+.sero-peek .sero-wrap{transform:translateY(148px);animation:sero-peek 5.4s cubic-bezier(.45,0,.25,1) forwards}
+.sero-peek .sero-peek-hands{opacity:1;animation:sero-peek-hands 5.4s ease-in-out forwards}
+.sero-peek .sero-head{animation:sero-peek-head 5.4s ease-in-out}
+.sero-peek .sero-face{animation:sero-peek-face 5.4s ease-in-out}
+.sero-peek .sero-gaze{animation:sero-peek-gaze 5.4s ease-in-out}
+.sero-peek .sero-eyes{animation:sero-peek-blink 5.4s ease-in-out}
+.sero-peek .sero-hat{animation:sero-peek-hat 5.4s ease-in-out}
+.sero-peek .sero-antenna{animation:sero-peek-antenna 5.4s ease-in-out}
+.sero-peek-corner .sero-wrap{transform:translate(89px,150px) rotate(-14deg);animation:sero-cpeek 6s cubic-bezier(.45,0,.25,1) forwards}
+.sero-peek-corner .sero-head{animation:sero-cpeek-head 6s ease-in-out}
+.sero-peek-corner .sero-face{animation:sero-cpeek-face 6s ease-in-out}
+.sero-peek-corner .sero-gaze{animation:sero-cpeek-gaze 6s ease-in-out}
+.sero-peek-corner .sero-eyes{animation:sero-cpeek-blink 6s ease-in-out}
+.sero-peek-corner .sero-hat{animation:sero-cpeek-hat 6s ease-in-out}
+.sero-peek-corner .sero-eye-r{animation:sero-cpeek-wink 6s ease-in-out}
+.sero-peek-corner .sero-m-grin{animation:sero-cpeek-grin 6s ease-in-out}
+.sero-peek-corner .sero-m-smile{animation:sero-cpeek-smile 6s ease-in-out}
+.sero-peek-corner .sero-antenna{animation:sero-cpeek-antenna 6s ease-in-out}
+@keyframes sero-peek{0%{transform:translateY(310px)}13%{transform:translateY(182px)}58%{transform:translateY(178px)}68%{transform:translateY(148px)}86%{transform:translateY(148px)}93%{transform:translateY(310px)}100%{transform:translateY(310px)}}
+@keyframes sero-peek-hands{0%{opacity:0;transform:translateY(30px)}6%{opacity:1;transform:translateY(30px)}13%{opacity:1;transform:translateY(0)}86%{opacity:1;transform:translateY(0)}93%{opacity:1;transform:translateY(34px)}97%,100%{opacity:0;transform:translateY(34px)}}
+@keyframes sero-peek-head{0%,20%{transform:rotate(0)}27%,34%{transform:rotate(-6deg)}41%,50%{transform:rotate(6deg)}58%,70%{transform:rotate(0)}76%,84%{transform:rotate(-3deg)}93%,100%{transform:rotate(0)}}
+@keyframes sero-peek-face{0%,20%{transform:translateX(0)}27%,34%{transform:translateX(-9px)}41%,50%{transform:translateX(9px)}58%,100%{transform:translateX(0)}}
+@keyframes sero-peek-gaze{0%,22%{transform:translateX(0)}28%,34%{transform:translateX(-3px)}42%,50%{transform:translateX(3px)}58%,100%{transform:translateX(0)}}
+@keyframes sero-peek-blink{0%,60%,66%,100%{transform:scaleY(1)}63%{transform:scaleY(.08)}}
+@keyframes sero-peek-hat{0%,74%,90%,100%{transform:translate(0,0) rotate(0)}79%,85%{transform:translate(-3px,-10px) rotate(-9deg)}}
+@keyframes sero-peek-antenna{0%,10%{transform:rotate(0)}15%{transform:rotate(-10deg)}20%{transform:rotate(6deg)}25%,100%{transform:rotate(0)}}
+@keyframes sero-cpeek{0%{transform:translate(150px,340px) rotate(0)}11%{transform:translate(94px,158px) rotate(-11deg)}17%{transform:translate(98px,172px) rotate(-9deg)}22%{transform:translate(96px,166px) rotate(-10deg)}60%{transform:translate(96px,166px) rotate(-10deg)}66%{transform:translate(87px,146px) rotate(-15deg)}70%{transform:translate(89px,150px) rotate(-14deg)}85%{transform:translate(89px,150px) rotate(-14deg)}89%{transform:translate(92px,140px) rotate(-12deg)}95%{transform:translate(150px,340px) rotate(0)}100%{transform:translate(150px,340px) rotate(0)}}
+@keyframes sero-cpeek-head{0%,24%{transform:rotate(0)}30%,38%{transform:rotate(-5deg)}45%,54%{transform:rotate(5deg)}60%,100%{transform:rotate(0)}}
+@keyframes sero-cpeek-face{0%,24%{transform:translateX(0)}30%,38%{transform:translateX(-9px)}45%,54%{transform:translateX(9px)}60%,100%{transform:translateX(0)}}
+@keyframes sero-cpeek-gaze{0%,26%{transform:translateX(0)}32%,38%{transform:translateX(-3px)}46%,54%{transform:translateX(3px)}60%,100%{transform:translateX(0)}}
+@keyframes sero-cpeek-blink{0%,64%,70%,100%{transform:scaleY(1)}67%{transform:scaleY(.08)}}
+@keyframes sero-cpeek-hat{0%,74%,90%,100%{transform:translate(0,0) rotate(0)}79%,85%{transform:translate(-3px,-10px) rotate(-9deg)}}
+@keyframes sero-cpeek-wink{0%,75%,81%,100%{transform:scaleY(1)}77%,79%{transform:scaleY(.08)}}
+@keyframes sero-cpeek-grin{0%,73%,84%,100%{opacity:0}75%,82%{opacity:1}}
+@keyframes sero-cpeek-smile{0%,73%,84%,100%{opacity:1}75%,82%{opacity:0}}
+@keyframes sero-cpeek-antenna{0%,8%{transform:rotate(0)}13%{transform:rotate(14deg)}18%{transform:rotate(-8deg)}23%{transform:rotate(3deg)}28%,100%{transform:rotate(0)}}
+
+/* stroll: the front rig folds away and the side rig walks (toggle; add sero-stroll-left to walk the other way) */
+.sero-front,.sero-side{transform-origin:150px 200px}
+.sero-front{transition:transform .2s ease-in .2s}
+.sero-side{transform:scaleX(0);transition:transform .2s ease-out 0s}
+.sero-stroll .sero-front{transform:scaleX(0);transition-delay:0s}
+.sero-stroll .sero-side{transform:scaleX(1);transition-delay:.2s}
+.sero-stroll.sero-stroll-left .sero-side{transform:scaleX(-1)}
+.sero-leg-n,.sero-leg-f{transform-origin:150px 284px}
+.sero-boot{transform-origin:150px 300px}
+.sero-arm-far{transform-origin:150px 214px}
+.sero-side-head{transform-origin:150px 184px}
+.sero-side-eye{transform-origin:191px 136px;animation:sero-idle-blink 7.3s ease-in-out infinite}
+.sero-stroll .sero-side-bob{animation:sero-walk-bob 1.2s ease-in-out infinite}
+.sero-stroll .sero-leg-n{animation:sero-leg 1.2s ease-in-out infinite}
+.sero-stroll .sero-boot{animation:sero-boot 1.2s ease-in-out infinite}
+.sero-stroll .sero-leg-f .sero-boot{animation-delay:-.6s}
+.sero-stroll .sero-leg-f{animation:sero-leg 1.2s ease-in-out infinite;animation-delay:-.6s}
+.sero-stroll .sero-arm-far{animation:sero-arm-far 1.2s ease-in-out infinite}
+.sero-stroll .sero-side-head{animation:sero-walk-head 1.2s ease-in-out infinite}
+.sero-stroll .sero-shadow{animation:sero-walk-shadow .6s ease-in-out infinite}
+@keyframes sero-leg{0%{transform:rotate(-30deg) translateY(0)}50%{transform:rotate(30deg) translateY(0)}75%{transform:rotate(0deg) translateY(-7px)}100%{transform:rotate(-30deg) translateY(0)}}
+@keyframes sero-arm-far{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(45deg)}}
+@keyframes sero-boot{0%{transform:rotate(30deg)}50%{transform:rotate(-30deg)}75%{transform:rotate(0deg)}100%{transform:rotate(30deg)}}
+@keyframes sero-walk-bob{0%,50%,100%{transform:translateY(0)}25%,75%{transform:translateY(-3px)}}
+@keyframes sero-walk-head{0%,100%{transform:rotate(1.5deg)}50%{transform:rotate(-1.5deg)}}
+@keyframes sero-walk-shadow{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.92)}}
+
+/* ---- 7. Thought cloud (optional) ---- */
+.sero{--bubble-fill:#FFFFFF;--bubble-stroke:#0B2A4A;--bubble-text:#0B2A4A;--bubble-scale:1}
+.sero.sero-bubble-on{overflow:visible}
+.sero-bubble{opacity:0;transform-origin:230px 96px;transform:scale(var(--bubble-scale))}
+.sero-bubble-on .sero-bubble{opacity:1;animation:sero-bubble-float 3.4s ease-in-out .5s infinite}
+.sero-bubble-on .sero-bubble-cloud{animation:sero-bubble-pop .5s cubic-bezier(.3,1.4,.5,1) .18s both}
+.sero-bubble-on .sero-bubble-dot1{animation:sero-bubble-pop .3s ease-out both}
+.sero-bubble-on .sero-bubble-dot2{animation:sero-bubble-pop .3s ease-out .1s both}
+.sero-bubble-cloud{transform-origin:252px 30px}
+.sero-bubble-dot1,.sero-bubble-dot2{transform-box:fill-box;transform-origin:center}
+.sero-bubble-fill{fill:var(--bubble-fill)}.sero-bubble-line{stroke:var(--bubble-stroke)}
+.sero-bubble-text{fill:var(--bubble-text)}
+.sero-bubble-dotrow{opacity:0}.sero-bubble-dotrow circle{fill:var(--bubble-text);transform-box:fill-box;transform-origin:center}
+.sero-bubble-on.sero-bubble-dots .sero-bubble-text{opacity:0}
+.sero-bubble-on.sero-bubble-dots .sero-bubble-dotrow{opacity:1}
+.sero-bubble-on.sero-bubble-dots .sero-bubble-dotrow circle{animation:sero-bubble-dot 1.2s ease-in-out var(--d) infinite}
+.sero-bubble-left .sero-bubble-shape{transform:scaleX(-1);transform-origin:150px 0px}
+.sero-bubble-left .sero-bubble-content{transform:translateX(-204px)}
+@keyframes sero-bubble-float{0%,100%{transform:scale(var(--bubble-scale)) translateY(0)}50%{transform:scale(var(--bubble-scale)) translateY(-3px)}}
+@keyframes sero-bubble-pop{0%{opacity:0;transform:scale(.2)}100%{opacity:1;transform:scale(1)}}
+@keyframes sero-bubble-dot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
+
+/* ---- 8. Modifiers ---- */
+.sero-flip .sero-root{transform:scaleX(-1)}
+.sero-static *,.sero-static{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){.sero *{animation:none!important;transition:none!important}}
+</style>
+
+<ellipse class="sero-shadow" cx="150" cy="318" rx="60" ry="6" fill="#0B2A4A" opacity="0.14"/>
+
+<g class="sero-root">
+<g class="sero-front"><g class="sero-wrap"><g class="sero-body-bob">
+
+<!-- feet -->
+<g class="sero-legs">
+<g class="sero-foot-l"><rect x="116" y="286" width="30" height="26" rx="12" fill="#1F6FB5"/><rect x="114" y="304" width="34" height="10" rx="5" fill="#0B2A4A"/></g>
+<g class="sero-foot-r"><rect x="154" y="286" width="30" height="26" rx="12" fill="#1F6FB5"/><rect x="152" y="304" width="34" height="10" rx="5" fill="#0B2A4A"/></g>
+</g>
+
+<!-- torso: neck, shell, belt, chest panel with the anchor -->
+<g class="sero-torso">
+<rect x="132" y="180" width="36" height="16" fill="#1F6FB5"/>
+<rect x="106" y="192" width="88" height="98" rx="30" fill="#D5E1ED"/>
+<rect x="106" y="192" width="82" height="92" rx="28" fill="#FFFFFF"/>
+<rect x="106" y="258" width="88" height="10" fill="#1F6FB5"/>
+<rect x="140" y="255" width="20" height="16" rx="3" fill="#F58220"/>
+<rect x="124" y="210" width="52" height="32" rx="8" fill="#0B2A4A"/>
+<g class="sero-anchor" fill="none" stroke="#CFE3F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="150" cy="216" r="3"/><line x1="150" y1="219" x2="150" y2="238"/><line x1="143.5" y1="224" x2="156.5" y2="224"/><path d="M141 232 Q142 240 150 240 Q158 240 159 232"/><path d="M138.5 234.5 L141 231.5 L143.5 234.5"/><path d="M156.5 234.5 L159 231.5 L161.5 234.5"/></g>
+</g>
+
+<!-- head: pivots at the neck (150,184). head-pose carries the state loops so poses can ease in. -->
+<g class="sero-head"><g class="sero-head-pose">
+<rect x="64" y="120" width="16" height="30" rx="7" fill="#1F6FB5"/>
+<rect x="220" y="120" width="16" height="30" rx="7" fill="#1F6FB5"/>
+<g class="sero-antenna">
+<line x1="230" y1="122" x2="246" y2="100" stroke="#1F6FB5" stroke-width="4" stroke-linecap="round"/>
+<circle class="sero-tip-glow" cx="248" cy="96" r="11" fill="url(#sero-g-glow)"/>
+<circle class="sero-tip" cx="248" cy="96" r="5" fill="#F58220"/>
+</g>
+<g class="sero-head-shape">
+<rect x="78" y="80" width="144" height="104" rx="38" fill="#D5E1ED"/>
+<rect x="78" y="80" width="136" height="96" rx="36" fill="#FFFFFF"/>
+</g>
+<g class="sero-face">
+<rect x="94" y="114" width="112" height="54" rx="26" fill="#0B2A4A"/>
+<g class="sero-brows" fill="none" stroke="#2EC4A6" stroke-width="2.5" stroke-linecap="round">
+<path class="sero-brow-l" d="M118 121 Q126 116 134 121"/>
+<path class="sero-brow-r" d="M166 121 Q174 116 182 121"/>
+</g>
+<g class="sero-eyes"><g class="sero-gaze">
+<g class="sero-eye-l"><rect x="119" y="126" width="14" height="20" rx="7" fill="#2EC4A6"/><circle cx="123.5" cy="131" r="2.2" fill="#CFFFF5" opacity=".85"/></g>
+<g class="sero-eye-r"><rect x="167" y="126" width="14" height="20" rx="7" fill="#2EC4A6"/><circle cx="171.5" cy="131" r="2.2" fill="#CFFFF5" opacity=".85"/></g>
+</g></g>
+<g class="sero-mouth" fill="none" stroke="#2EC4A6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+<path class="sero-m sero-m-smile" d="M137 156 Q150 165 163 156"/>
+<path class="sero-m sero-m-flat" d="M141 158 L159 158"/>
+<circle class="sero-m sero-m-o" cx="150" cy="158" r="5"/>
+<path class="sero-m sero-m-grin" d="M135 154 Q150 172 165 154 Z" fill="#2EC4A6"/>
+<path class="sero-m sero-m-sad" d="M139 161 Q150 153 161 161"/>
+<path class="sero-m sero-m-wavy" d="M138 158 Q144 153 150 158 Q156 163 162 158"/>
+</g>
+</g>
+<g class="sero-hat">
+<path d="M88 102 Q88 40 150 40 Q212 40 212 102 Z" fill="#F58220"/>
+<path d="M100 88 Q102 60 128 50" fill="none" stroke="#FFA24D" stroke-width="5" stroke-linecap="round"/>
+<rect x="140" y="42" width="20" height="60" fill="#D9680F"/>
+<rect x="72" y="98" width="156" height="14" rx="7" fill="#D9680F"/>
+<circle cx="150" cy="72" r="18" fill="#FFFFFF"/>
+<g class="sero-logo" transform="translate(139.75 56.2) scale(0.099)">
+<polygon points="185,20 105,19 20,103 18,263 89,196 93,115" fill="url(#sero-g-teal)"/>
+<polygon points="188,61 116,131 113,209 22,298 105,301 189,217" fill="url(#sero-g-blue)"/>
+</g>
+<circle cx="150" cy="105" r="4" fill="#FFE29A"/>
+</g>
+</g></g>
+
+<!-- left arm (viewer's left): shoulder (108,214) → elbow (90,234) → hand (80,264) holding the tablet -->
+<g class="sero-arm-l">
+<line x1="108" y1="214" x2="90" y2="234" stroke="#1F6FB5" stroke-width="16" stroke-linecap="round"/>
+<g transform="translate(90 234) rotate(18.4)"><g class="sero-fore-l"><g class="sero-fore-l-loop">
+<g class="sero-fore-l-seg"><rect x="-8" y="-4" width="16" height="35.6" rx="8" fill="#1F6FB5"/></g>
+<g class="sero-hand-l"><g transform="translate(0 31.6) rotate(-18.4)">
+<g class="sero-tablet">
+<rect x="-24" y="2" width="38" height="28" rx="5" fill="#0B2A4A"/>
+<rect class="sero-screen" x="-20" y="6" width="30" height="20" rx="3" fill="#1F6FB5"/>
+<rect class="sero-bar" style="--d:0s" x="-15" y="17" width="4" height="6" rx="1" fill="#FFFFFF"/>
+<rect class="sero-bar" style="--d:.12s" x="-8" y="12" width="4" height="11" rx="1" fill="#FFFFFF"/>
+<rect class="sero-bar" style="--d:.24s" x="-1" y="9" width="4" height="14" rx="1" fill="#FFFFFF"/>
+</g>
+<circle cx="0" cy="0" r="10" fill="#F58220"/>
+</g></g>
+</g></g></g>
+</g>
+
+<!-- right arm (viewer's right): shoulder (192,214) → elbow (210,234) → hand (220,264). The forearm can telescope. -->
+<g class="sero-arm-r">
+<line x1="192" y1="214" x2="210" y2="234" stroke="#1F6FB5" stroke-width="16" stroke-linecap="round"/>
+<g transform="translate(210 234) rotate(-18.4)"><g class="sero-fore-r"><g class="sero-fore-r-loop">
+<g class="sero-fore-r-seg"><rect x="-8" y="-4" width="16" height="35.6" rx="8" fill="#1F6FB5"/></g>
+<g class="sero-hand-r"><circle cx="0" cy="31.6" r="10" fill="#F58220"/></g>
+</g></g></g>
+</g>
+
+<!-- effects: wave arcs, sparkles, "?", "!", zzz -->
+<g class="sero-fx">
+<g class="sero-arcs" fill="none" stroke="#7FB2E0" stroke-width="3" stroke-linecap="round"><path d="M252 160 Q259 168 252 176"/><path d="M260 152 Q271 168 260 184"/></g>
+<g fill="#FFE29A">
+<g transform="translate(62 66)"><path class="sero-spark" style="--d:.55s" d="M0-7L1.8-1.8 7 0 1.8 1.8 0 7-1.8 1.8-7 0-1.8-1.8Z"/></g>
+<g transform="translate(236 46)"><path class="sero-spark" style="--d:.65s" d="M0-7L1.8-1.8 7 0 1.8 1.8 0 7-1.8 1.8-7 0-1.8-1.8Z"/></g>
+<g transform="translate(258 140)"><path class="sero-spark" style="--d:.75s" d="M0-6L1.5-1.5 6 0 1.5 1.5 0 6-1.5 1.5-6 0-1.5-1.5Z"/></g>
+<g transform="translate(46 150)"><path class="sero-spark" style="--d:.85s" d="M0-6L1.5-1.5 6 0 1.5 1.5 0 6-1.5 1.5-6 0-1.5-1.5Z"/></g>
+<g transform="translate(118 26)"><path class="sero-spark" style="--d:.95s" d="M0-5L1.3-1.3 5 0 1.3 1.3 0 5-1.3 1.3-5 0-1.3-1.3Z"/></g>
+<g transform="translate(198 24)"><path class="sero-spark" style="--d:1.05s" d="M0-5L1.3-1.3 5 0 1.3 1.3 0 5-1.3 1.3-5 0-1.3-1.3Z"/></g>
+</g>
+<g transform="translate(238 76)"><text class="sero-qmark" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#7FB2E0">?</text></g>
+<g transform="translate(240 76)"><text class="sero-bang" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#F58220">!</text></g>
+<g fill="#9CC4EA" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="700">
+<g transform="translate(228 96)"><text class="sero-z" style="--d:0s" font-size="12">z</text></g>
+<g transform="translate(242 78)"><text class="sero-z" style="--d:1s" font-size="16">z</text></g>
+<g transform="translate(258 60)"><text class="sero-z" style="--d:2s" font-size="21">z</text></g>
+</g>
+</g>
+
+</g></g></g>
+
+<!-- thought cloud: hidden unless sero-bubble-on. Text is replaced by sero.js bubble(); up to two lines. -->
+<g class="sero-bubble" aria-hidden="true">
+<g class="sero-bubble-shape">
+<circle class="sero-bubble-dot1 sero-bubble-fill sero-bubble-line" cx="222" cy="90" r="3.5" stroke-width="2.5"/>
+<circle class="sero-bubble-dot2 sero-bubble-fill sero-bubble-line" cx="232" cy="74" r="5.5" stroke-width="2.5"/>
+<g class="sero-bubble-cloud">
+<g class="sero-bubble-fill sero-bubble-line" stroke-width="3">
+<circle cx="222" cy="36" r="18"/><circle cx="240" cy="20" r="21"/><circle cx="264" cy="22" r="19"/><circle cx="282" cy="38" r="15"/><circle cx="252" cy="44" r="17"/><circle cx="268" cy="44" r="15"/><circle cx="236" cy="46" r="14"/>
+</g>
+<g class="sero-bubble-fill">
+<circle cx="222" cy="36" r="18"/><circle cx="240" cy="20" r="21"/><circle cx="264" cy="22" r="19"/><circle cx="282" cy="38" r="15"/><circle cx="252" cy="44" r="17"/><circle cx="268" cy="44" r="15"/><circle cx="236" cy="46" r="14"/>
+</g>
+</g>
+</g>
+<g class="sero-bubble-content">
+<text class="sero-bubble-text" x="252" y="36" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="15" font-weight="700"><tspan class="sero-bubble-l1" x="252">Hmm…</tspan><tspan class="sero-bubble-l2" x="252" dy="15"></tspan></text>
+<g class="sero-bubble-dotrow"><circle style="--d:0s" cx="240" cy="32" r="3.5"/><circle style="--d:.15s" cx="252" cy="32" r="3.5"/><circle style="--d:.3s" cx="264" cy="32" r="3.5"/></g>
+</g>
+</g>
+
+<!-- side rig, used only while strolling -->
+<g class="sero-side"><g class="sero-side-bob">
+<g class="sero-arm-far"><line x1="150" y1="214" x2="150" y2="256" stroke="#175A94" stroke-width="14" stroke-linecap="round"/><circle cx="150" cy="262" r="9" fill="#D9680F"/></g>
+<g class="sero-leg-f"><rect x="143" y="282" width="14" height="24" rx="6" fill="#175A94"/><g class="sero-boot"><rect x="141" y="294" width="30" height="20" rx="9" fill="#175A94"/><rect x="139" y="306" width="34" height="8" rx="4" fill="#0B2A4A"/></g></g>
+<g class="sero-leg-n"><rect x="143" y="282" width="14" height="24" rx="6" fill="#1F6FB5"/><g class="sero-boot"><rect x="141" y="294" width="30" height="20" rx="9" fill="#1F6FB5"/><rect x="139" y="306" width="34" height="8" rx="4" fill="#0B2A4A"/></g></g>
+<rect x="140" y="180" width="20" height="16" fill="#1F6FB5"/>
+<rect x="125" y="192" width="50" height="98" rx="24" fill="#D5E1ED"/>
+<rect x="125" y="192" width="46" height="92" rx="22" fill="#FFFFFF"/>
+<rect x="125" y="258" width="50" height="10" fill="#1F6FB5"/>
+<rect x="163" y="255" width="10" height="16" rx="3" fill="#F58220"/>
+<g class="sero-side-head">
+<line x1="98" y1="128" x2="80" y2="106" stroke="#1F6FB5" stroke-width="4" stroke-linecap="round"/>
+<circle cx="77" cy="102" r="5" fill="#F58220"/>
+<rect x="88" y="80" width="124" height="104" rx="38" fill="#D5E1ED"/>
+<rect x="88" y="80" width="116" height="96" rx="36" fill="#FFFFFF"/>
+<circle cx="128" cy="140" r="14" fill="#1F6FB5"/>
+<circle cx="128" cy="140" r="6" fill="#175A94"/>
+<rect x="146" y="114" width="72" height="54" rx="26" fill="#0B2A4A"/>
+<g class="sero-side-eye"><rect x="184" y="126" width="14" height="20" rx="7" fill="#2EC4A6"/><circle cx="188.5" cy="131" r="2.2" fill="#CFFFF5" opacity=".85"/></g>
+<path d="M188 156 Q200 165 212 156" fill="none" stroke="#2EC4A6" stroke-width="3" stroke-linecap="round"/>
+<path d="M96 102 Q96 42 148 42 Q200 42 200 102 Z" fill="#F58220"/>
+<path d="M108 88 Q110 60 132 50" fill="none" stroke="#FFA24D" stroke-width="5" stroke-linecap="round"/>
+<rect x="92" y="98" width="134" height="14" rx="7" fill="#D9680F"/>
+<ellipse cx="184" cy="72" rx="9" ry="17" fill="#FFFFFF"/>
+<g transform="translate(180.3 56.2) scale(0.055 0.099)">
+<polygon points="185,20 105,19 20,103 18,263 89,196 93,115" fill="url(#sero-g-teal)"/>
+<polygon points="188,61 116,131 113,209 22,298 105,301 189,217" fill="url(#sero-g-blue)"/>
+</g>
+<circle cx="216" cy="105" r="4" fill="#FFE29A"/>
+</g>
+<path d="M150 214 L150 244 L181 247" fill="none" stroke="#1F6FB5" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="172" y="214" width="30" height="32" rx="4" fill="#0B2A4A"/>
+<rect x="176" y="218" width="22" height="24" rx="3" fill="#1F6FB5"/>
+<rect x="180" y="233" width="4" height="6" rx="1" fill="#FFFFFF"/>
+<rect x="186" y="228" width="4" height="11" rx="1" fill="#FFFFFF"/>
+<rect x="192" y="224" width="4" height="15" rx="1" fill="#FFFFFF"/>
+<circle cx="181" cy="248" r="9" fill="#F58220"/>
+</g></g>
+
+<!-- hands on the ledge during the edge peek -->
+<g class="sero-peek-hands">
+<rect x="44" y="316" width="34" height="34" rx="14" fill="#F58220"/>
+<rect x="222" y="316" width="34" height="34" rx="14" fill="#F58220"/>
+<g stroke="#D9680F" stroke-width="2" stroke-linecap="round">
+<line x1="53" y1="320" x2="53" y2="330"/><line x1="61" y1="320" x2="61" y2="330"/><line x1="69" y1="320" x2="69" y2="330"/>
+<line x1="231" y1="320" x2="231" y2="330"/><line x1="239" y1="320" x2="239" y2="330"/><line x1="247" y1="320" x2="247" y2="330"/>
+</g>
+</g>
+</g>
+</svg>

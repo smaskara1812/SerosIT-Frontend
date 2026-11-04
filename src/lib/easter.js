@@ -136,6 +136,17 @@ export function triggerSignature() {
   window.dispatchEvent(new CustomEvent('seros:signature'))
 }
 
+// True when what was typed into the home search is Sero's greeting. Like the others it never takes over a real page name.
+export function isSeroPhrase(text) {
+  return EASTER_EGGS.sero && EASTER_EGGS.seroTricks && !customBanner && matches(text, EASTER_EGGS.seroPhrases)
+}
+
+// Sero walks the banner and waves; he is in the home banner (see HomeSero) and listens for this.
+export function triggerSero() {
+  if (!EASTER_EGGS.sero || !EASTER_EGGS.seroTricks) return
+  window.dispatchEvent(new CustomEvent('seros:sero'))
+}
+
 // True when what was typed into the home search is the spud-in phrase.
 export function isSpudPhrase(text) {
   return EASTER_EGGS.spudIn && matches(text, EASTER_EGGS.spudPhrases)
@@ -164,7 +175,7 @@ export function riddleForNow(now = Date.now()) {
   const h = Math.imul(slot ^ 0x9e3779b1, 0x85ebca6b) >>> 0
   if ((h >>> 3) % EASTER_EGGS.riddleEveryNthSlot !== 0) return null
   // A riddle is only asked if the secret it leads to is switched on.
-  const all = [...(EASTER_EGGS.sunset ? RIDDLES.sunset : []), ...(EASTER_EGGS.spudIn ? RIDDLES.spud : []), ...(EASTER_EGGS.chopper && !customBanner ? RIDDLES.chopper : []), ...(EASTER_EGGS.rigMove && !customBanner ? RIDDLES.rigmove : []), ...(EASTER_EGGS.fracJob && !customBanner ? RIDDLES.frac : []), ...(EASTER_EGGS.convoy && !customBanner ? RIDDLES.convoy : [])]
+  const all = [...(EASTER_EGGS.sunset ? RIDDLES.sunset : []), ...(EASTER_EGGS.spudIn ? RIDDLES.spud : []), ...(EASTER_EGGS.chopper && !customBanner ? RIDDLES.chopper : []), ...(EASTER_EGGS.rigMove && !customBanner ? RIDDLES.rigmove : []), ...(EASTER_EGGS.fracJob && !customBanner ? RIDDLES.frac : []), ...(EASTER_EGGS.convoy && !customBanner ? RIDDLES.convoy : []), ...(EASTER_EGGS.sero && EASTER_EGGS.seroTricks && !customBanner ? RIDDLES.sero : [])]
   if (!all.length) return null
   return all[(h >>> 11) % all.length]
 }

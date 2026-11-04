@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Home as HomeIcon, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import PageSearch from '@/components/PageSearch'
+import { EASTER_EGGS } from '@/config/easterEggs'
+
+const SceneSero = lazy(() => import('@/components/sero/SceneSero'))
 
 // A page that does not exist: a dry well. Seros runs mobile onshore land rigs, so this is one of those: a lattice
 // mast on its substructure, the doghouse with the company name, ramps down either side. The rig crew are still
@@ -120,6 +123,12 @@ export default function NotFound() {
       <div className="rounded-3xl border border-border bg-card shadow-sm">
         <div className="relative overflow-hidden rounded-t-3xl">
           <DryWell tipped={tipped} onLettering={onLettering} />
+          {EASTER_EGGS.sero && (
+            <Suspense fallback={null}>
+              {/* Sero stands on the dry ground, puzzled, looking up at the mast; he startles when the bucket tips */}
+              <SceneSero left="68%" bottom="4%" width="16.5%" state="confused" gaze={[-1, -0.8]} react={tipped ? 'alert' : null} />
+            </Suspense>
+          )}
           {tipped && (
             <p role="status" className="bucket-caption absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#14285a]/90 px-4 py-1.5 text-sm font-semibold text-white shadow-lg">
               One drop… and it's dry again.

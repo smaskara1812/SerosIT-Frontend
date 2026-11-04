@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LockKeyhole } from 'lucide-react'
+import { EASTER_EGGS } from '@/config/easterEggs'
+
+const SceneSero = lazy(() => import('@/components/sero/SceneSero'))
 
 // Rendered in place of a page's real content when the signed-in user lacks
 // view rights on it — used instead of silently redirecting to "/", which
@@ -116,6 +119,12 @@ export default function AccessDenied() {
       <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
         <div className="relative">
           <Gate trying={trying} onTry={tryGate} />
+          {EASTER_EGGS.sero && (
+            <Suspense fallback={null}>
+              {/* Sero stands in front of the barrier, sorry he cannot let you through; he shakes his head whenever the gate is tried */}
+              <SceneSero left="68%" bottom="3%" width="16.5%" state="sorry" react={trying ? 'shake' : null} />
+            </Suspense>
+          )}
           {trying && (
             <p role="status" className="animate-in fade-in-0 slide-in-from-bottom-2 absolute bottom-3 left-1/2 w-max max-w-[92%] -translate-x-1/2 rounded-full bg-[#17203d]/90 px-4 py-1.5 text-center text-sm font-semibold text-white shadow-lg duration-300 motion-reduce:animate-none">
               {joke}

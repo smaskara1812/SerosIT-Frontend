@@ -24,6 +24,14 @@ export const EASTER_EGGS = {
   sunsetPhrases: ['golden hour', 'magic hour', 'sunset', 'sundown', 'dusk','golden'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts the sunset scene
   spudIn: true, // the spud-in animation, started by a secret phrase typed into the home page search
   spudPhrases: ['spud in', 'spud', 'spudding in', 'spudding', 'spud date'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it
+  sero: true, // Sero, the Seros mascot, standing in the home banner (and on the 404 and access-denied pages). He is part of the app, not a hidden touch: this switch only shows or hides him
+  seroTricks: true, // what he does: pokes, eyes that follow the cursor, a nap when the page is idle, the search-box reactions, the morning wave and the secret phrase. Off = he only stands and breathes
+  seroPhrases: ['sero', 'hello sero', 'hi sero', 'hey sero'], // typed into the home page search and confirmed with Enter: he walks the banner, waves and tips his hat
+  seroSleepAfterMs: 6 * 60 * 1000, // idle time on the home page before he dozes off (the idle hints start earlier, at idleHintAfterMs); any movement wakes him
+  seroSleepyFrom: 22, // from this hour of the night (22 = 10 pm) until seroSleepyUntil he is drowsy
+  seroSleepyUntil: 5,
+  seroMorningFrom: 5, // a morning wave, once per visit, between these hours
+  seroMorningUntil: 11,
   rigLoadingLines: true, // rig-floor wording instead of plain "Loading…"
 
   // Clues, so people can find the hidden touches without being told. Both are quiet and easy to miss.
@@ -40,7 +48,7 @@ export const EASTER_EGGS = {
   ],
 }
 
-// Riddles for the home search box. Each answer is a secret phrase (typed into the search box and confirmed with
+// Riddles for the home search box ("sero" answers are in seroPhrases). Each answer is a secret phrase (typed into the search box and confirmed with
 // Enter): the "sunset" answers must be in sunsetPhrases above, the "spud" answers in spudPhrases, and the "chopper" answers in chopperPhrases, the "rigmove" answers in rigMovePhrases, the "frac" answers in fracPhrases, and the "convoy" answers in convoyPhrases.
 export const RIDDLES = {
   sunset: [
@@ -80,6 +88,13 @@ export const RIDDLES = {
     'Trucks rolling together at first light. One word.',
     'Seros’s LNG and electric trucks run in a line at dawn. What is it?',
     'Its hashtag says two words, and its trucks run on LNG and electricity.',
+  ],
+  sero: [
+    'The one deckhand who never leaves the banner. Say his name.',
+    'Orange hard hat, an anchor on his chest, and he never says a word. Who?',
+    'He keeps the records, carries a tablet and has an antenna. Name him.',
+    'A small robot on the rig crew. What is he called?',
+    'Four letters, he lives on the home page, and he is not a person.',
   ],
   spud: [
     'Two words mark the moment a bit first bites the ground.',

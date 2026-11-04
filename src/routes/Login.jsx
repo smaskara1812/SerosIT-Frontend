@@ -9,6 +9,7 @@ import { EASTER_EGGS } from '@/config/easterEggs'
 import { SIGNED_OUT_REASON } from '@/lib/idle'
 
 const SEEN_KEY = 'serosit.has_signed_in'
+const GREET_KEY = 'serosit.sero_greet'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -52,6 +53,7 @@ export default function Login() {
     try {
       await login(username, password)
       try { localStorage.setItem(SEEN_KEY, '1') } catch { /* private mode */ }
+      try { sessionStorage.setItem(GREET_KEY, '1') } catch { /* private mode */ } // Sero, on the home page, greets the person who has just signed in
       navigate('/', { replace: true })
     } catch (err) {
       if (err.retryAfter) {

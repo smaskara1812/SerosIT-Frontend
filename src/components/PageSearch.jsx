@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { accessibleNavLeaves } from '@/lib/shortcuts'
 import { IconSearch } from '@/components/icons'
-import { isChopperPhrase, isConvoyPhrase, isSignaturePhrase, isTerminalPhrase, isFracPhrase, isRigMovePhrase, isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerChopper, triggerConvoy, triggerFrac, triggerSignature, triggerTerminal, triggerRigMove, triggerSpud, triggerSunset } from '@/lib/easter'
+import { isChopperPhrase, isConvoyPhrase, isSignaturePhrase, isTerminalPhrase, isFracPhrase, isRigMovePhrase, isSeroPhrase, isSpudPhrase, isSunsetPhrase, msToNextSlot, norm, riddleForNow, triggerChopper, triggerConvoy, triggerFrac, triggerSignature, triggerTerminal, triggerRigMove, triggerSero, triggerSpud, triggerSunset } from '@/lib/easter'
 
 const MAX_RESULTS = 8
 
@@ -44,6 +44,7 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
   }, [variant])
 
   const leaves = useMemo(() => accessibleNavLeaves(user), [user])
+  const [focused, setFocused] = useState(false)
   const results = useMemo(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean)
     if (!words.length) return []
@@ -54,6 +55,14 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
       .slice(0, MAX_RESULTS)
       .map((r) => r.leaf)
   }, [leaves, query])
+
+  // The home page's mascot watches this box: whether it is being used, and whether what was typed matches no page.
+  const noMatch = query.trim().length > 0 && results.length === 0
+  useEffect(() => {
+    if (variant !== 'hero') return
+    window.dispatchEvent(new CustomEvent('seros:search', { detail: { focused, typing: query.trim().length > 0, noMatch } }))
+  }, [variant, focused, query, noMatch])
+  useEffect(() => () => { if (variant === 'hero') window.dispatchEvent(new CustomEvent('seros:search', { detail: { focused: false, typing: false, noMatch: false } })) }, [variant])
 
   useEffect(() => {
     function onDocClick(e) {
@@ -81,13 +90,15 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
       const convoy = isConvoyPhrase(query)
       const signature = isSignaturePhrase(query)
       const terminal = isTerminalPhrase(query)
-      if ((spud || chopper || rigMove || frac || convoy || signature || terminal || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
+      const sero = isSeroPhrase(query)
+      if ((spud || sero || chopper || rigMove || frac || convoy || signature || terminal || isSunsetPhrase(query)) && !leaves.some((l) => norm(l.label) === norm(query))) {
         e.preventDefault()
         setOpen(false)
         setQuery('')
         e.currentTarget.blur()
         const first = (user?.display_name || user?.username || '').split(' ')[0]
         if (spud) triggerSpud(first)
+        else if (sero) triggerSero()
         else if (chopper) triggerChopper()
         else if (rigMove) triggerRigMove()
         else if (frac) triggerFrac()
@@ -128,7 +139,8 @@ export default function PageSearch({ variant = 'default', autoFocus = false }) {
           setActive(0)
           setOpen(true)
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => { setOpen(true); setFocused(true) }}
+        onBlur={() => setFocused(false)}
         onKeyDown={onKeyDown}
         placeholder={hero ? (riddle ? `Riddle: ${riddle}` : 'Where would you like to go?  Try “drilling report” or “hazard”') : 'Search for a page…'}
         aria-label="Search for a page"
