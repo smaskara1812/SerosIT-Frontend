@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -132,6 +134,7 @@ function SortHeader({ col, ordering, onClick }) {
 export default function ItAssetsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const ret = useListReturn('itasset.assets')
   const [searchParams] = useSearchParams()
   const canAdd = can(user, 'it_asset.it_assets', 'add')
   const canEdit = can(user, 'it_asset.it_assets', 'edit')
@@ -141,18 +144,19 @@ export default function ItAssetsPage() {
   // IT Asset Overview dashboard (a KPI, chart segment, or quick-action
   // button) opens straight into the matching filtered view — the user can
   // still change any of them normally afterwards.
-  const [filters, setFilters] = useState(() => {
-    const seeded = { active: '', holder_type: '', allocated: '', it_asset_type: '', it_asset_subtype: '', it_asset_mfg: '', own_company: '', warranty_status: '', pur_year: '' }
-    URL_SEEDABLE_FILTERS.forEach((key) => {
-      const v = searchParams.get(key)
-      if (v) seeded[key] = v
-    })
-    return seeded
+  const emptyFilters = { active: '', holder_type: '', allocated: '', it_asset_type: '', it_asset_subtype: '', it_asset_mfg: '', own_company: '', warranty_status: '', pur_year: '' }
+  const seeded = { ...emptyFilters }
+  URL_SEEDABLE_FILTERS.forEach((k) => {
+    const v = searchParams.get(k)
+    if (v) seeded[k] = v
   })
-  const [search, setSearch] = useState('')
-  const [ordering, setOrdering] = useState('-pur_dt')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const hasSeed = URL_SEEDABLE_FILTERS.some((k) => searchParams.get(k))
+  // Remembered for the tab (see usePersistedState); a link's own filters win over them.
+  const [filters, setFilters] = usePersistedState('itasset.assets.filters', emptyFilters, hasSeed ? seeded : undefined)
+  const [search, setSearch] = usePersistedState('itasset.assets.search', '')
+  const [ordering, setOrdering] = usePersistedState('itasset.assets.ordering', '-pur_dt')
+  const [page, setPage] = useState(ret.restoredPage ?? 1)
+  const [pageSize, setPageSize] = usePersistedState('itasset.assets.pageSize', 50)
 
   const [rows, setRows] = useState([])
   const [reloadTick, setReloadTick] = useState(0) // bumped after a version is restored from History
@@ -530,9 +534,7 @@ export default function ItAssetsPage() {
                             title="View Assignment History"
                             onClick={(e) => {
                               e.stopPropagation()
-                              navigate(
-                                `/it-asset/it-asset-holders?asset=${r.it_asset_id}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`
-                              )
+                              ret.open(navigate, `/it-asset/it-asset-holders?asset=${r.it_asset_id}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`, page)
                             }}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
@@ -544,7 +546,7 @@ export default function ItAssetsPage() {
                               title={canEdit ? 'Edit' : 'View'}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                navigate(`/it-asset/it-assets/${r.it_asset_id}/edit`)
+                                ret.open(navigate, `/it-asset/it-assets/${r.it_asset_id}/edit`, page)
                               }}
                               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                             >
@@ -578,7 +580,7 @@ export default function ItAssetsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => navigate(`/it-asset/it-assets/${r.it_asset_id}/edit`)}
+                                onClick={() => ret.open(navigate, `/it-asset/it-assets/${r.it_asset_id}/edit`, page)}
                               >
                                 <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                                 {canEdit ? 'Edit' : 'View'}
@@ -600,9 +602,7 @@ export default function ItAssetsPage() {
                               size="sm"
                               variant="outline"
                               onClick={() =>
-                                navigate(
-                                  `/it-asset/it-asset-holders?asset=${r.it_asset_id}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`
-                                )
+                                ret.open(navigate, `/it-asset/it-asset-holders?asset=${r.it_asset_id}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`, page)
                               }
                             >
                               <History className="h-3.5 w-3.5" />

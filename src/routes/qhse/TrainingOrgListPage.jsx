@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -30,11 +32,13 @@ export default function TrainingOrgListPage() {
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = usePersistedState('qhse.training-org.query', '')
   const [exporting, setExporting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const listRef = useRef(null)
+  const ret = useListReturn('qhse.training-org', listRef)
+  const firstLoadRef = useRef(true)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
 
@@ -52,15 +56,16 @@ export default function TrainingOrgListPage() {
     else setLoading(true)
     const params = buildParams()
     params.set('page', String(pageNum))
-    apiFetch(`${API}?${params}`)
+    return apiFetch(`${API}?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = data.results || data
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(data.count ?? results.length)
         setHasMore(Boolean(data.next))
         setPage(pageNum)
+        return Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -72,6 +77,11 @@ export default function TrainingOrgListPage() {
   useEffect(() => {
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false
+        ret.load((n, append) => loadPage(n, append))
+        return
+      }
       if (listRef.current) listRef.current.scrollTop = 0
       loadPage(1, false)
     }, 300)
@@ -183,7 +193,7 @@ export default function TrainingOrgListPage() {
                       <button
                         type="button"
                         title="Open"
-                        onClick={() => navigate(`/qhse/training-org/${r.training_org_hdr_id}/edit`)}
+                        onClick={() => ret.open(navigate, `/qhse/training-org/${r.training_org_hdr_id}/edit`, page)}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />

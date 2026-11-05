@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import usePersistedState from '@/hooks/usePersistedState'
@@ -149,6 +150,8 @@ export default function IncidentDetailsListPage() {
   const [deleting, setDeleting] = useState(false)
   const [openRow, setOpenRow] = useState(null)
   const listRef = useRef(null)
+  const ret = useListReturn('qhse.incident-details', listRef)
+  const firstLoadRef = useRef(true)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
 
@@ -172,15 +175,16 @@ export default function IncidentDetailsListPage() {
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v))
     params.set('page', String(pageNum))
     params.set('fields', LIST_FIELDS)
-    apiFetch(`/api/qhse/incidents/?${params}`)
+    return apiFetch(`/api/qhse/incidents/?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = data.results || []
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(data.count ?? results.length)
         setHasMore(Boolean(data.next))
         setPage(pageNum)
+        return Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -192,6 +196,11 @@ export default function IncidentDetailsListPage() {
   useEffect(() => {
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false
+        ret.load((n, append) => loadPage(n, query, append))
+        return
+      }
       if (listRef.current) listRef.current.scrollTop = 0
       loadPage(1, query, false)
     }, 300)
@@ -360,7 +369,7 @@ export default function IncidentDetailsListPage() {
                             title={canEdit ? 'Edit' : 'View'}
                             onClick={(e) => {
                               e.stopPropagation()
-                              navigate(`/qhse/incident-details/${r.incident_id}/edit`)
+                              ret.open(navigate, `/qhse/incident-details/${r.incident_id}/edit`, page)
                             }}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >

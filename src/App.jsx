@@ -94,6 +94,7 @@ const SafetyPerformancePage = lazy(() => import('@/routes/dashboards/SafetyPerfo
 const FuelWaterPage = lazy(() => import('@/routes/dashboards/FuelWaterPage'))
 const RigMovesPage = lazy(() => import('@/routes/dashboards/RigMovesPage'))
 const RigOperationsPage = lazy(() => import('@/routes/dashboards/RigOperationsPage'))
+const RigOperationsChecksPage = lazy(() => import('@/routes/dashboards/RigOperationsChecksPage'))
 // Rig Health Index pulled from the app for now — page and its backend
 // view (rig_health_dashboard.py) are kept, just not wired up here.
 // import RigHealthDashboardPage from '@/routes/dashboards/RigHealthDashboardPage'
@@ -216,6 +217,7 @@ function App() {
           <Route path="/dashboards/fuel-water" element={<FuelWaterPage />} />
           <Route path="/dashboards/rig-moves" element={<RigMovesPage />} />
           <Route path="/dashboards/rig-operations" element={<RigOperationsPage />} />
+          <Route path="/dashboards/rig-operations/things-to-check" element={<RigOperationsChecksPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
           <Route path="/reports/rig-performance" element={<RigPerformanceReportPage />} />

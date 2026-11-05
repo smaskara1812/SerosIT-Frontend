@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { RemoteCombobox, TilePicker } from '@/routes/masters/MasterCrudPage'
+import { RemoteCombobox } from '@/routes/masters/MasterCrudPage'
 import { buildFieldErrors, formatApiError, scrollToFirstFieldError } from '@/lib/errors'
 import { FieldErrorScope, FieldFrame } from '@/components/FieldFrame'
 import { localDateStr } from '@/lib/naiveDateTime'
@@ -34,13 +34,9 @@ const MENU_KEY = 'drilling.drilling_report'
 const API = '/api/drilling/drilling-report/'
 
 const RIG_FIELD = { type: 'select-remote', remote: '/api/drilling/my-rigs/', optionLabel: 'rig_name', optionValue: 'rig_id', labelField: 'rig_name' }
-const OPS_FIELD = { type: 'select-remote', remote: '/api/masters/drilling-operations/', optionLabel: 'drilling_ops_name', optionValue: 'drilling_ops_id', labelField: 'drilling_ops_name' }
+// "6. Trips": the operation's number first, as the legacy screen listed them (people pick by number); listed in number order.
+const OPS_FIELD = { type: 'select-remote', remote: '/api/masters/drilling-operations/', optionLabel: 'display_label', optionValue: 'drilling_ops_id', labelField: 'display_label' }
 const SECTION_FIELD = { type: 'select-remote', remote: '/api/masters/drilling-sections/', optionLabel: 'drilling_section_name', optionValue: 'drilling_section_id', labelField: 'drilling_section_name' }
-
-const SHIFT_OPTIONS = [
-  { value: 'M', label: 'Morning' },
-  { value: 'E', label: 'Evening' },
-]
 
 function emptyWellInfo() {
   return { location: '', contract: null, contract_no: '', drilling_completion_dt: null, suggested_date: null }
@@ -50,8 +46,9 @@ function emptyForm() {
   return {
     rig: null, rig_label: '', drilling_dtl_dt: '',
     pob_operator: '', pob_essar: '', pob_essar_serv: '', pob_others: '',
-    wind_speed: '', current_k: '', at_press_mbar: '',
-    vdl: '', avdl: '', tot_vdl: '', kg: '', kg_margin: '', draft: '',
+    // The rig conditions are rarely entered: a new report starts with 0 in each (still editable).
+    wind_speed: '0', current_k: '0', at_press_mbar: '0',
+    vdl: '0', avdl: '0', tot_vdl: '0', kg: '0', kg_margin: '0', draft: '0',
     consumption_diesel: '', consumption_water: '', received_diesel: '', received_water: '', generated_water: '',
     remark: '', downtime_reason: '',
     ops: [],
@@ -60,7 +57,7 @@ function emptyForm() {
 
 function emptyNewOp() {
   return {
-    time_from: '', time_to: '', work_shift: 'M',
+    time_from: '', time_to: '',
     drilling_ops: null, drilling_ops_label: '',
     drilling_section: null, drilling_section_label: '',
     depth_from: '', depth_to: '', operation_desc: '',
@@ -86,60 +83,59 @@ function toIso(dateStr, timeStr, rollIfBefore) {
   return `${y}-${m}-${d}T${timeStr}:00`
 }
 
-// Native <input type="time"> renders 12h-with-AM/PM or 24h purely based on
-// the browser/OS locale, with no way for the page to force one — on a
-// 12-hour locale there's no way to type "14:30" at all, and the legacy
-// system this is replacing was always 24-hour military time. Two explicit
-// Hour/Minute dropdowns compose the same "HH:MM" string the rest of the
-// form already expects (toIso, row display via .slice(11,16)), so entry is
-// unambiguous 24-hour time for every user regardless of locale.
-function from24h(value) {
-  if (!value) return { hour: '', minute: '' }
-  const [hh, mm] = value.split(':')
-  return { hour: hh, minute: mm }
+// Times are typed as the legacy screen took them: 0700 shows as 07:00 as it is typed, 1800 as 18:00 (only the four digits are needed). It is always 24-hour
+// time, whatever the browser's locale. A value that is not a real time (2575) is outlined and counts as empty. On leaving the box a short entry is
+// completed: 7 or 07 -> 07:00, 700 -> 07:00.
+function digitsOf(text) {
+  return String(text || '').replace(/\D/g, '').slice(0, 4)
 }
 
-function to24h(hour, minute) {
-  if (hour === '' || minute === '') return ''
-  return `${hour}:${minute}`
+function showTime(digits) {
+  return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits
+}
+
+function validTime(digits) {
+  if (digits.length !== 4) return ''
+  const h = Number(digits.slice(0, 2))
+  const m = Number(digits.slice(2))
+  return h <= 23 && m <= 59 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : ''
 }
 
 function TimeField24h({ value, onChange, disabled }) {
-  // Local state, not re-derived from `value` every render — while only
-  // the hour has been picked (minute still blank), to24h() has nothing
-  // valid to return yet, so the composed "HH:MM" stays '' until both parts
-  // are set. Deriving hour/minute straight from that '' each render would
-  // silently forget the hour the moment minute is picked next. Only the
-  // component's own mount (i.e. a fresh row) resets this, via the
-  // initializer below.
-  const [local, setLocal] = useState(() => from24h(value))
-  const { hour, minute } = local
+  const [text, setText] = useState(value || '')
+  const digits = digitsOf(text)
+  const bad = digits.length === 4 && !validTime(digits)
 
-  function update(patch) {
-    const next = { hour, minute, ...patch }
-    setLocal(next)
-    onChange(to24h(next.hour, next.minute))
+  function change(e) {
+    const d = digitsOf(e.target.value)
+    setText(showTime(d))
+    onChange(validTime(d))
   }
 
-  const selectClass =
-    'h-9 rounded-lg border border-input bg-transparent px-1 text-sm text-foreground outline-none focus:border-ring disabled:opacity-50'
+  function finish() {
+    let d = digitsOf(text)
+    if (d.length === 0 || d.length === 4) return
+    d = d.length <= 2 ? d.padStart(2, '0') + '00' : d.padStart(4, '0')
+    setText(showTime(d))
+    onChange(validTime(d))
+  }
 
   return (
-    <div className="flex items-center gap-1">
-      <select value={hour} onChange={(e) => update({ hour: e.target.value })} disabled={disabled} className={selectClass}>
-        <option value="">--</option>
-        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map((h) => (
-          <option key={h} value={h}>{h}</option>
-        ))}
-      </select>
-      <span className="text-muted-foreground">:</span>
-      <select value={minute} onChange={(e) => update({ minute: e.target.value })} disabled={disabled} className={selectClass}>
-        <option value="">--</option>
-        {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((m) => (
-          <option key={m} value={m}>{m}</option>
-        ))}
-      </select>
-    </div>
+    <input
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      placeholder="hh:mm"
+      maxLength={5}
+      value={text}
+      onChange={change}
+      onBlur={finish}
+      onKeyDown={(e) => e.key === 'Enter' && finish()}
+      disabled={disabled}
+      aria-invalid={bad || undefined}
+      title="Type the 24-hour time, for example 0700 or 1800"
+      className={`h-9 w-full min-w-0 rounded-lg border bg-transparent px-2 text-center font-mono text-sm text-foreground outline-none focus:border-ring disabled:opacity-50 ${bad ? 'border-destructive ring-2 ring-destructive/40' : 'border-input'}`}
+    />
   )
 }
 
@@ -249,7 +245,7 @@ function checkForm(form, original, today) {
   if (!form.drilling_dtl_dt) e.drilling_dtl_dt = REQUIRED
   else if (form.drilling_dtl_dt > today && changed('drilling_dtl_dt')) e.drilling_dtl_dt = "The Drilling Date can't be in the future."
 
-  const required = original ? REQUIRED_NUMBERS : [...REQUIRED_NUMBERS, 'received_water']
+  const required = original ? REQUIRED_NUMBERS : [...REQUIRED_NUMBERS, 'received_diesel', 'received_water']
   for (const f of required) if (String(form[f]).trim() === '') e[f] = REQUIRED
   for (const f of WHOLE_NUMBERS) {
     const v = String(form[f]).trim()
@@ -371,9 +367,9 @@ export default function DrillingReportFormPage() {
       remark: row.remark || '', downtime_reason: row.downtime_reason || '',
       ops: (row.ops || []).map((o) => ({
         drilling_dtl_ops_id: o.drilling_dtl_ops_id,
-        time_from: o.time_from, time_to: o.time_to, work_shift: o.work_shift,
+        time_from: o.time_from, time_to: o.time_to,
         duration: o.duration,
-        drilling_ops: o.drilling_ops, drilling_ops_label: o.drilling_ops_name,
+        drilling_ops: o.drilling_ops, drilling_ops_label: o.drilling_ops_code_no != null ? `${o.drilling_ops_code_no}. ${o.drilling_ops_name}` : o.drilling_ops_name,
         drilling_section: o.drilling_section, drilling_section_label: o.drilling_section_name,
         depth_from: o.depth_from, depth_to: o.depth_to, rop_trip_mh: o.rop_trip_mh, operation_desc: o.operation_desc,
         prj_drilling_rate: o.prj_drilling_rate, prj_drilling_rate_label: o.rate_code,
@@ -469,7 +465,7 @@ export default function DrillingReportFormPage() {
       downtime_reason: form.downtime_reason || null,
       ops: form.ops.map((o) => ({
         ...(o.drilling_dtl_ops_id ? { drilling_dtl_ops_id: o.drilling_dtl_ops_id } : {}),
-        time_from: o.time_from, time_to: o.time_to, work_shift: o.work_shift,
+        time_from: o.time_from, time_to: o.time_to,
         drilling_ops: o.drilling_ops, drilling_section: o.drilling_section,
         // rop_trip_mh is server-computed (round((Depth_To-Depth_From)/Duration),
         // confirmed against real historical rows) — never sent, same as duration.
@@ -719,7 +715,7 @@ export default function DrillingReportFormPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <UnitField label="Consumption: Diesel" name="consumption_diesel" unit="L" value={form.consumption_diesel} onChange={(e) => setForm((f) => ({ ...f, consumption_diesel: e.target.value }))} disabled={disabled} required />
               <UnitField label="Consumption: Water" name="consumption_water" unit="L" value={form.consumption_water} onChange={(e) => setForm((f) => ({ ...f, consumption_water: e.target.value }))} disabled={disabled} required />
-              <UnitField label="Received: Diesel" name="received_diesel" unit="L" value={form.received_diesel} onChange={(e) => setForm((f) => ({ ...f, received_diesel: e.target.value }))} disabled={disabled} />
+              <UnitField label="Received: Diesel" name="received_diesel" unit="L" required value={form.received_diesel} onChange={(e) => setForm((f) => ({ ...f, received_diesel: e.target.value }))} disabled={disabled} />
               <UnitField label="Received: Water" name="received_water" unit="L" value={form.received_water} onChange={(e) => setForm((f) => ({ ...f, received_water: e.target.value }))} disabled={disabled} />
               <UnitField label="Generated: Water" name="generated_water" unit="L" value={form.generated_water} onChange={(e) => setForm((f) => ({ ...f, generated_water: e.target.value }))} disabled={disabled} />
             </div>
@@ -779,24 +775,22 @@ export default function DrillingReportFormPage() {
             <div className="max-h-[560px] overflow-auto rounded-lg border border-border">
               <table className="w-full table-fixed text-sm">
                 <colgroup>
-                  <col style={{ width: '9%' }} />
-                  <col style={{ width: '9%' }} />
-                  <col style={{ width: '7%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
                   <col style={{ width: '5%' }} />
+                  <col style={{ width: '17%' }} />
+                  <col style={{ width: '9%' }} />
+                  <col style={{ width: '6%' }} />
+                  <col style={{ width: '6%' }} />
+                  <col style={{ width: '6%' }} />
                   <col style={{ width: '14%' }} />
-                  <col style={{ width: '9%' }} />
-                  <col style={{ width: '6%' }} />
-                  <col style={{ width: '6%' }} />
-                  <col style={{ width: '6%' }} />
-                  <col style={{ width: '15%' }} />
-                  <col style={{ width: '9%' }} />
+                  <col style={{ width: '12%' }} />
                   {!disabled && <col style={{ width: '5%' }} />}
                 </colgroup>
                 <thead className="sticky top-0 z-10 bg-card">
                   <tr className="border-b border-border text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                     <th className="px-3 py-2.5 text-left">From</th>
                     <th className="px-3 py-2.5 text-left">To</th>
-                    <th className="px-3 py-2.5 text-left">Shift</th>
                     <th className="px-3 py-2.5 text-right">Dur</th>
                     <th className="px-3 py-2.5 text-left">Operation</th>
                     <th className="px-3 py-2.5 text-left">Section</th>
@@ -810,13 +804,12 @@ export default function DrillingReportFormPage() {
                 </thead>
                 <tbody>
                   {form.ops.length === 0 && !addingOp && (
-                    <tr><td colSpan={12} className="px-3 py-6 text-center text-muted-foreground">No rows yet.</td></tr>
+                    <tr><td colSpan={11} className="px-3 py-6 text-center text-muted-foreground">No rows yet.</td></tr>
                   )}
                   {form.ops.map((o, i) => (
                     <tr key={o.drilling_dtl_ops_id ?? `new-${i}`} className={`border-b border-border/60 last:border-b-0 ${i % 2 === 1 ? 'bg-muted/20' : ''}`}>
                       <td className="px-3 py-2 font-mono">{o.time_from ? o.time_from.slice(11, 16) : ''}</td>
                       <td className="px-3 py-2 font-mono">{o.time_to ? o.time_to.slice(11, 16) : ''}</td>
-                      <td className="px-3 py-2">{o.work_shift === 'M' ? 'Morning' : 'Evening'}</td>
                       <td className="px-3 py-2 text-right font-mono tabular-nums">{o.duration ?? ''}</td>
                       <td className="px-3 py-2 break-words">{o.drilling_ops_label}</td>
                       <td className="px-3 py-2 break-words">{o.drilling_section_label}</td>
@@ -838,21 +831,20 @@ export default function DrillingReportFormPage() {
                     <tr ref={newRowRef} className="border-t border-dashed border-border bg-muted/20">
                       <td className="px-2 py-2"><div className={opErrors.time_from ? 'rounded-lg ring-2 ring-destructive/70' : ''}><TimeField24h value={newOp.time_from} onChange={(v) => setNewOp((r) => ({ ...r, time_from: v }))} /></div></td>
                       <td className="px-2 py-2"><div className={opErrors.time_to ? 'rounded-lg ring-2 ring-destructive/70' : ''}><TimeField24h value={newOp.time_to} onChange={(v) => setNewOp((r) => ({ ...r, time_to: v }))} /></div></td>
-                      <td className="px-2 py-2"><TilePicker options={SHIFT_OPTIONS} value={newOp.work_shift} onChange={(v) => setNewOp((r) => ({ ...r, work_shift: v }))} /></td>
                       <td className="px-2 py-2 text-right text-muted-foreground">auto</td>
                       <td className="px-2 py-2">
                         <div className={opErrors.drilling_ops ? 'rounded-lg ring-2 ring-destructive/70' : ''}>
                         <RemoteCombobox
                           field={OPS_FIELD}
                           value={newOp.drilling_ops}
-                          onChange={(v) => setNewOp((r) => ({ ...r, drilling_ops: v, prj_drilling_rate: null, prj_drilling_rate_label: '' }))}
+                          onChange={(v, raw) => setNewOp((r) => ({ ...r, drilling_ops: v, drilling_ops_label: raw?.display_label ?? '', prj_drilling_rate: null, prj_drilling_rate_label: '' }))}
                           labelValue={newOp.drilling_ops_label}
                         />
                         </div>
                       </td>
                       <td className="px-2 py-2">
                         <div className={opErrors.drilling_section ? 'rounded-lg ring-2 ring-destructive/70' : ''}>
-                          <RemoteCombobox field={SECTION_FIELD} value={newOp.drilling_section} onChange={(v) => setNewOp((r) => ({ ...r, drilling_section: v }))} labelValue={newOp.drilling_section_label} />
+                          <RemoteCombobox field={SECTION_FIELD} value={newOp.drilling_section} onChange={(v, raw) => setNewOp((r) => ({ ...r, drilling_section: v, drilling_section_label: raw?.drilling_section_name ?? r.drilling_section_label }))} labelValue={newOp.drilling_section_label} />
                         </div>
                       </td>
                       <td className="px-2 py-2"><Input type="number" step="0.01" value={newOp.depth_from} onChange={(e) => setNewOp((r) => ({ ...r, depth_from: e.target.value }))} className={`h-9 w-full text-right ${opErrors.depth_from ? 'border-destructive ring-2 ring-destructive/40' : ''}`} /></td>
@@ -864,7 +856,7 @@ export default function DrillingReportFormPage() {
                         <RemoteCombobox
                           field={rateField}
                           value={newOp.prj_drilling_rate}
-                          onChange={(v) => setNewOp((r) => ({ ...r, prj_drilling_rate: v }))}
+                          onChange={(v, raw) => setNewOp((r) => ({ ...r, prj_drilling_rate: v, prj_drilling_rate_label: raw?.rate_code ?? r.prj_drilling_rate_label }))}
                           labelValue={newOp.prj_drilling_rate_label}
                           disabled={!form.rig}
                         />

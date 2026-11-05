@@ -6,6 +6,7 @@ import { can } from '@/lib/permissions'
 import AccessDenied from '@/components/AccessDenied'
 import { Button } from '@/components/ui/button'
 import { MonthYearSelect } from '@/components/PeriodSelects'
+import { useUrlString } from '@/routes/dashboards/dashboardUrlState'
 import { toast } from 'sonner'
 import { Download } from 'lucide-react'
 
@@ -220,7 +221,9 @@ export default function RigPerformanceReportPage() {
   const { user } = useAuth()
   const canView = can(user, MENU_KEY, 'view')
   const canExport = can(user, MENU_KEY, 'export')
-  const [month, setMonth] = useState(defaultMonth)
+  // The month is kept in the address, so Back, refresh and a shared link return to it.
+  const [monthUrl, setMonth] = useUrlString('month')
+  const month = monthUrl || defaultMonth()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)

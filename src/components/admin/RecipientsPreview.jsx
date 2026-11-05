@@ -65,6 +65,7 @@ export function RecipientsPreview({ data, compact = false }) {
       {data.links?.recipients && (
         <div className="flex flex-wrap gap-4 text-sm">
           <Link to={data.links.recipients} className="inline-flex items-center gap-1 text-primary hover:underline"><ExternalLink className="h-3.5 w-3.5" /> Edit these recipients (Alert To Users, for this alert)</Link>
+          {data.links.rig_recipients && <Link to={data.links.rig_recipients} className="inline-flex items-center gap-1 text-primary hover:underline"><ExternalLink className="h-3.5 w-3.5" /> Edit the per-rig / per-company recipients (Rig Alert Recipients)</Link>}
           {data.links.alert && <Link to={data.links.alert} className="inline-flex items-center gap-1 text-primary hover:underline"><ExternalLink className="h-3.5 w-3.5" /> Open the alert</Link>}
         </div>
       )}

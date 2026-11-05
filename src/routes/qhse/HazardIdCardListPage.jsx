@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -119,6 +120,7 @@ export default function HazardIdCardListPage() {
   const [meta, setMeta] = useState({ years: [], hazard_types: [], work_locations: [], categories: [] })
   const [rigs, setRigs] = useState([])
 
+  // list-memory: filters in the address (Back restores them); the batch and scroll position come from useListReturn
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = useMemo(() => {
     const f = {}
@@ -180,6 +182,8 @@ export default function HazardIdCardListPage() {
   const [deleting, setDeleting] = useState(false)
   const [openRow, setOpenRow] = useState(null)
   const listRef = useRef(null)
+  const ret = useListReturn('qhse.hazard-id-card', listRef)
+  const firstLoadRef = useRef(true)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
 
@@ -210,15 +214,16 @@ export default function HazardIdCardListPage() {
     if (ordering) params.set('ordering', ordering)
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v))
     params.set('page', String(pageNum))
-    apiFetch(`/api/qhse/hazard-id-card/?${params}`)
+    return apiFetch(`/api/qhse/hazard-id-card/?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = data.results || []
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(data.count ?? results.length)
         setHasMore(Boolean(data.next))
         setPage(pageNum)
+        return Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -230,6 +235,11 @@ export default function HazardIdCardListPage() {
   useEffect(() => {
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false
+        ret.load((n, append) => loadPage(n, query, append))
+        return
+      }
       if (listRef.current) listRef.current.scrollTop = 0
       loadPage(1, query, false)
     }, 300)
@@ -434,7 +444,7 @@ export default function HazardIdCardListPage() {
                             title={canEdit ? 'Edit' : 'View'}
                             onClick={(e) => {
                               e.stopPropagation()
-                              navigate(`/qhse/hazard-id-card/${r.haz_card_id}/edit`)
+                              ret.open(navigate, `/qhse/hazard-id-card/${r.haz_card_id}/edit`, page)
                             }}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >

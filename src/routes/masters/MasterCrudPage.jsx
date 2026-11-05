@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { MonthYearSelect } from '@/components/PeriodSelects'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiFetch, cachedGet } from '@/lib/api'
@@ -42,7 +43,7 @@ import {
   IconCheck,
   IconAlertCircle,
 } from '@/components/icons'
-import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, X } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink, Info, Users, X } from 'lucide-react'
 import { localDateStr } from '@/lib/naiveDateTime'
 import { checkCommon, nextDay } from '@/lib/mastersChecks'
 import RigLoading from '@/components/RigLoading'
@@ -663,6 +664,10 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
       />
     )
   }
+  // A whole month (not a day): two dropdowns, month and year. It is kept as the 1st of the month ("2026-11-01").
+  if (field.type === 'month') {
+    return <MonthYearSelect value={value ? String(value).slice(0, 7) : ''} onChange={(v) => onChange(v ? `${v}-01` : '')} disabled={disabled} minYear={field.minYear ?? 2020} />
+  }
   if (field.type === 'date' && field.hint) {
     return <NullableDateField value={value} onChange={onChange} disabled={disabled} />
   }
@@ -1071,7 +1076,7 @@ function MasterCrudPageInner() {
       // to go over the wire as null instead.
       const payload = { ...form }
       for (const f of schema.fields) {
-        if ((f.type === 'date' || f.type === 'number') && payload[f.name] === '') {
+        if ((f.type === 'date' || f.type === 'month' || f.type === 'number') && payload[f.name] === '') {
           payload[f.name] = null
         }
         const kept = dateTimesRef.current[f.name]
@@ -1327,26 +1332,27 @@ function MasterCrudPageInner() {
                   }`}
                 />
               )}
-              {schema.rowLink && (
+              {[schema.rowLink, schema.rowLink2].filter(Boolean).map((linkOf, k) => (
                 <span
+                  key={k}
                   role="link"
                   tabIndex={0}
-                  title={schema.rowLink(r).title}
+                  title={linkOf(r).title}
                   onClick={(e) => {
                     e.stopPropagation()
-                    navigate(schema.rowLink(r).to)
+                    navigate(linkOf(r).to)
                   }}
                   onKeyDown={(e) => {
                     if (e.key !== 'Enter' && e.key !== ' ') return
                     e.stopPropagation()
                     e.preventDefault()
-                    navigate(schema.rowLink(r).to)
+                    navigate(linkOf(r).to)
                   }}
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  {k === 0 ? <ExternalLink className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
                 </span>
-              )}
+              ))}
             </button>
           ))}
           {loadingMore && (

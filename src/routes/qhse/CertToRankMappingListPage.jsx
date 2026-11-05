@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -25,7 +26,8 @@ export default function CertToRankMappingListPage() {
 
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState('')
+  // list-memory: unpaged list, so only the search is remembered for the tab (usePersistedState); there is no batch or page to return to
+  const [query, setQuery] = usePersistedState('qhse.cert-to-rank-mapping.query', '')
   const [exporting, setExporting] = useState(false)
 
   usePageSubtitle(rows.length ? `${rows.length} certificates mapped` : null)

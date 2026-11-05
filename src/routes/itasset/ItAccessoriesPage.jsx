@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -28,15 +30,16 @@ const ACTIVE_OPTIONS = [
 export default function ItAccessoriesPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const ret = useListReturn('itasset.accessories')
   const canAdd = can(user, 'masters.it_accessories', 'add')
   const canEdit = can(user, 'masters.it_accessories', 'edit')
   const canDelete = can(user, 'masters.it_accessories', 'delete')
 
-  const [active, setActive] = useState('')
-  const [search, setSearch] = useState('')
-  const [ordering, setOrdering] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [active, setActive] = usePersistedState('itasset.accessories.active', '')
+  const [search, setSearch] = usePersistedState('itasset.accessories.search', '')
+  const [ordering, setOrdering] = usePersistedState('itasset.accessories.ordering', '')
+  const [page, setPage] = useState(ret.restoredPage ?? 1)
+  const [pageSize, setPageSize] = usePersistedState('itasset.accessories.pageSize', 50)
 
   const [rows, setRows] = useState([])
   const [count, setCount] = useState(0)
@@ -211,7 +214,7 @@ export default function ItAccessoriesPage() {
                           <button
                             type="button"
                             title={canEdit ? 'Edit' : 'View'}
-                            onClick={() => navigate(`/it-asset/it-accessories/${r.it_accessory_id}/edit`)}
+                            onClick={() => ret.open(navigate, `/it-asset/it-accessories/${r.it_accessory_id}/edit`, page)}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
                             <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />

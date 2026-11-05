@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -94,6 +96,7 @@ function isOngoing(toDate) {
 export default function ItAssetHoldersPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const ret = useListReturn('itasset.asset-holders')
   const [searchParams, setSearchParams] = useSearchParams()
   const canAdd = can(user, 'it_asset.it_asset_holders', 'add')
   const canEdit = can(user, 'it_asset.it_asset_holders', 'edit')
@@ -104,14 +107,14 @@ export default function ItAssetHoldersPage() {
   const assetFilter = searchParams.get('asset')
   const assetFilterLabel = searchParams.get('sr_no')
 
-  const [status, setStatus] = useState('')
-  const [itAssetType, setItAssetType] = useState('')
-  const [itAssetSubtype, setItAssetSubtype] = useState('')
-  const [ownCompany, setOwnCompany] = useState('')
-  const [search, setSearch] = useState('')
-  const [ordering, setOrdering] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [status, setStatus] = usePersistedState('itasset.asset-holders.status', '')
+  const [itAssetType, setItAssetType] = usePersistedState('itasset.asset-holders.itAssetType', '')
+  const [itAssetSubtype, setItAssetSubtype] = usePersistedState('itasset.asset-holders.itAssetSubtype', '')
+  const [ownCompany, setOwnCompany] = usePersistedState('itasset.asset-holders.ownCompany', '')
+  const [search, setSearch] = usePersistedState('itasset.asset-holders.search', '')
+  const [ordering, setOrdering] = usePersistedState('itasset.asset-holders.ordering', '')
+  const [page, setPage] = useState(ret.restoredPage ?? 1)
+  const [pageSize, setPageSize] = usePersistedState('itasset.asset-holders.pageSize', 50)
 
   const [rows, setRows] = useState([])
   const [reloadTick, setReloadTick] = useState(0) // bumped after a version is restored from History
@@ -420,7 +423,7 @@ export default function ItAssetHoldersPage() {
                               title={canEdit ? 'Edit' : 'View'}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                navigate(`/it-asset/it-asset-holders/${r.it_asset_holder_id}/edit`)
+                                ret.open(navigate, `/it-asset/it-asset-holders/${r.it_asset_holder_id}/edit`, page)
                               }}
                               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                             >
@@ -454,7 +457,7 @@ export default function ItAssetHoldersPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => navigate(`/it-asset/it-asset-holders/${r.it_asset_holder_id}/edit`)}
+                                onClick={() => ret.open(navigate, `/it-asset/it-asset-holders/${r.it_asset_holder_id}/edit`, page)}
                               >
                                 <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                                 {canEdit ? 'Edit' : 'View'}
@@ -487,9 +490,7 @@ export default function ItAssetHoldersPage() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() =>
-                                  navigate(
-                                    `/it-asset/it-asset-holders/new?reassign=${r.it_asset}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`
-                                  )
+                                  ret.open(navigate, `/it-asset/it-asset-holders/new?reassign=${r.it_asset}&sr_no=${encodeURIComponent(r.it_asset_sr_no)}`, page)
                                 }
                               >
                                 <Repeat className="h-3.5 w-3.5" />

@@ -4,6 +4,34 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* The palette the application's utility classes (bg-emerald-100, text-red-600 ...) draw from is the Seros family, not Tailwind's stock colours:
+   success, warning, danger, information and the greys each have a full ramp tuned to sit with the navy, teal and blue of the logo (card: design/seros-colour-card.html).
+   Nothing else needs to change for a page to pick them up. */
+@theme {
+    --color-emerald-50: #ecfbf6; --color-emerald-100: #d2f5e8; --color-emerald-200: #a8e8d2; --color-emerald-300: #6fd6b6; --color-emerald-400: #36bd9a;
+    --color-emerald-500: #12a07f; --color-emerald-600: #0b8368; --color-emerald-700: #0a6853; --color-emerald-800: #0a5343; --color-emerald-900: #08423a; --color-emerald-950: #04271f;
+    --color-green-50: #ecfbf6; --color-green-100: #d2f5e8; --color-green-200: #a8e8d2; --color-green-300: #6fd6b6; --color-green-400: #36bd9a;
+    --color-green-500: #12a07f; --color-green-600: #0b8368; --color-green-700: #0a6853; --color-green-800: #0a5343; --color-green-900: #08423a; --color-green-950: #04271f;
+    --color-amber-50: #fff8e6; --color-amber-100: #feefc2; --color-amber-200: #fddd8a; --color-amber-300: #fbc54a; --color-amber-400: #f5a623;
+    --color-amber-500: #e8900c; --color-amber-600: #c26f07; --color-amber-700: #9a5309; --color-amber-800: #7c420d; --color-amber-900: #66370f; --color-amber-950: #3a1c05;
+    --color-orange-50: #fff4ec; --color-orange-100: #ffe4d0; --color-orange-200: #ffc7a1; --color-orange-300: #ffa366; --color-orange-400: #f97d33;
+    --color-orange-500: #e85f12; --color-orange-600: #c24a0c; --color-orange-700: #9a3b0e; --color-orange-800: #7a3212; --color-orange-900: #642c12; --color-orange-950: #371406;
+    --color-red-50: #fdf0ef; --color-red-100: #fbdcd9; --color-red-200: #f8bab4; --color-red-300: #f18d84; --color-red-400: #e8594d;
+    --color-red-500: #d9342b; --color-red-600: #bd2820; --color-red-700: #9c211b; --color-red-800: #7f1f1a; --color-red-900: #691f1b; --color-red-950: #3a0d0b;
+    --color-blue-50: #eff6fb; --color-blue-100: #d6e8f5; --color-blue-200: #aed1ea; --color-blue-300: #78b0d9; --color-blue-400: #4090c9;
+    --color-blue-500: #2b7cb8; --color-blue-600: #236595; --color-blue-700: #1a4f75; --color-blue-800: #143e5c; --color-blue-900: #102f47; --color-blue-950: #0a1c2b;
+    --color-sky-50: #eef8fc; --color-sky-100: #d5eefa; --color-sky-200: #a9dbf3; --color-sky-300: #6fc3e8; --color-sky-400: #36a8d8;
+    --color-sky-500: #1a8fc0; --color-sky-600: #1673a0; --color-sky-700: #165d82; --color-sky-800: #164d6b; --color-sky-900: #123f58; --color-sky-950: #0a2638;
+    --color-teal-50: #ebfaf9; --color-teal-100: #d0f1ee; --color-teal-200: #a2e2dc; --color-teal-300: #64cec5; --color-teal-400: #3dbdb0;
+    --color-teal-500: #00988a; --color-teal-600: #008077; --color-teal-700: #006661; --color-teal-800: #004c4a; --color-teal-900: #003836; --color-teal-950: #001f1e;
+    --color-purple-50: #f5f2ff; --color-purple-100: #ebe5ff; --color-purple-200: #d9ceff; --color-purple-300: #bfaaff; --color-purple-400: #a283fb;
+    --color-purple-500: #8b5cf6; --color-purple-600: #7440e0; --color-purple-700: #5f31bd; --color-purple-800: #4e2a98; --color-purple-900: #3f257a; --color-purple-950: #261448;
+    --color-gray-50: #f6f8fb; --color-gray-100: #eceff5; --color-gray-200: #dfe4ee; --color-gray-300: #c6cedd; --color-gray-400: #98a3ba;
+    --color-gray-500: #6b7692; --color-gray-600: #525d77; --color-gray-700: #424a60; --color-gray-800: #2f3547; --color-gray-900: #1f2433; --color-gray-950: #12151f;
+    --color-slate-50: #f6f8fb; --color-slate-100: #eceff5; --color-slate-200: #dfe4ee; --color-slate-300: #c6cedd; --color-slate-400: #98a3ba;
+    --color-slate-500: #6b7692; --color-slate-600: #525d77; --color-slate-700: #424a60; --color-slate-800: #2f3547; --color-slate-900: #1f2433; --color-slate-950: #12151f;
+}
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -63,26 +91,82 @@
     --ss-act-bg: #ffffff;
     --ss-grp-text: #8189a3;
     --ss-hover-bg: rgba(26, 63, 122, 0.06);
-    --app-bg: #f0f2f5;
+    --app-bg: #e9eef7;
+
+    /* ── The Seros colour family (card: design/seros-colour-card.html) ──────────────────────────────────────────────────────────────────
+       Navy is the brand (600 = #1a3f7a, the sidebar and primary buttons); teal (500 = #00988A, the logo) and blue (500 = #2b7cb8) are its
+       companions. Every grey of the app is a navy-tinted grey, so surfaces, lines and shadows belong to one family. */
+    --seros-navy-50: #f3f6fc;
+    --seros-navy-100: #e4ebf6;
+    --seros-navy-200: #c7d5ea;
+    --seros-navy-300: #98b0d7;
+    --seros-navy-400: #5b83c2;
+    --seros-navy-500: #2d5da9;
+    --seros-navy-600: #1a3f7a;
+    --seros-navy-700: #143167;
+    --seros-navy-800: #0e224e;
+    --seros-navy-900: #091535;
+    --seros-teal-50: #ebfaf9;
+    --seros-teal-100: #d0f1ee;
+    --seros-teal-200: #a2e2dc;
+    --seros-teal-300: #64cec5;
+    --seros-teal-400: #3dbdb0;
+    --seros-teal-500: #00988a;
+    --seros-teal-600: #008077;
+    --seros-teal-700: #006661;
+    --seros-teal-800: #004c4a;
+    --seros-blue-50: #eff6fb;
+    --seros-blue-100: #d6e8f5;
+    --seros-blue-200: #aed1ea;
+    --seros-blue-300: #78b0d9;
+    --seros-blue-400: #4090c9;
+    --seros-blue-500: #2b7cb8;
+    --seros-blue-600: #236595;
+    --seros-blue-700: #1a4f75;
+
+    /* Depth: four steps, every shadow is the navy at low strength (never black), so layers read as layers without looking heavy.
+       0 the page · 1 cards · 2 the page's top "island" and anything raised above cards · 3 menus, dropdowns, dialogs, toasts. */
+    --shadow-rgb: 14 34 78;
+    --elev-1: 0 1px 2px rgb(var(--shadow-rgb) / 0.07), 0 2px 6px rgb(var(--shadow-rgb) / 0.05);
+    --elev-2: 0 2px 4px rgb(var(--shadow-rgb) / 0.08), 0 8px 18px rgb(var(--shadow-rgb) / 0.10);
+    --elev-3: 0 4px 8px rgb(var(--shadow-rgb) / 0.10), 0 16px 36px rgb(var(--shadow-rgb) / 0.18);
+    --elev-inset: inset 0 1px 2px rgb(var(--shadow-rgb) / 0.07);
+    --edge: var(--seros-navy-200);
+
+    /* From the logo: the charcoal of the wordmark and the two gradients of the mark. */
+    --seros-graphite-50: #f5f6f8;
+    --seros-graphite-100: #e9ebef;
+    --seros-graphite-200: #d3d6dd;
+    --seros-graphite-300: #aeb3be;
+    --seros-graphite-400: #858c9a;
+    --seros-graphite-500: #626978;
+    --seros-graphite-600: #4d5361;
+    --seros-graphite-700: #424242;
+    --seros-graphite-800: #2b2d33;
+    --seros-graphite-900: #1b1d22;
+    --grad-teal: linear-gradient(135deg, #3dbdb0 0%, #1e968a 100%);
+    --grad-navy: linear-gradient(135deg, #2a6aa8 0%, #1e3666 100%);
+    --grad-brand: linear-gradient(180deg, #2a5ca3 0%, #1a3f7a 100%);
+    --grad-mark: linear-gradient(135deg, #3dbdb0 0%, #2b7cb8 55%, #1e3666 100%);
 
     --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --foreground: #1d2330;
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: #1d2330;
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
+    --popover-foreground: #1d2330;
     --primary: #1a3f7a;
     --primary-foreground: #ffffff;
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.965 0.012 255);
+    --secondary-foreground: oklch(0.205 0.03 255);
+    --muted: oklch(0.965 0.012 255);
+    --muted-foreground: oklch(0.52 0.03 255);
+    --accent: oklch(0.955 0.018 255);
+    --accent-foreground: oklch(0.205 0.03 255);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.9 0.018 255);
+    --input: oklch(0.88 0.022 255);
+    --ring: #3dbdb0; /* the logo's teal: focus reads as Seros, not browser-default blue */
     /* Seros brand palette (same hexes as the legacy serosIS dashboard) —
        first real consumer of these tokens, so charts across the app draw
        from one shared, on-brand set instead of ad-hoc colours per page. */
@@ -103,6 +187,9 @@
 }
 
 .dark {
+    --app-bg: #0d1424;
+    --shadow-rgb: 0 0 0;
+    --edge: oklch(1 0 0 / 14%);
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
@@ -148,7 +235,28 @@
   html {
     @apply font-sans;
     }
+  /* Entry boxes sit slightly sunk into their card, so they read as places to type. Components that carry their own look (a box inside an input group,
+     a bare table input) set shadow-none or their own shadow and win over this. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]), textarea, select {
+    box-shadow: var(--elev-inset);
+    }
 }
+
+/* Cards: the white panels of every page rise one step off the page. Same navy-tinted shadow everywhere (see --elev-*). */
+@layer components {
+  .border.bg-card:is(.rounded-2xl, .rounded-xl, .rounded-lg) {
+    box-shadow: var(--elev-1);
+  }
+}
+/* The page's top "island" (a sticky card that holds the title and its buttons, class bg-card/95): one step higher than the cards under it, with a
+   clear edge, so the content scrolling beneath it never blends into it. */
+[class*="bg-card/95"].border {
+  box-shadow: var(--elev-2);
+  border-color: var(--edge);
+  background-color: var(--card);  /* solid: what scrolls beneath it must not show through */
+  background-image: linear-gradient(180deg, color-mix(in oklab, var(--seros-navy-50) 80%, transparent), transparent 70%);
+}
+.dark [class*="bg-card/95"].border { background-image: none; }
 /* Home banner "drill-down" (hidden Konami surprise): the contours sway like a seismic read-out and the sonar rings ping outward. */
 @keyframes contour-sway {
   from { transform: translateY(-7px); }
@@ -714,3 +822,20 @@ html[data-ui-zoom] .min-h-screen { min-height: calc(100vh / var(--ui-zoom, 1)); 
 @keyframes sonar-ping { 0% { opacity: .38; transform: scale(.03); } 70% { opacity: .1; } 100% { opacity: 0; transform: scale(1); } }
 .sonar-blip { transform-box: fill-box; transform-origin: center; opacity: 0; animation: sonar-blip .9s ease-out both; }
 @keyframes sonar-blip { 0% { opacity: .3; transform: scale(.2); } 100% { opacity: 0; transform: scale(1.5); } }
+
+/* ── Signals with depth ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   Status pills and call-out boxes in the success (emerald), warning (amber), danger (red) and information (blue, sky) ramps are given an
+   edge in their own colour, a faint top highlight and a small lift, so they read as raised objects and not flat stickers. */
+[class*="rounded-full"][class*="px-"]:is([class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-red-"], [class*="bg-sky-"], [class*="bg-blue-"], [class*="bg-orange-"], [class*="bg-purple-"]) {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, currentColor 20%, transparent), 0 1px 2px rgb(var(--shadow-rgb) / 0.08);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.5), transparent 75%);
+}
+[class*="rounded-"][class*="border-"][class*="bg-"]:is([class*="border-amber-"], [class*="border-red-"], [class*="border-emerald-"], [class*="border-sky-"], [class*="border-blue-"], [class*="border-orange-"]):not([class*="rounded-full"]) {
+  box-shadow: var(--elev-1), inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+/* A status dot gets a soft halo in its own colour. */
+[class*="rounded-full"]:is([class*="bg-emerald-500"], [class*="bg-green-500"], [class*="bg-amber-500"], [class*="bg-amber-400"], [class*="bg-red-500"], [class*="bg-sky-500"], [class*="bg-blue-500"]):not([class*="px-"]):not([class*="py-"]) {
+  box-shadow: 0 0 0 2px var(--card), 0 1px 3px 1px rgb(var(--shadow-rgb) / 0.28);
+}
+.dark [class*="rounded-full"][class*="px-"]:is([class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-red-"], [class*="bg-sky-"], [class*="bg-blue-"], [class*="bg-orange-"], [class*="bg-purple-"]) { background-image: none; }
+.dark [class*="rounded-"][class*="border-"][class*="bg-"]:is([class*="border-amber-"], [class*="border-red-"], [class*="border-emerald-"], [class*="border-sky-"], [class*="border-blue-"], [class*="border-orange-"]) { box-shadow: var(--elev-1); }

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -62,6 +64,23 @@ function statusInfo(row) {
   return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
 }
 
+function linkFilters(linkParams) {
+  const scope = linkParams.get('scope')
+  const status = linkParams.get('status')
+  // From the Rig Operations dashboard: ?rig=<id>&date_from=YYYY-MM-DD&date_to=YYYY-MM-DD opens the list for that rig and those days.
+  const rig = linkParams.get('rig')
+  const isoDay = (v) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '')
+  return {
+    ...emptyFilters(),
+    scope: SCOPE_TABS.some((t) => t.value && t.value === scope) ? scope : '',
+    status: STATUS_OPTIONS.some((o) => o.value && o.value === status) ? status : '',
+    rig: rig && /^\d+$/.test(rig) ? rig : '',
+    rig_label: rig && /^\d+$/.test(rig) ? (linkParams.get('rig_name') || '').slice(0, 60) : '',
+    date_from: isoDay(linkParams.get('date_from')),
+    date_to: isoDay(linkParams.get('date_to')),
+  }
+}
+
 // Data-entry is the primary use of this page — a wide table the user scans
 // and jumps into, not a side-panel drawer they browse alongside typing.
 // Editing/creating a report gets the whole screen on its own route.
@@ -77,29 +96,21 @@ export default function DrillingReportListPage() {
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = usePersistedState('drilling.report-list.query', '')
   // A link from elsewhere (for example the Home "to approve" tile) can open the list already narrowed:
   // ?scope=pending_for_me or ?status=pending
   const [linkParams] = useSearchParams()
-  const [filters, setFilters] = useState(() => {
-    const scope = linkParams.get('scope')
-    const status = linkParams.get('status')
-    // From the Rig Operations dashboard: ?rig=<id>&date_from=YYYY-MM-DD&date_to=YYYY-MM-DD opens the list for that rig and those days.
-    const rig = linkParams.get('rig')
-    const isoDay = (v) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '')
-    return {
-      ...emptyFilters(),
-      scope: SCOPE_TABS.some((t) => t.value && t.value === scope) ? scope : '',
-      status: STATUS_OPTIONS.some((o) => o.value && o.value === status) ? status : '',
-      rig: rig && /^\d+$/.test(rig) ? rig : '',
-      rig_label: rig && /^\d+$/.test(rig) ? (linkParams.get('rig_name') || '').slice(0, 60) : '',
-      date_from: isoDay(linkParams.get('date_from')),
-      date_to: isoDay(linkParams.get('date_to')),
-    }
-  })
+  // Filters are remembered for the tab (see usePersistedState); a link's own filters (from another page) win over them.
+  const hasLinkFilters = ['scope', 'status', 'rig', 'date_from', 'date_to'].some((k) => linkParams.get(k))
+  const [filters, setFilters] = usePersistedState(
+    'drilling.report-list.filters',
+    emptyFilters(),
+    hasLinkFilters ? linkFilters(linkParams) : undefined,
+  )
   const [showFilters, setShowFilters] = useState(() => Boolean(linkParams.get('rig') || linkParams.get('date_from') || linkParams.get('date_to')))
 
   const listRef = useRef(null)
+  const ret = useListReturn('drilling.report-list', listRef)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
   const skipNextLoadRef = useRef(true)
@@ -125,15 +136,16 @@ export default function DrillingReportListPage() {
     params.set('fields', LIST_FIELDS)
     if (append) setLoadingMore(true)
     else setLoading(true)
-    apiFetch(`${API}?${params}`)
+    return apiFetch(`${API}?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = Array.isArray(data) ? data : data.results || []
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(Array.isArray(data) ? results.length : (data.count ?? results.length))
         setHasMore(!Array.isArray(data) && Boolean(data.next))
         setPage(pageNum)
+        return !Array.isArray(data) && Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -171,7 +183,7 @@ export default function DrillingReportListPage() {
   }
 
   useEffect(() => {
-    loadPage(1, '')
+    ret.load((n, append) => loadPage(n, query, { append }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -318,7 +330,7 @@ export default function DrillingReportListPage() {
               return (
                 <tr
                   key={r.drilling_dtl_id}
-                  onClick={() => navigate(`/drilling/drilling-report/${r.drilling_dtl_id}/edit`)}
+                  onClick={() => ret.open(navigate, `/drilling/drilling-report/${r.drilling_dtl_id}/edit`, page)}
                   className="cursor-pointer border-b border-border/60 transition-colors last:border-b-0 hover:bg-accent/60"
                 >
                   <td className="px-4 py-2.5 font-semibold text-foreground">{r.rig_name}</td>

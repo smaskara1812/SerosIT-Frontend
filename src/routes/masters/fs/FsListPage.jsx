@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -52,9 +54,10 @@ export default function FsListPage({ kind: kindKey }) {
   const canAddStatus = can(user, mastersSchemas['fs-emp-cur-status'].menuKey, 'add')
   const remoteFilters = useMemo(() => schema.fields.filter((f) => f.filterable && f.remote), [schema])
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS)
-  const [labels, setLabels] = useState({})
-  const [query, setQuery] = useState('')
+  const memKey = `masters.fs-${kindKey}`
+  const [filters, setFilters] = usePersistedState(`${memKey}.filters`, EMPTY_FILTERS)
+  const [labels, setLabels] = usePersistedState(`${memKey}.labels`, {})
+  const [query, setQuery] = usePersistedState(`${memKey}.query`, '')
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
@@ -66,6 +69,8 @@ export default function FsListPage({ kind: kindKey }) {
   const [deleting, setDeleting] = useState(false)
   const [exporting, setExporting] = useState(false)
   const listRef = useRef(null)
+  const ret = useListReturn(memKey, listRef)
+  const firstLoadRef = useRef(true)
   const requestIdRef = useRef(0)
   const timerRef = useRef(null)
 
@@ -84,15 +89,16 @@ export default function FsListPage({ kind: kindKey }) {
     else setLoading(true)
     const params = buildParams()
     params.set('page', String(pageNum))
-    apiFetch(`${schema.apiBase}?${params}`)
+    return apiFetch(`${schema.apiBase}?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = data.results || data
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(data.count ?? results.length)
         setHasMore(Boolean(data.next))
         setPage(pageNum)
+        return Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -104,6 +110,11 @@ export default function FsListPage({ kind: kindKey }) {
   useEffect(() => {
     clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false
+        ret.load((n, append) => loadPage(n, append))
+        return
+      }
       if (listRef.current) listRef.current.scrollTop = 0
       loadPage(1, false)
     }, 300)
@@ -269,7 +280,7 @@ export default function FsListPage({ kind: kindKey }) {
                             title={canEdit ? 'Edit' : 'View'}
                             onClick={(e) => {
                               e.stopPropagation()
-                              navigate(kind.editPath(id))
+                              ret.open(navigate, kind.editPath(id), page)
                             }}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
@@ -298,7 +309,7 @@ export default function FsListPage({ kind: kindKey }) {
                       <td colSpan={kind.columns.length + 2} className="px-5 py-4">
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                           {(
-                            <Button size="sm" variant="outline" onClick={() => navigate(kind.editPath(id))}>
+                            <Button size="sm" variant="outline" onClick={() => ret.open(navigate, kind.editPath(id), page)}>
                               <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                               {canEdit ? 'Edit' : 'Open'}
                             </Button>

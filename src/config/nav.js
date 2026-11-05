@@ -566,6 +566,13 @@ export const navTree = [
             menuKey: 'masters.mail_alert_to_users',
           },
           {
+            key: 'rig_alert_recipients',
+            label: 'Rig Alert Recipients',
+            path: '/masters/rig-alert-recipients',
+            icon: IconLink,
+            menuKey: 'masters.rig_alert_recipients',
+          },
+          {
             key: 'mail_recipient_mappings',
             label: 'Mail Recipient Mapping',
             path: '/masters/mail-recipient-mappings',

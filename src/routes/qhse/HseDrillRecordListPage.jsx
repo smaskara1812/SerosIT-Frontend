@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -86,8 +88,8 @@ export default function HseDrillRecordListPage() {
 
   const [meta, setMeta] = useState({ years: [], drill_types: [] })
   const [rigs, setRigs] = useState([])
-  const [filters, setFilters] = useState({ year: '', rig: '', hse_drill: '' })
-  const [ordering, setOrdering] = useState('-drill_dt')
+  const [filters, setFilters] = usePersistedState('qhse.hse-drill-record.filters', { year: '', rig: '', hse_drill: '' })
+  const [ordering, setOrdering] = usePersistedState('qhse.hse-drill-record.ordering', '-drill_dt')
 
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
@@ -95,10 +97,12 @@ export default function HseDrillRecordListPage() {
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = usePersistedState('qhse.hse-drill-record.query', '')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const listRef = useRef(null)
+  const ret = useListReturn('qhse.hse-drill-record', listRef)
+  const firstLoadRef = useRef(true)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
 
@@ -121,15 +125,16 @@ export default function HseDrillRecordListPage() {
     if (ordering) params.set('ordering', ordering)
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v))
     params.set('page', String(pageNum))
-    apiFetch(`/api/qhse/hse-drill-record/?${params}`)
+    return apiFetch(`/api/qhse/hse-drill-record/?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = data.results || data
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(data.count ?? results.length)
         setHasMore(Boolean(data.next))
         setPage(pageNum)
+        return Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -141,6 +146,11 @@ export default function HseDrillRecordListPage() {
   useEffect(() => {
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false
+        ret.load((n, append) => loadPage(n, query, append))
+        return
+      }
       if (listRef.current) listRef.current.scrollTop = 0
       loadPage(1, query, false)
     }, 300)
@@ -279,7 +289,7 @@ export default function HseDrillRecordListPage() {
                       <button
                         type="button"
                         title="Drill Details (Events, Observations, Improvements, Corrective Action, Photos)"
-                        onClick={() => navigate(`/qhse/hse-drill-record/${r.drill_record_hdr_id}/details`)}
+                        onClick={() => ret.open(navigate, `/qhse/hse-drill-record/${r.drill_record_hdr_id}/details`, page)}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <ClipboardList className="h-3.5 w-3.5" />
@@ -298,7 +308,7 @@ export default function HseDrillRecordListPage() {
                         <button
                           type="button"
                           title={canEdit ? 'Edit' : 'View'}
-                          onClick={() => navigate(`/qhse/hse-drill-record/${r.drill_record_hdr_id}/edit`)}
+                          onClick={() => ret.open(navigate, `/qhse/hse-drill-record/${r.drill_record_hdr_id}/edit`, page)}
                           className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                         >
                           <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />

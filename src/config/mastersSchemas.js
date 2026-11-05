@@ -350,7 +350,12 @@ export const mastersSchemas = {
     // name and search for it there by hand.
     rowLink: (r) => ({
       to: `/masters/mail-alert-to-users?alert=${r.alert_id}&alertName=${encodeURIComponent(r.alert_name || '')}`,
-      title: 'View recipients configured for this alert',
+      title: 'View the recipients of this alert (Alert To Users)',
+    }),
+    // Second shortcut: the people set for a rig or a company for this alert (Rig Alert Recipients), added to the above by the mails that go out per rig or company.
+    rowLink2: (r) => ({
+      to: `/masters/rig-alert-recipients?alert=${r.alert_id}&alertName=${encodeURIComponent(r.alert_name || '')}`,
+      title: 'View the per-rig / per-company recipients of this alert (Rig Alert Recipients)',
     }),
     fields: [
       {
@@ -604,6 +609,8 @@ export const mastersSchemas = {
             { value: 'send_open_incident_actions_mail', label: 'Send Open Incident Actions mail' },
             { value: 'send_daily_operations_update_mail', label: 'Send Daily Operations Update mail' },
             { value: 'send_rig_performance_mail', label: 'Send Rig Performance mail' },
+            { value: 'send_drilling_info_not_entered_mail', label: 'Send Drilling Info: Daily Not Entered mail' },
+            { value: 'send_drilling_info_status_mail', label: 'Send Drilling Info Status mail' },
           ],
         },
         required: true,
@@ -1819,9 +1826,9 @@ export const mastersSchemas = {
     idField: 'plan_id',
     nameField: 'display_name',
     activeField: null,
-    listSecondary: (r) => `ILM ${Number(r.ilm_days)} days · R1 ${Number(r.r1_pct)}% / R2 ${Number(r.r2_pct)}%`,
+    listSecondary: (r) => `${r.r1_pct == null ? 'weights carried over' : `R1 ${Number(r.r1_pct)}% / R2 ${Number(r.r2_pct)}%`}`,
     helpText:
-      "How many days of a rig's month are ILM days and how many are normal days. The Rig Performance report calculates the month's revenue projection from this and the project's rates: normal days x the normal day's revenue, plus the ILM amount when there are ILM days. Leave Non-ILM Days blank and the system counts the days the rig is on its project that month (a rig that starts on the 15th, or ends on the 10th, counts only those days) less the ILM days. The percentages say how the normal day's revenue is weighed from the R1, R2 and R3 rates (85 / 15 / 0 unless you change them here for this rig and month). A rig with no row has no ILM days and the default weights. Pick any day of the month: it is kept as the 1st.",
+      "A rig's month: how many normal days it has and how the normal day's revenue is weighed. The Rig Performance report calculates the month's revenue projection from this and the project's rates: normal days x the normal day's revenue, plus the amounts of the planned rig moves. The planned moves (ILM / IPM, any number, entered in hours) are added on Reports > Rig Performance > Masters, on the rig's card. Leave Normal Days blank and the system counts the days the rig is on its project that month (a rig that starts on the 15th, or ends on the 10th, counts only those days) less the planned moves' hours / 24. The percentages say how the normal day's revenue is weighed from the R1, R2 and R3 rates. They are optional: leave them blank and the month uses the weights of the rig's latest earlier month that set them (while it is on the same project), else 85 / 15 / 0. Fill them only for a month that differs. A rig with no row has no planned moves and the weights carried over or the default.",
     fields: [
       {
         name: 'rig',
@@ -1833,13 +1840,80 @@ export const mastersSchemas = {
         labelField: 'rig_name',
         required: true,
       },
-      { name: 'month', label: 'Month', type: 'date', required: true, hint: 'Any day of the month' },
-      { name: 'ilm_days', label: 'ILM Days', type: 'number', required: true, hint: 'Days of the month spent on a rig move (0 if none)' },
-      { name: 'non_ilm_days', label: 'Non-ILM Days', type: 'number', hint: 'Leave blank for automatic: the days on the project less the ILM days' },
-      { name: 'r1_pct', label: 'R1 Weight (%)', type: 'number', required: true, hint: 'Usually 85' },
-      { name: 'r2_pct', label: 'R2 Weight (%)', type: 'number', required: true, hint: 'Usually 15' },
-      { name: 'r3_pct', label: 'R3 Weight (%)', type: 'number', required: true, hint: 'Usually 0. The three weights must add up to 100.' },
+      { name: 'month', label: 'Month', type: 'month', required: true },
+      { name: 'non_ilm_days', label: 'Normal Days', type: 'number', hint: 'Leave blank for automatic: the days on the project less the planned moves' },
+      { name: 'r1_pct', label: 'R1 Weight (%)', type: 'number', hint: 'Leave all three weights blank to carry them over (default 85 / 15 / 0)' },
+      { name: 'r2_pct', label: 'R2 Weight (%)', type: 'number', hint: 'Only fill the weights for a month that differs' },
+      { name: 'r3_pct', label: 'R3 Weight (%)', type: 'number', hint: 'The three weights go together and must add up to 100' },
       { name: 'note', label: 'Note', wide: true },
+    ],
+  },
+  'rig-alert-recipients': {
+    title: 'Rig Alert Recipients',
+    menuKey: 'masters.rig_alert_recipients',
+    apiBase: '/api/masters/rig-alert-recipients/',
+    idField: 'rig_to_email_mapping_id',
+    nameField: 'display_name',
+    activeField: null,
+    // A recipient gets the alert's mail for the rig from the From date until the To date (blank = still receiving).
+    dateActiveField: 'to_dt',
+    linkFilter: { param: 'alert', field: 'alert', labelParam: 'alertName' },
+    listSecondary: (r) => `${r.user_email || ''}${r.to_dt ? ` · until ${r.to_dt}` : ''}`,
+    helpText:
+      "Who gets an alert's mail for one rig. Some mails (for example Drilling Info: Daily Not Entered) go out once per rig, to the people set here for that rig and alert, plus the alert's own recipients in Alert To Users. Pick the alert, the rig (or, for a mail that goes out per company, the company) and the person, and whether they get it as To, Cc or Bcc. The address is the one on the user's record. Leave To blank while they should keep receiving it.",
+    fields: [
+      {
+        name: 'alert',
+        label: 'Alert',
+        type: 'search-remote',
+        remote: '/api/masters/mail-alerts/',
+        optionLabel: 'alert_name',
+        optionValue: 'alert_id',
+        labelField: 'alert_name',
+        wide: true,
+      },
+      {
+        name: 'rig',
+        label: 'Rig',
+        type: 'select-remote',
+        remote: '/api/masters/rigs/',
+        optionLabel: 'rig_name',
+        optionValue: 'rig_id',
+        labelField: 'rig_name',
+      },
+      {
+        name: 'company',
+        label: 'Company',
+        type: 'search-remote',
+        remote: '/api/masters/companies/?owns_rigs=1',
+        optionLabel: 'company_name',
+        optionValue: 'company_id',
+        labelField: 'company_name',
+        hint: 'Either a rig or a company, not both. Choose a company for a mail that goes out per company (Drilling Info Status); only companies that own a rig are listed.',
+      },
+      {
+        name: 'user',
+        label: 'User',
+        type: 'search-remote',
+        remote: '/api/masters/users/',
+        optionLabel: 'display_name',
+        optionValue: 'user_id',
+        labelField: 'user_label',
+        required: true,
+      },
+      {
+        name: 'addressee_type',
+        label: 'Addressee Type',
+        type: 'select',
+        options: [
+          { value: 'T', label: 'To' },
+          { value: 'C', label: 'Cc' },
+          { value: 'B', label: 'Bcc' },
+        ],
+        required: true,
+      },
+      { name: 'from_dt', label: 'From', type: 'date', required: true, hint: 'The first day this person receives the mail' },
+      { name: 'to_dt', label: 'To', type: 'date', hint: 'The last day. Leave blank while they should keep receiving it.' },
     ],
   },
   'ilm-rate-terms': {
@@ -1979,6 +2053,20 @@ export const mastersSchemas = {
     fields: [
       { name: 'rate_code', label: 'Rate Code', required: true },
       { name: 'rate_description', label: 'Description', wide: true },
+      {
+        name: 'rate_class',
+        label: 'Rate Class',
+        type: 'select',
+        options: [
+          { value: 'Operating', label: 'Operating (R1)' },
+          { value: 'Standby', label: 'Standby (R2, R2-A/B/C ...)' },
+          { value: 'Repair', label: 'Repair (R3)' },
+          { value: 'Zero Rate', label: 'Zero Rate (R0)' },
+          { value: 'Force Majeure', label: 'Force Majeure (FM)' },
+          { value: 'Rig Move', label: 'Rig Move (ILM / IPM)' },
+        ],
+        hint: 'What kind of time these hours are. Rig Performance and the Rig Operations dashboard use it to count productive hours. Leave blank for billing items (meterage, MOB, Other).',
+      },
       { name: 'rate_active', label: 'Active', type: 'active-select' },
     ],
   },

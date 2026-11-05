@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -64,15 +66,16 @@ function isOngoing(toDate) {
 export default function ItAccessoryHoldersPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const ret = useListReturn('itasset.accessory-holders')
   const canAdd = can(user, 'it_asset.it_accessory_holders', 'add')
   const canEdit = can(user, 'it_asset.it_accessory_holders', 'edit')
   const canDelete = can(user, 'it_asset.it_accessory_holders', 'delete')
 
-  const [status, setStatus] = useState('')
-  const [accessory, setAccessory] = useState('')
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [status, setStatus] = usePersistedState('itasset.accessory-holders.status', '')
+  const [accessory, setAccessory] = usePersistedState('itasset.accessory-holders.accessory', '')
+  const [search, setSearch] = usePersistedState('itasset.accessory-holders.search', '')
+  const [page, setPage] = useState(ret.restoredPage ?? 1)
+  const [pageSize, setPageSize] = usePersistedState('itasset.accessory-holders.pageSize', 50)
 
   const [rows, setRows] = useState([])
   const [count, setCount] = useState(0)
@@ -280,7 +283,7 @@ export default function ItAccessoryHoldersPage() {
                               title={canEdit ? 'Edit' : 'View'}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                navigate(`/it-asset/it-accessory-holders/${r.it_accessory_holder_id}/edit`)
+                                ret.open(navigate, `/it-asset/it-accessory-holders/${r.it_accessory_holder_id}/edit`, page)
                               }}
                               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                             >
@@ -314,7 +317,7 @@ export default function ItAccessoryHoldersPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => navigate(`/it-asset/it-accessory-holders/${r.it_accessory_holder_id}/edit`)}
+                                onClick={() => ret.open(navigate, `/it-asset/it-accessory-holders/${r.it_accessory_holder_id}/edit`, page)}
                               >
                                 <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                                 {canEdit ? 'Edit' : 'View'}

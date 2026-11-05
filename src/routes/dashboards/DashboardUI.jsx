@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ArrowUpRight, Info, ListFilter } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -32,6 +33,8 @@ export function KpiCard({
   onViewList,
   onFilter,
   filterActive = false,
+  to,
+  toLabel = 'Open the list',
 }) {
   const tint = warning ? 'var(--destructive)' : accent
   return (
@@ -63,6 +66,11 @@ export function KpiCard({
           </div>
         )}
         <p className="truncate text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+        {to && (
+          <Link to={to} title={toLabel} className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
         {onViewList && (
           <button
             type="button"
@@ -96,6 +104,7 @@ export function KpiCard({
       <p className={`text-2xl font-bold ${warning ? 'text-destructive' : 'text-foreground'}`}>{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
       {filterActive && <p className="text-[11px] font-semibold text-primary">Filtering list below</p>}
+      {to && <Link to={to} className="text-[11px] font-semibold text-primary hover:underline">{toLabel} →</Link>}
     </div>
   )
 }

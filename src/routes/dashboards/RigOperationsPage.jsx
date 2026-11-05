@@ -66,14 +66,26 @@ function useDebounced(value, ms = 450) {
   return v
 }
 
+// While a date is being typed the browser reports "" until every part (day, month, year) is filled, and the page turns "" into its default (the From date
+// falls back to 12 months ago), which used to overwrite the part just typed: only the last digit stayed. The text being typed is kept here and only a
+// complete date is sent up; leaving the field with it incomplete goes back to the page's own value.
 function DateField({ label, value, onChange }) {
+  const [draft, setDraft] = useState(null)
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">{label}</p>
       <input
         type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={draft ?? value}
+        onChange={(e) => {
+          const v = e.target.value
+          setDraft(v)
+          if (/^\d{4}-\d{2}-\d{2}$/.test(v) && v >= '1900-01-01') onChange(v)
+        }}
+        onBlur={() => {
+          if (draft === '') onChange('')
+          setDraft(null)
+        }}
         className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none focus:border-ring"
       />
     </div>
@@ -130,7 +142,6 @@ export default function RigOperationsPage() {
   const [toUrl, setTo] = useUrlString('to')
   const [loaded, setLoaded] = useState({ key: null, data: null })
   const [error, setError] = useState('')
-  const [showCheck, setShowCheck] = useState(false)
 
   // Without dates in the address the page shows the last 12 months (the workbook showed all the data; clear a date to widen it).
   const defaultFrom = useMemo(() => isoDaysAgo(365), [])
@@ -241,81 +252,21 @@ export default function RigOperationsPage() {
             <KpiCard icon={Timer} label="Operating % (R1 only)" value={pct(k.operating_pct)} sub={`operating hrs: ${n0(k.operating_hrs)}`} accent="var(--chart-2)" />
             <KpiCard
               icon={TriangleAlert}
-              label="Days to check"
+              label="Things to check"
               value={n0(k.days_to_check)}
-              sub="hours not adding up (latest 2 years)"
+              sub="hours or depths to correct (latest 2 years)"
               warning={k.days_to_check > 0}
-              onFilter={() => setShowCheck((s) => !s)}
-              filterActive={showCheck}
+              to={`/dashboards/rig-operations/things-to-check${selectedRigIds.size ? `?rigs=${[...selectedRigIds].join(',')}` : ''}`}
+              toLabel="Open the list"
             />
           </div>
 
           {data.warnings.length > 0 && (
-            <div className="flex flex-col gap-1 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <div className="flex flex-col gap-1 px-1 text-sm text-amber-700 dark:text-amber-300">
               {data.warnings.map((w) => (
                 <p key={w}>⚠ {w}</p>
               ))}
-              {canReport && data.depth_error_days?.length > 0 && (
-                <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <span className="font-semibold">Open the report:</span>
-                  {data.depth_error_days.slice(0, 8).map((d) => (
-                    <Link key={d.dtl_id} to={reportUrl(d.dtl_id)} className="font-medium underline underline-offset-2">
-                      {d.rig} {dmy(d.date)}
-                    </Link>
-                  ))}
-                </p>
-              )}
-              {data.days_to_check_total > 0 && !showCheck && (
-                <button type="button" onClick={() => setShowCheck(true)} className="self-start text-xs font-semibold underline underline-offset-2">
-                  Show the days to check
-                </button>
-              )}
             </div>
-          )}
-
-          {showCheck && (
-            <ChartCard icon={TriangleAlert} title="Days to check" subtitle={`— ${n0(data.days_to_check_total)} flagged in the latest 2 years of the chosen rigs (first ${n0(data.days_to_check.length)} shown)`} accent="var(--destructive)" bodyClassName="p-0">
-              <Table
-                cols={6}
-                empty={data.days_to_check.filter((r) => selectedRigIds.size === 0 || selectedRigIds.has(r.rig_id)).length === 0 ? 'No day needs checking.' : null}
-                head={
-                  <>
-                    <Th>Rig</Th>
-                    <Th>Date</Th>
-                    <Th right>Operations (h)</Th>
-                    <Th right>Daily summary (h)</Th>
-                    <Th>Problem</Th>
-                    <Th>Record</Th>
-                  </>
-                }
-              >
-                {data.days_to_check
-                  .filter((r) => selectedRigIds.size === 0 || selectedRigIds.has(r.rig_id))
-                  .map((r, i) => (
-                    <tr key={`${r.rig_id}-${r.date}`} className={rowClass(i)}>
-                      <td className="px-3 py-2.5 font-medium text-foreground">{r.rig}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">
-                        <RecordLink to={reportUrl(r.dtl_id)} allowed={canReport} title="Open this day's drilling report">
-                          {dmy(r.date)}
-                        </RecordLink>
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-foreground">{n2(r.ops_hours)}</td>
-                      <td className="px-3 py-2.5 text-right text-muted-foreground">{n2(r.summary_hours)}</td>
-                      <td className="px-3 py-2.5 text-destructive">{r.problems.join('; ')}</td>
-                      <td className="px-3 py-2.5 text-xs">
-                        {canReport ? (
-                          <Link to={reportUrl(r.dtl_id)} className="font-semibold text-primary hover:underline">
-                            Open report →
-                          </Link>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-              </Table>
-              <p className="px-4 py-3 text-[11px] text-muted-foreground">The first and last report days of a rig are often part-days, so they can be flagged legitimately.</p>
-            </ChartCard>
           )}
 
           <ChartCard icon={Layers} title="Rig status board" subtitle="— each rig's latest report (ignores the filters)" accent="var(--chart-2)" bodyClassName="p-0">
@@ -418,17 +369,13 @@ export default function RigOperationsPage() {
                   <td className="px-3 py-2.5 text-right text-muted-foreground">{n0(r.wells_completed)}</td>
                   <td className={`px-3 py-2.5 text-right ${r.check_days > 0 ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}>
                     {r.rig_id && r.check_days > 0 ? (
-                      <button
-                        type="button"
+                      <Link
                         className="font-semibold text-destructive underline underline-offset-2"
-                        title="Show the days to check for this rig"
-                        onClick={() => {
-                          setSelectedRigIds(new Set([r.rig_id]))
-                          setShowCheck(true)
-                        }}
+                        title="Open the things to check for this rig"
+                        to={`/dashboards/rig-operations/things-to-check?rigs=${r.rig_id}`}
                       >
                         {n0(r.check_days)}
-                      </button>
+                      </Link>
                     ) : (
                       n0(r.check_days)
                     )}

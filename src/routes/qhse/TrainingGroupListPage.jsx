@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -30,18 +32,20 @@ export default function TrainingGroupListPage() {
   const canDelete = can(user, MENU_KEY, 'delete')
   const canExport = can(user, MENU_KEY, 'export')
 
-  const [active, setActive] = useState('')
+  const [active, setActive] = usePersistedState('qhse.training-group.active', '')
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = usePersistedState('qhse.training-group.query', '')
   const [exporting, setExporting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const listRef = useRef(null)
+  const ret = useListReturn('qhse.training-group', listRef)
+  const firstLoadRef = useRef(true)
   const requestIdRef = useRef(0)
   const searchTimerRef = useRef(null)
 
@@ -60,15 +64,16 @@ export default function TrainingGroupListPage() {
     else setLoading(true)
     const params = buildParams()
     params.set('page', String(pageNum))
-    apiFetch(`${API}?${params}`)
+    return apiFetch(`${API}?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = data.results || data
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(data.count ?? results.length)
         setHasMore(Boolean(data.next))
         setPage(pageNum)
+        return Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -80,6 +85,11 @@ export default function TrainingGroupListPage() {
   useEffect(() => {
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false
+        ret.load((n, append) => loadPage(n, append))
+        return
+      }
       if (listRef.current) listRef.current.scrollTop = 0
       loadPage(1, false)
     }, 300)
@@ -216,7 +226,7 @@ export default function TrainingGroupListPage() {
                         <button
                           type="button"
                           title="Open"
-                          onClick={() => navigate(`/qhse/training-group/${r.training_group_hdr_id}/edit`)}
+                          onClick={() => ret.open(navigate, `/qhse/training-group/${r.training_group_hdr_id}/edit`, page)}
                           className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                         >
                           <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />

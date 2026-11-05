@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import usePersistedState from '@/hooks/usePersistedState'
+import { useListReturn } from '@/hooks/useListReturn'
 import RowOpenIcon from '@/components/RowOpenIcon'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -35,9 +37,9 @@ export default function TrainingLogListPage() {
   const canDelete = can(user, MENU_KEY, 'delete')
   const canExport = can(user, MENU_KEY, 'export')
 
-  const [filters, setFilters] = useState({})
+  const [filters, setFilters] = usePersistedState('qhse.training-log.filters', {})
   const [labels, setLabels] = useState({})
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = usePersistedState('qhse.training-log.query', '')
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
@@ -48,6 +50,8 @@ export default function TrainingLogListPage() {
   const [deleting, setDeleting] = useState(false)
   const [exporting, setExporting] = useState(false)
   const listRef = useRef(null)
+  const ret = useListReturn('qhse.training-log', listRef)
+  const firstLoadRef = useRef(true)
   const requestIdRef = useRef(0)
   const timerRef = useRef(null)
 
@@ -66,15 +70,16 @@ export default function TrainingLogListPage() {
     else setLoading(true)
     const params = buildParams()
     params.set('page', String(pageNum))
-    apiFetch(`${API}?${params}`)
+    return apiFetch(`${API}?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (thisRequest !== requestIdRef.current) return
+        if (thisRequest !== requestIdRef.current) return false
         const results = data.results || data
         setRows((prev) => (append ? [...prev, ...results] : results))
         setTotalCount(data.count ?? results.length)
         setHasMore(Boolean(data.next))
         setPage(pageNum)
+        return Boolean(data.next)
       })
       .finally(() => {
         if (thisRequest !== requestIdRef.current) return
@@ -86,6 +91,11 @@ export default function TrainingLogListPage() {
   useEffect(() => {
     clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false
+        ret.load((n, append) => loadPage(n, append))
+        return
+      }
       if (listRef.current) listRef.current.scrollTop = 0
       loadPage(1, false)
     }, 300)
@@ -225,7 +235,7 @@ export default function TrainingLogListPage() {
                 <td className="px-2 py-2.5">
                   <div className="flex items-center justify-end gap-1">
                     {(
-                      <button type="button" title="Open" onClick={() => navigate(`/qhse/training-log/${r.training_log_hdr_id}/edit`)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+                      <button type="button" title="Open" onClick={() => ret.open(navigate, `/qhse/training-log/${r.training_log_hdr_id}/edit`, page)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
                         <RowOpenIcon canEdit={canEdit} className="h-3.5 w-3.5" />
                       </button>
                     )}
