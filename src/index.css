@@ -106,6 +106,12 @@
     --seros-navy-700: #143167;
     --seros-navy-800: #0e224e;
     --seros-navy-900: #091535;
+    /* Ocean: the cool teal-blue accent for selection, highlight and the sidebar marker (between the logo's teal and its blue). */
+    --seros-ocean-100: #d4edf4;
+    --seros-ocean-300: #8fd3e4;
+    --seros-ocean-400: #35a8c4;
+    --seros-ocean-500: #2a93ad;
+    --seros-ocean-700: #17566a;
     --seros-teal-50: #ebfaf9;
     --seros-teal-100: #d0f1ee;
     --seros-teal-200: #a2e2dc;
@@ -161,8 +167,8 @@
     --secondary-foreground: oklch(0.205 0.03 255);
     --muted: oklch(0.965 0.012 255);
     --muted-foreground: oklch(0.52 0.03 255);
-    --accent: oklch(0.955 0.018 255);
-    --accent-foreground: oklch(0.205 0.03 255);
+    --accent: #e3f2f7; /* ocean tint (from --seros-ocean-400): the highlighted item of a menu or dropdown, hovered rows */
+    --accent-foreground: #17394a;
     --destructive: oklch(0.577 0.245 27.325);
     --border: oklch(0.9 0.018 255);
     --input: oklch(0.88 0.022 255);
@@ -235,6 +241,8 @@
   html {
     @apply font-sans;
     }
+  input[type="checkbox"], input[type="radio"], progress { accent-color: var(--seros-ocean-500); }
+  ::selection { background: color-mix(in oklab, var(--seros-ocean-300) 55%, transparent); }
   /* Entry boxes sit slightly sunk into their card, so they read as places to type. Components that carry their own look (a box inside an input group,
      a bare table input) set shadow-none or their own shadow and win over this. */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]), textarea, select {

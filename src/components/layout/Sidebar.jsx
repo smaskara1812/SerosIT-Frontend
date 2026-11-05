@@ -162,10 +162,10 @@ export default function Sidebar() {
                 .join(' ')}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 h-[18px] w-[3px] -translate-y-1/2 rounded-full bg-blue-400" />
+                <span className="absolute left-0 top-1/2 h-[18px] w-[3px] -translate-y-1/2 rounded-full bg-[#35a8c4] shadow-[0_0_8px_rgb(53_168_196/0.65)]" />
               )}
               <Icon
-                className={`h-[19px] w-[19px] shrink-0 transition-colors ${isActive ? 'text-blue-300' : ''}`}
+                className={`h-[19px] w-[19px] shrink-0 transition-colors ${isActive ? 'text-[#8fd3e4]' : ''}`}
               />
               {!collapsed && <span className="min-w-0 break-words leading-snug">{label}</span>}
               {collapsed && (
