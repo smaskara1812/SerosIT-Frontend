@@ -21,6 +21,8 @@ import {
   IconExposure,
   IconActivity,
   IconTrendingUp,
+  IconFuel,
+  IconTarget,
   IconPerson,
   IconShieldCheck,
   IconFlask,
@@ -163,6 +165,13 @@ export const navTree = [
             path: '/dashboards/rig-moves',
             icon: Truck,
             menuKey: 'dashboards.rig_moves',
+          },
+          {
+            key: 'rig_operations',
+            label: 'Rig Operations',
+            path: '/dashboards/rig-operations',
+            icon: IconActivity,
+            menuKey: 'dashboards.rig_operations',
           },
           // Rig Health Index pulled from the nav for now (not removed —
           // see RigHealthDashboardPage.jsx / rig_health_dashboard.py,
@@ -716,6 +725,32 @@ export const navTree = [
         ],
       },
       {
+        label: 'Rig Performance',
+        items: [
+          {
+            key: 'diesel_prices',
+            label: 'Diesel Prices',
+            path: '/masters/diesel-prices',
+            icon: IconFuel,
+            menuKey: 'masters.diesel_prices',
+          },
+          {
+            key: 'rig_month_plans',
+            label: 'Rig Month Plans',
+            path: '/masters/rig-month-plans',
+            icon: IconTarget,
+            menuKey: 'masters.rig_month_plans',
+          },
+          {
+            key: 'ilm_rate_terms',
+            label: 'ILM Rate Terms',
+            path: '/masters/ilm-rate-terms',
+            icon: IconTrendingUp,
+            menuKey: 'masters.ilm_rate_terms',
+          },
+        ],
+      },
+      {
         label: 'General Mapping Masters',
         items: [
           {
@@ -1230,6 +1265,25 @@ export const navTree = [
             path: '/reports/hazard-cards',
             icon: IconShieldCheck,
             menuKey: 'reports.hazard_cards',
+          },
+        ],
+      },
+      {
+        label: 'Rig Performance',
+        items: [
+          {
+            key: 'rig_performance_masters',
+            label: 'Masters',
+            path: '/reports/rig-performance-masters',
+            icon: IconTarget,
+            menuKey: 'reports.rig_performance_masters',
+          },
+          {
+            key: 'rig_performance_report',
+            label: 'Rig Performance Report',
+            path: '/reports/rig-performance',
+            icon: IconTrendingUp,
+            menuKey: 'reports.rig_performance',
           },
         ],
       },

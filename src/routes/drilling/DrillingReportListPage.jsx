@@ -84,13 +84,20 @@ export default function DrillingReportListPage() {
   const [filters, setFilters] = useState(() => {
     const scope = linkParams.get('scope')
     const status = linkParams.get('status')
+    // From the Rig Operations dashboard: ?rig=<id>&date_from=YYYY-MM-DD&date_to=YYYY-MM-DD opens the list for that rig and those days.
+    const rig = linkParams.get('rig')
+    const isoDay = (v) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '')
     return {
       ...emptyFilters(),
       scope: SCOPE_TABS.some((t) => t.value && t.value === scope) ? scope : '',
       status: STATUS_OPTIONS.some((o) => o.value && o.value === status) ? status : '',
+      rig: rig && /^\d+$/.test(rig) ? rig : '',
+      rig_label: rig && /^\d+$/.test(rig) ? (linkParams.get('rig_name') || '').slice(0, 60) : '',
+      date_from: isoDay(linkParams.get('date_from')),
+      date_to: isoDay(linkParams.get('date_to')),
     }
   })
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(() => Boolean(linkParams.get('rig') || linkParams.get('date_from') || linkParams.get('date_to')))
 
   const listRef = useRef(null)
   const requestIdRef = useRef(0)

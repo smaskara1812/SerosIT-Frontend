@@ -298,7 +298,7 @@ function ReportDetail({ report, mayEdit, mayExport, onChanged }) {
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{report.description}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          {mayExport && <Button type="button" variant="outline" size="sm" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/20 hover:text-emerald-900 dark:text-emerald-200 dark:hover:text-emerald-100" onClick={download} disabled={downloading || !s.alert} title="The report as it would be built this minute. Nothing is sent."><Download /> {downloading ? 'Preparing…' : 'Download Excel'}</Button>}
+          {mayExport && <Button type="button" variant="outline" size="sm" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/20 hover:text-emerald-900 dark:text-emerald-200 dark:hover:text-emerald-100" onClick={download} disabled={downloading || !s.alert} title="The report as it would be built this minute. Nothing is sent."><Download /> {downloading ? 'Preparing…' : 'Download report'}</Button>}
           {mayEdit && <Button type="button" variant="outline" size="sm" onClick={() => setTesting(true)} disabled={!s.alert}><Send /> Send a test</Button>}
           {mayEdit && <Button type="button" size="sm" onClick={() => setSending(true)} disabled={!s.alert || !s.trigger_active || !s.alert?.active} title="Sends it to the people on the alert now"><Zap /> Send now</Button>}
         </div>

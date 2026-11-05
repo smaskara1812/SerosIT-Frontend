@@ -31,6 +31,8 @@ const DrillingWorkShiftPage = lazy(() => import('@/routes/masters/DrillingWorkSh
 const FsCatgToRigTypeMappingPage = lazy(() => import('@/routes/masters/FsCatgToRigTypeMappingPage'))
 const IncidentsPage = lazy(() => import('@/routes/reports/IncidentsPage'))
 const HazardCardsPage = lazy(() => import('@/routes/reports/HazardCardsPage'))
+const RigPerformanceReportPage = lazy(() => import('@/routes/reports/RigPerformanceReportPage'))
+const RigPerformanceMastersPage = lazy(() => import('@/routes/reports/RigPerformanceMastersPage'))
 const ItAssetsPage = lazy(() => import('@/routes/itasset/ItAssetsPage'))
 const ItAssetFormPage = lazy(() => import('@/routes/itasset/ItAssetFormPage'))
 const ItAssetHoldersPage = lazy(() => import('@/routes/itasset/ItAssetHoldersPage'))
@@ -91,6 +93,7 @@ const ComplianceRadarPage = lazy(() => import('@/routes/dashboards/ComplianceRad
 const SafetyPerformancePage = lazy(() => import('@/routes/dashboards/SafetyPerformancePage'))
 const FuelWaterPage = lazy(() => import('@/routes/dashboards/FuelWaterPage'))
 const RigMovesPage = lazy(() => import('@/routes/dashboards/RigMovesPage'))
+const RigOperationsPage = lazy(() => import('@/routes/dashboards/RigOperationsPage'))
 // Rig Health Index pulled from the app for now — page and its backend
 // view (rig_health_dashboard.py) are kept, just not wired up here.
 // import RigHealthDashboardPage from '@/routes/dashboards/RigHealthDashboardPage'
@@ -212,8 +215,11 @@ function App() {
           <Route path="/dashboards/safety-performance" element={<SafetyPerformancePage />} />
           <Route path="/dashboards/fuel-water" element={<FuelWaterPage />} />
           <Route path="/dashboards/rig-moves" element={<RigMovesPage />} />
+          <Route path="/dashboards/rig-operations" element={<RigOperationsPage />} />
           <Route path="/reports/incidents" element={<IncidentsPage />} />
           <Route path="/reports/hazard-cards" element={<HazardCardsPage />} />
+          <Route path="/reports/rig-performance" element={<RigPerformanceReportPage />} />
+          <Route path="/reports/rig-performance-masters" element={<RigPerformanceMastersPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>

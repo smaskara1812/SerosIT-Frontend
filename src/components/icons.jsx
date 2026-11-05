@@ -405,3 +405,21 @@ export function IconPalette(props) {
     </svg>
   )
 }
+
+export function IconFuel(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3c3 4 5 6.5 5 9.5a5 5 0 0 1-10 0C7 9.5 9 7 12 3z" />
+    </svg>
+  )
+}
+
+export function IconTarget(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" />
+    </svg>
+  )
+}
