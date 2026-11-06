@@ -106,6 +106,12 @@ function HealthPanel({ health, events, mayRun, onRun, running, onChecked }) {
         )}
       </div>
 
+      {health.mail_redirect?.on && (
+        <p className="border-t border-border/60 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-300">
+          Mail redirect is on: every mail from this server goes only to {health.mail_redirect.to.length ? health.mail_redirect.to.join(', ') : 'nobody (no address is set, so nothing is sent)'}. Each mail names the people it was meant for.
+        </p>
+      )}
+
       {health.problems?.length > 0 && (
         <ul className="space-y-1.5 border-t border-border/60 px-4 py-3">
           {health.problems.map((p) => (
