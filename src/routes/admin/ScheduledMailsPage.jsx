@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { AlertTriangle, CalendarClock, CheckCircle2, Eye, FastForward, RefreshCw, RotateCw, Search, SkipForward, Undo2, Users } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CheckCircle2, Eye, FastForward, Mails, RefreshCw, RotateCw, Search, SkipForward, Undo2, Users } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { apiFetch } from '@/lib/api'
 import { can } from '@/lib/permissions'
@@ -276,6 +276,70 @@ function EmailDialog({ item, onClose, isAdmin }) {
   )
 }
 
+// A run of Drilling Info Status / Not Entered is one line on the page but sends one mail per company / per rig: this lists every one of them.
+function MailsDialog({ item, onClose, isAdmin }) {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+  const [open, setOpen] = useState(null)
+  useEffect(() => {
+    if (!item) return undefined
+    let live = true
+    apiFetch(`/api/admin/scheduled-mails/${item.id}/mails/`)
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}))
+        if (!live) return
+        if (r.ok) setData(d)
+        else setError(d.detail || 'The mails could not be loaded.')
+      })
+      .catch(() => live && setError('The mails could not be loaded.'))
+    return () => { live = false }
+  }, [item])
+  const sent = data?.sent || []
+  const preview = data?.preview || []
+  const rows = [
+    ...sent.map((m) => ({ key: `s${m.id}`, subject: m.subject, label: m.label, to: m.recipients, body: m.body, state: m.success ? 'Sent' : 'Failed', when: fmtWhen(m.sent_at), error: m.error, logId: m.id })),
+    ...preview.map((m, i) => ({ key: `p${i}`, subject: m.subject, label: m.summary, to: [...m.to, ...m.cc.map((c) => `cc: ${c}`), ...m.bcc.map((b) => `bcc: ${b}`)].join(', ') || 'no To address yet', body: m.body, state: 'Would send', when: '' })),
+  ]
+  return (
+    <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{item?.label}</DialogTitle>
+          <DialogDescription>
+            {preview.length ? `This run sends ${preview.length} ${preview.length === 1 ? 'mail' : 'mails'}, one for each company or rig. Shown as they would go if it ran now.` : 'Every mail this run sent, one for each company or rig.'}
+          </DialogDescription>
+        </DialogHeader>
+        {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+        {data?.note && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{data.note}</p>}
+        {!data && !error && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {data && rows.length === 0 && !data.note && <p className="text-sm text-muted-foreground">No mail would go out right now (nothing to report).</p>}
+        <ul className="flex flex-col gap-2">
+          {rows.map((m) => (
+            <li key={m.key} className="rounded-lg border border-border">
+              <button type="button" className="flex w-full items-start gap-3 px-3 py-2 text-left" onClick={() => setOpen(open === m.key ? null : m.key)}>
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-sm font-medium">{m.label || m.subject}</p>
+                  <p className="break-words text-xs text-muted-foreground">{m.subject}</p>
+                  <p className="break-words text-xs text-muted-foreground">To: {m.to}</p>
+                  {m.error && <p className="break-words text-xs text-red-600">{m.error}</p>}
+                </div>
+                <span className="whitespace-nowrap text-xs text-muted-foreground">{m.state}{m.when ? ` · ${m.when}` : ''}</span>
+              </button>
+              {open === m.key && (
+                <div className="border-t border-border p-3">
+                  <iframe title={m.subject} srcDoc={m.body} sandbox="" className="h-80 w-full rounded-lg border border-border bg-white" />
+                  {isAdmin && m.logId && <Link to={`/admin/email-log?id=${m.logId}`} className="mt-2 inline-block text-sm text-primary hover:underline">Open in the Email Log</Link>}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+        <DialogFooter><Button type="button" variant="secondary" onClick={onClose}>Close</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const fmtDate = (iso) => (iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '')
 
 // Pausing or resuming an automation, after saying what it really does (checked by scripts/check_pause_resume.py).
@@ -337,6 +401,7 @@ export default function ScheduledMailsPage() {
   const [busy, setBusy] = useState(null)
   const [running, setRunning] = useState(false)
   const [email, setEmail] = useState(null)
+  const [mails, setMails] = useState(null)
   const [who, setWho] = useState(null)
   const [confirm, setConfirm] = useState(null) // { item, kind }
   const acting = useRef(false) // a second click before the screen has caught up must not act twice
@@ -540,7 +605,8 @@ export default function ScheduledMailsPage() {
                       </div>
                       <div className="flex items-center justify-end gap-0.5 whitespace-nowrap">
                         <Button type="button" variant="ghost" size="icon-sm" title="Who it goes to" aria-label="Who it goes to" onClick={() => setWho(r)}><Users /></Button>
-                        {r.email_log_id && <Button type="button" variant="ghost" size="icon-sm" title="View the email" aria-label="View the email" onClick={() => setEmail(r)}><Eye /></Button>}
+                        {r.multi_mail && <Button type="button" variant="ghost" size="icon-sm" title="All the mails of this run" aria-label="All the mails of this run" onClick={() => setMails(r)}><Mails /></Button>}
+                        {r.email_log_id && !r.multi_mail && <Button type="button" variant="ghost" size="icon-sm" title="View the email" aria-label="View the email" onClick={() => setEmail(r)}><Eye /></Button>}
                         {mayEdit && r.can.send_now && <Button type="button" variant="ghost" size="icon-sm" title="Send now" aria-label="Send now" disabled={!!busy} onClick={() => ask(r, 'send-now')}><FastForward /></Button>}
                         {mayEdit && r.can.resend && <Button type="button" variant="ghost" size="icon-sm" title="Send again" aria-label="Send again" disabled={!!busy} onClick={() => ask(r, 'resend')}><RotateCw /></Button>}
                         {mayEdit && r.can.skip && <Button type="button" variant="ghost" size="icon-sm" title="Skip this mail" aria-label="Skip this mail" disabled={!!busy} onClick={() => ask(r, 'skip')}><SkipForward /></Button>}
@@ -566,6 +632,7 @@ export default function ScheduledMailsPage() {
         </section>}
       </div>
 
+      {mails && <MailsDialog key={mails.id} item={mails} onClose={() => setMails(null)} isAdmin={!!user?.is_app_admin} />}
       <EmailDialog item={email} onClose={() => setEmail(null)} isAdmin={!!user?.is_app_admin} />
       <RecipientsDialog item={who} onClose={() => setWho(null)} />
       {switchAsk && <SwitchDialog job={switchAsk} busy={!!switching} onClose={() => setSwitchAsk(null)} onConfirm={() => switchJob(switchAsk)} />}
