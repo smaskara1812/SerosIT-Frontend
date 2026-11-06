@@ -343,26 +343,42 @@ export default function ScheduledMailsPage() {
   const [switching, setSwitching] = useState('') // the automation whose switch is being changed
   const [switchAsk, setSwitchAsk] = useState(null) // the automation the person is about to pause or resume
 
-  const load = useCallback(async () => {
-    const p = new URLSearchParams({ section, page: String(page), page_size: '40' })
-    if (status) p.set('status', status)
-    if (jobFilter) p.set('job', jobFilter)
-    if (q.trim()) p.set('q', q.trim())
+  // The page asks for two things that change at different speeds. The LIST (the mails of a tab, with the filters and the page) is asked for every time a tab, a
+  // filter or the page changes: it is a couple of small queries. The PANEL (the scheduler's health and the automations) is asked for when the page opens, every
+  // minute, and after something is done: it is the heavy one, so switching tabs no longer waits for it.
+  const fetchPart = useCallback(async (part, extra) => {
+    const p = new URLSearchParams({ part, ...extra })
     try {
       const res = await apiFetch(`/api/admin/scheduled-mails/?${p}`)
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.detail || 'Could not load the scheduled mails.')
-      setData(await res.json())
+      const body = await res.json()
+      setData((prev) => ({ ...(prev || {}), ...body }))
       setError('')
     } catch (e) {
       setError(e.message)
     }
+  }, [])
+  const listParams = useCallback(() => {
+    const extra = { section, page: String(page), page_size: '40' }
+    if (status) extra.status = status
+    if (jobFilter) extra.job = jobFilter
+    if (q.trim()) extra.q = q.trim()
+    return extra
   }, [section, status, jobFilter, q, page])
+  const loadList = useCallback(() => fetchPart('list', listParams()), [fetchPart, listParams])
+  const loadPanel = useCallback(() => fetchPart('panel', {}), [fetchPart])
+  const load = useCallback(() => Promise.all([loadList(), loadPanel()]), [loadList, loadPanel]) // after an action: both
 
   useEffect(() => {
     if (!mayView) return undefined
-    const t = setTimeout(load, q ? 300 : 0)
+    const t = setTimeout(loadList, q ? 300 : 0)
     return () => clearTimeout(t)
-  }, [mayView, load, q])
+  }, [mayView, loadList, q])
+  useEffect(() => {
+    if (!mayView) return undefined
+    const t = setTimeout(loadPanel, 0)
+    return () => clearTimeout(t)
+  }, [mayView, loadPanel])
   useEffect(() => {
     if (!mayView) return undefined
     const t = setInterval(load, 60000) // keep the page fresh while it is open
@@ -423,7 +439,7 @@ export default function ScheduledMailsPage() {
   }
 
   const rows = data?.results || []
-  const pages = data ? Math.max(1, Math.ceil(data.count / data.page_size)) : 1
+  const pages = data?.results ? Math.max(1, Math.ceil(data.count / data.page_size)) : 1
   const ask = (item, kind) => setConfirm({ item, kind })
   const CONFIRM = {
     'send-now': ['Send this mail now?', 'It goes out straight away to the people on the alert, without waiting for its time.'],
@@ -447,7 +463,7 @@ export default function ScheduledMailsPage() {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
-        {data && <HealthPanel health={data.health} events={data.health_events} mayRun={mayEdit} onRun={runNow} running={running} onChecked={load} />}
+        {data?.health && <HealthPanel health={data.health} events={data.health_events} mayRun={mayEdit} onRun={runNow} running={running} onChecked={load} />}
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
         <div className="flex gap-1 border-b border-border" role="tablist" aria-label="Scheduled Mails sections">
@@ -455,12 +471,12 @@ export default function ScheduledMailsPage() {
             <button key={key} type="button" role="tab" aria-selected={view === key} title={hint} onClick={() => setView(key)}
               className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${view === key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
               {label}
-              {key === 'automations' && data && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{data.jobs.length}</span>}
+              {key === 'automations' && data?.jobs && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{data.jobs.length}</span>}
             </button>
           ))}
         </div>
 
-        {view === 'automations' && data && (
+        {view === 'automations' && data?.jobs && (
           <section aria-label="Automations">
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Automations <span className="font-normal normal-case">· click one to see its mails</span></h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -476,7 +492,7 @@ export default function ScheduledMailsPage() {
                 <button key={key} type="button" role="tab" aria-selected={section === key} title={hint} onClick={() => { setSection(key); setPage(1) }}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${section === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
                   {label}
-                  {data && <span className={`ml-1.5 text-xs ${section === key ? 'opacity-80' : 'text-muted-foreground'}`}>{data.counts[key]}</span>}
+                  {data?.counts && <span className={`ml-1.5 text-xs ${section === key ? 'opacity-80' : 'text-muted-foreground'}`}>{data.counts[key]}</span>}
                 </button>
               ))}
             </div>
@@ -495,8 +511,8 @@ export default function ScheduledMailsPage() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto">
-            {!data && <p className="px-4 py-10 text-center text-sm text-muted-foreground">Loading…</p>}
-            {data && rows.length === 0 && (
+            {!data?.results && <p className="px-4 py-10 text-center text-sm text-muted-foreground">Loading…</p>}
+            {data?.results && rows.length === 0 && (
               <p className="px-4 py-12 text-center text-sm text-muted-foreground">
                 {section === 'upcoming' ? 'Nothing is planned for the next 7 days.' : section === 'today' ? 'Nothing is scheduled for today.' : 'Nothing found.'}
               </p>

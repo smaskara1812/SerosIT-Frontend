@@ -41,6 +41,24 @@ function EmailBodyPreview({ body }) {
   )
 }
 
+// The body of one email, asked for when its row is opened (the list does not carry it).
+function LoggedBody({ id }) {
+  const [state, setState] = useState({ id: null, body: '', error: '' })
+  useEffect(() => {
+    let live = true
+    apiFetch(`/api/admin/email-log/${id}/body/`)
+      .then(async (r) => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
+      .then(({ ok, data }) => live && setState({ id, body: ok ? data.body : '', error: ok ? '' : data.detail || 'The body could not be loaded.' }))
+      .catch(() => live && setState({ id, body: '', error: 'The body could not be loaded.' }))
+    return () => {
+      live = false
+    }
+  }, [id])
+  if (state.id !== id) return <p className="text-muted-foreground">Loading…</p>
+  if (state.error) return <p className="text-red-600">{state.error}</p>
+  return <EmailBodyPreview body={state.body} />
+}
+
 export default function EmailLog() {
   const [facets, setFacets] = useState({ users: [], triggers: [] })
   const [params] = useSearchParams()
@@ -233,7 +251,7 @@ export default function EmailLog() {
                           )}
                           <div>
                             <span className="mb-1 block font-medium text-foreground">Body</span>
-                            <EmailBodyPreview body={r.body} />
+                            <LoggedBody id={r.email_log_id} />
                           </div>
                         </div>
                       </td>
