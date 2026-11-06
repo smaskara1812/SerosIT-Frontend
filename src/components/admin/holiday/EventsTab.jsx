@@ -38,7 +38,7 @@ function EventDialog({ event, onClose, onSaved }) {
   function choose(file2) {
     if (!file2) return
     if (!/\.(png|jpe?g)$/i.test(file2.name)) return toast.error('The picture must be a PNG (or JPG).')
-    if (file2.size > 5 * 1048576) return toast.error('That file is over 5 MB.')
+    if (file2.size > 10 * 1048576) return toast.error('That file is over 10 MB.')
     setFile(file2)
     setPreview(URL.createObjectURL(file2))
     if (!f.name) set({ name: file2.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ') })
@@ -82,7 +82,7 @@ function EventDialog({ event, onClose, onSaved }) {
                 : editing ? <MediaImage url={event.url} alt={event.name} className="max-h-72 w-full object-contain" /> : 'Click to choose the finished picture'}
             </button>
             <input ref={input} type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" className="sr-only" aria-label="Choose a picture" onChange={(e) => choose(e.target.files?.[0])} />
-            <p className="text-xs text-muted-foreground">PNG (or JPG), up to 5 MB. It goes out about 900 px wide, so a wide banner works well. {editing && 'Choose another file to replace the picture.'}</p>
+            <p className="text-xs text-muted-foreground">PNG (or JPG), up to 10 MB. It goes out about 900 px wide, so a wide banner works well. {editing && 'Choose another file to replace the picture.'}</p>
           </div>
 
           <div className="flex flex-col gap-4">

@@ -278,7 +278,7 @@ function NewTemplateDialog({ onClose, onCreated }) {
   function choose(f) {
     if (!f) return
     if (!/\.(png|jpe?g)$/i.test(f.name)) return toast.error('A template must be a PNG (or JPG) picture.')
-    if (f.size > 5 * 1048576) return toast.error('That file is over 5 MB.')
+    if (f.size > 10 * 1048576) return toast.error('That file is over 10 MB.')
     setFile(f)
     setUrl(URL.createObjectURL(f))
     setName((n) => n || f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '))
@@ -303,7 +303,7 @@ function NewTemplateDialog({ onClose, onCreated }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>Add a template</DialogTitle><DialogDescription>Choose the birthday picture (PNG, or JPG; up to 5 MB). Next you mark where the name goes.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>Add a template</DialogTitle><DialogDescription>Choose the birthday picture (PNG, or JPG; up to 10 MB). Next you mark where the name goes.</DialogDescription></DialogHeader>
         <div className="flex flex-col gap-4">
           <button type="button" onClick={() => input.current?.click()} className="flex min-h-40 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:bg-muted/40">
             {url ? <img src={url} alt="The picture you chose" className="max-h-64 w-full object-contain" /> : 'Click to choose a picture'}
