@@ -11,7 +11,7 @@ export const EFFECTS = [{ key: 'fireworks', label: 'Fireworks', hint: 'A Diwali 
   { key: 'flag', label: 'Hoist the flag', hint: 'About eight seconds: a flagpole rises, the tricolour is run up it and ripples in the wind, then a shower of petals bursts from the flag and doves fly off. The sky takes a faint wash of saffron, white and green.', defaults: { colors: ['#ff9933', '#ffffff', '#138808', '#000080'], bursts: 8 } },
   { key: 'navratri', label: 'Garba night', max: 9, hint: 'About twelve seconds: from one point of light, nine glowing lotus rings draw themselves outward, one for each night and each in its own colour, then turn against one another like a Garba circle with lights chasing round them. The mandala blooms in a flash of sparks and breathes out into rising golden embers.', defaults: { colors: ['#f97316', '#f8fafc', '#dc2626', '#2563eb', '#facc15', '#16a34a', '#94a3b8', '#7e22ce', '#0d9488'], bursts: 8 } },
   { key: 'ganesh', label: 'Welcome Bappa', hint: 'About eleven seconds, with no figure: a lotus rises out of still water and opens inside an arch of lamps that light from both ends; modaks pop onto a banana leaf; hibiscus and durva grass fall; then an aarti flame circles the lotus three times, each circle ringing a ripple of light like a temple bell, before a final burst of gold.', defaults: { colors: ['#f59e0b', '#dc2626', '#fde68a', '#f472b6'], bursts: 8 } },
-  { key: 'janmashtami', label: 'Break the handi', hint: 'About eleven seconds: a midnight night with a big moon, peacock feathers and drifting flute notes. A clay pot of butter hangs on a rope while a pyramid of glowing orbs builds beneath it, tier by tier; the top orb leaps, the pot breaks, and shards, butter and petals fly while the pyramid flares.', defaults: { colors: ['#ffd166', '#fdf6e3', '#38bdf8', '#f472b6'], bursts: 8 } },
+  { key: 'janmashtami', label: 'Break the handi', hint: 'You do the breaking. A decorated matka of dahi hangs on a rope, and six kids build a 3-2-1 pyramid under it, the smallest climbing to the top. When you click the matka, the boy on top swings his stick and it breaks: shards, marigolds and flags fly, and the dahi pours thick and glossy over the kids, who cheer. Esc closes it any time; it also closes by itself a few seconds after the break.', defaults: { colors: ['#f28c1c', '#2f5fbf', '#2f7d3a', '#d63a2a'], bursts: 8 } },
 ]
 
 export const KINDS = [
@@ -39,13 +39,13 @@ export function newAction(kind = 'effect', effect = 'fireworks') {
 // Plays what a button does. `go` opens an in-app path. The show's code is fetched only now, so a banner with buttons costs nothing until one is used.
 export async function runAction(action, go) {
   if (action.kind === 'link') return go?.(action.link)
-  if (action.effect === 'ganesh') {
-    const { playGanesh } = await import('@/lib/bannerGanesh')
-    playGanesh({ colors: action.colors, bursts: action.bursts })
-  }
   if (action.effect === 'janmashtami') {
     const { playJanmashtami } = await import('@/lib/bannerJanmashtami')
     playJanmashtami({ colors: action.colors, bursts: action.bursts })
+  }
+  if (action.effect === 'ganesh') {
+    const { playGanesh } = await import('@/lib/bannerGanesh')
+    playGanesh({ colors: action.colors, bursts: action.bursts })
   }
   if (action.effect === 'navratri') {
     const { playNavratri } = await import('@/lib/bannerNavratri')

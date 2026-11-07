@@ -221,7 +221,7 @@ function ScheduleDialog({ report, onClose, onDone }) {
           </div>
         </div>
         {passed && <p className="text-xs text-amber-700 dark:text-amber-300">That hour has already passed today, so it goes at the scheduler’s next run.</p>}
-        <p className="text-xs text-muted-foreground">The scheduler checks once an hour, so it goes out at that hour. To send it right now, use Send now instead.</p>
+        <p className="text-xs text-muted-foreground">The scheduler checks regularly (every 30 minutes unless the server is set otherwise), so it goes out on the first check at or after that hour. To send it right now, use Send now instead.</p>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
           <Button type="button" onClick={save} disabled={busy || !date}>{busy ? 'Saving…' : 'Save'}</Button>
@@ -242,7 +242,7 @@ function Overview({ report }) {
       <Row label="Sent as"><SentAs name={s.from_name} address={s.from_address} /></Row>
       <Row label="Account">{s.smtp.sender ? <>The alert’s own account (<code className="text-xs">{s.smtp.sender.host}</code>)</> : <>The default system account (<code className="text-xs">{s.smtp.default_host}</code>)</>}</Row>
       <Row label="Goes out">{report.schedule}</Row>
-      <Row label="If it fails">Retried at the next hourly runs, at most twice more. After that {s.error_mail_to.length ? <b>{s.error_mail_to.join(', ')}</b> : 'nobody (not set)'} is told by e-mail, and it shows as Failed on Scheduled Mails.</Row>
+      <Row label="If it fails">Retried once the next hour starts (at most once an hour), at most twice more. After that {s.error_mail_to.length ? <b>{s.error_mail_to.join(', ')}</b> : 'nobody (not set)'} is told by e-mail, and it shows as Failed on Scheduled Mails.</Row>
     </dl>
   )
 }

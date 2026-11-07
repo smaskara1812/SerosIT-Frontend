@@ -89,7 +89,7 @@ export default function SetupTab({ mayEdit, refreshKey }) {
           <dl className="divide-y divide-border/60">
             <Row label="Sent as"><SentAs name={setup.from_name} address={setup.from_address} /></Row>
             <Row label="Subject">{setup.subject ? <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{setup.subject}</code> : '—'} <span className="text-xs text-muted-foreground">{'{name}'} becomes the person’s name.</span></Row>
-            <Row label="When">Every day at {String(setup.send_hour).padStart(2, '0')}:00. The scheduler checks once an hour, so it goes out at that hour.</Row>
+            <Row label="When">Every day at {String(setup.send_hour).padStart(2, '0')}:00. The scheduler checks regularly (every 30 minutes unless the server is set otherwise), so it goes out on the first check at or after that hour.</Row>
             <Row label="To"><Chips list={r.to} empty="Nobody" /></Row>
             <Row label="Cc"><Chips list={r.cc} empty="Nobody" /></Row>
             <Row label="Bcc"><Chips list={r.bcc} empty="Nobody" /></Row>
@@ -101,7 +101,7 @@ export default function SetupTab({ mayEdit, refreshKey }) {
                   : <>The default account (<code className="text-xs">{setup.smtp.default_host}</code>). No sender is set for this alert and no separate birthday account is set on the server.</>}
               {' '}<Link to="/masters/alert-senders" className="text-primary hover:underline">Alert Senders</Link>
             </Row>
-            <Row label="If it fails">It is tried again at the next hourly run, at most twice more. After that it shows as Failed on Scheduled Mails, where it can be sent again by hand.</Row>
+            <Row label="If it fails">It is tried again once the next hour starts (at most once an hour), at most twice more. After that it shows as Failed on Scheduled Mails, where it can be sent again by hand.</Row>
           </dl>
           <div className="mt-3 flex flex-wrap gap-4 text-sm">
             {links.recipients && <Link to={links.recipients} className="inline-flex items-center gap-1 text-primary hover:underline"><ExternalLink className="h-3.5 w-3.5" /> Change who it goes to</Link>}

@@ -96,7 +96,7 @@ function HealthPanel({ health, events, mayRun, onRun, running, onChecked }) {
         <Icon className={`h-5 w-5 shrink-0 ${iconCls}`} />
         <div className="min-w-0 flex-1 text-sm">
           <p className="font-medium">{health.title}</p>
-          <p className="text-xs text-muted-foreground">{stateText}{health.mode === 'task' ? ' · hourly task mode' : ''}</p>
+          <p className="text-xs text-muted-foreground">{stateText}{health.mode === 'task' ? ' · task mode' : ''}</p>
         </div>
         <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>{open ? 'Hide details' : 'Details'}</Button>
         {mayRun && (
@@ -183,7 +183,7 @@ function runSummary(results, jobs) {
   return `The scheduler ran. ${parts.length ? parts.join(' ') : 'Nothing was due.'}`
 }
 
-// The on/off switch of one automation. On = it is planned and sent every hour; Paused = nothing is planned or sent for it (what is already planned stays as it is).
+// The on/off switch of one automation. On = it is planned and sent at every scheduler run; Paused = nothing is planned or sent for it (what is already planned stays as it is).
 // Someone without the Edit right sees the state as a plain label.
 function RunSwitch({ job, editable, busy, onSwitch }) {
   const on = job.enabled

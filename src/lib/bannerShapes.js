@@ -48,6 +48,7 @@ export const SHAPES = [
   { key: 'artgoggles', cat: 'work', label: 'Goggles (picture)', w: 130, h: 130 },
   { key: 'artwoman', cat: 'festive', label: 'Line art portrait with lotus (picture)', w: 220, h: 220 },
   { key: 'artlotus', cat: 'festive', label: 'Lotus (picture)', w: 150, h: 150 },
+  { key: 'artjanmashtami', cat: 'festive', label: 'Janmashtami: matkas and feathers (picture)', w: 325, h: 340 },
   { key: 'artdraft', cat: 'work', label: 'Engineering drafting scene (picture)', w: 232, h: 170 },
   { key: 'artcircuit', cat: 'work', label: 'Circuit board line art (picture)', w: 320, h: 220 },
   { key: 'artplant', cat: 'nature', label: 'Growing plant (picture)', w: 444, h: 342 },

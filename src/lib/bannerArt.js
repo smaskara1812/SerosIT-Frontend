@@ -1,3 +1,4 @@
+import janmashtamiPicture from '@/assets/banner-art/janmashtami.svg'
 import { GULAL_BOX, GULAL_PIECES } from '@/lib/bannerGulal'
 import { EARTH_GLOBE, PLANT_BOX, PLANT_PIECES } from '@/lib/bannerEarthday'
 // Ready-made pictures for banners: small outlined illustrations made of several coloured pieces, drawn on a 100 x 100 frame
@@ -501,5 +502,7 @@ ART_RAW.artdiwali.push(
 Object.assign(ARTBOX, GULAL_BOX, PLANT_BOX)
 Object.assign(ART_RAW, GULAL_PIECES, PLANT_PIECES)
 
-export const isArt = (type) => type in ART || type in ART_RAW
+// Pictures that ship with the app as image files (too detailed to draw from a few paths): drawn as an image, not as pieces. The value is the file's address.
+export const IMAGE_ART = { artjanmashtami: janmashtamiPicture }
+export const isArt = (type) => type in ART || type in ART_RAW || type in IMAGE_ART
 export const artPieces = (type) => ART[type] || ART_RAW[type]

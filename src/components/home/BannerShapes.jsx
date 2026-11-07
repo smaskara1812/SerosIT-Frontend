@@ -1,6 +1,6 @@
 import { FONTS, shapeInfo, shapeSpec } from '@/lib/bannerShapes'
 import { fillTokens } from '@/lib/bannerDesign'
-import { ARTBOX, artPieces, isArt } from '@/lib/bannerArt'
+import { ARTBOX, IMAGE_ART, artPieces, isArt } from '@/lib/bannerArt'
 import { useBannerPicture } from '@/lib/bannerAssets'
 
 // An uploaded picture: centred on its position like every other layer, drawn to fill its box (the editor keeps the box in the picture's
@@ -20,6 +20,13 @@ function PictureLayer({ layer }) {
 // when several banners are on one page.
 export function LayerShape({ layer, uid = 'x' }) {
   if (layer.type === 'picture') return <PictureLayer layer={layer} />
+  if (IMAGE_ART[layer.type]) {
+    return (
+      <g transform={`translate(${layer.x} ${layer.y}) rotate(${layer.rot || 0})`} opacity={layer.opacity ?? 1}>
+        <image href={IMAGE_ART[layer.type]} x={-layer.w / 2} y={-layer.h / 2} width={layer.w} height={layer.h} preserveAspectRatio="xMidYMid meet" />
+      </g>
+    )
+  }
   if (isArt(layer.type)) {
     const box = ARTBOX[layer.type]
     const pieces = artPieces(layer.type).map((p, i) => {

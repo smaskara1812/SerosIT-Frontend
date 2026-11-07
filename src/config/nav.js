@@ -1345,7 +1345,7 @@ export const navTree = [
           { key: 'holiday_mailer', label: 'Holiday Mailer', path: '/admin/holiday-mailer', icon: PartyPopper, menuKey: 'admin.holiday_mailer', openToRights: true },
           { key: 'report_mails', label: 'Report Mails', path: '/admin/report-mails', icon: FileSpreadsheet, menuKey: 'admin.report_mails', openToRights: true },
           { key: 'scheduled_mails', label: 'Scheduled Mails', path: '/admin/scheduled-mails', icon: CalendarClock, menuKey: 'admin.scheduled_mails', openToRights: true },
-          { key: 'mail_redirect', label: 'Mail Redirect', path: '/admin/mail-redirect', icon: IconMail },
+          { key: 'mail_controls', label: 'Mail Controls', path: '/admin/mail-controls', icon: IconMail },
         ],
       },
       {

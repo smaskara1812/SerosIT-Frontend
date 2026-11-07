@@ -48,40 +48,10 @@ const GARBA_NIGHT = [{ label: 'Join the Garba', kind: 'effect', effect: 'navratr
 // The Ganesh Chaturthi button: a lotus, lamps, modaks and an aarti, with no figure.
 const WELCOME_BAPPA = [{ label: 'Welcome Bappa', kind: 'effect', effect: 'ganesh', colors: ['#f59e0b', '#dc2626', '#fde68a', '#f472b6'], bursts: 8, color: null, icon: 'sparkles' }]
 
-// The Janmashtami button: the pyramid reaches the pot and breaks the handi.
-const BREAK_HANDI = [{ label: 'Break the handi', kind: 'effect', effect: 'janmashtami', colors: ['#ffd166', '#fdf6e3', '#38bdf8', '#f472b6'], bursts: 8, color: null, icon: 'party' }]
 
 
-// A peacock feather with its eye: the feather outline, then the eye drawn as layered ellipses where the feather's eye sits.
-const featherWithEye = (cx, cy, w, h, rot, fill, fill2) => {
-  const r = (rot * Math.PI) / 180
-  const lx = 0.05 * w
-  const ly = -0.24 * h
-  const ex = cx + lx * Math.cos(r) - ly * Math.sin(r)
-  const ey = cy + lx * Math.sin(r) + ly * Math.cos(r)
-  return [
-    S('feather', cx, cy, w * 1.14, h * 1.04, '#d6b23a', { opacity: 0.3, rot }),
-    S('feather', cx, cy, w, h, fill, { fill2, grad: 90, rot }),
-    S('circle', ex, ey, w * 0.66, h * 0.25, '#e0b030', { rot }), S('circle', ex, ey, w * 0.54, h * 0.2, '#2f9e5a', { rot }), S('circle', ex, ey, w * 0.42, h * 0.155, '#0e8aa3', { rot }),
-    S('circle', ex, ey, w * 0.28, h * 0.1, '#1d4ed8', { rot }), S('circle', ex, ey, w * 0.12, h * 0.045, '#0b1a4a', { rot }), S('circle', ex - w * 0.04, ey - h * 0.02, w * 0.06, h * 0.02, '#ffffff', { opacity: 0.45, rot }),
-  ]
-}
-
-// A pyramid of glowing orbs, five then four then three then two then one, each with a soft halo: the team under the hanging pot.
-const orbPyramid = (cx, baseY) => {
-  const cols = [['#fff1b8', '#ffd166'], ['#ffffff', '#fdf6e3'], ['#bfe9ff', '#38bdf8'], ['#ffd1e6', '#f472b6']]
-  const out = []
-  for (let ti = 0; ti < 5; ti += 1) {
-    const n = 5 - ti
-    for (let i = 0; i < n; i += 1) {
-      const [c0, c1] = cols[(i + ti) % 4]
-      const x = cx + (i - (n - 1) / 2) * 35
-      const y = baseY - ti * 33
-      out.push(S('circle', x, y, 56, 56, c1, { opacity: 0.16 }), S('circle', x, y, 30, 30, c0, { fill2: c1, grad: 135 }))
-    }
-  }
-  return out
-}
+// The Janmashtami button: you click the matka and the boy on top breaks it.
+const BREAK_HANDI = [{ label: 'Break the handi', kind: 'effect', effect: 'janmashtami', colors: ['#f28c1c', '#2f5fbf', '#2f7d3a', '#d63a2a'], bursts: 8, color: null, icon: 'party' }]
 
 // `when` is [first month, first day, last month, last day] for a fixed-date occasion.
 
@@ -190,27 +160,13 @@ export const TEMPLATES = [
   {
     key: 'janmashtami', label: 'Janmashtami', note: 'Set the dates for this year', when: null,
     design: make({ titleFont: 'yatra', bodyFont: 'default', actions: BREAK_HANDI, edges: [{ edge: 'top', type: 'garland', size: 42, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f472b6'] }], tint: '#eef2ff', greeting: 'Happy Janmashtami, {name}', message: 'A midnight of music, butter and joy.', caption: '', bg: ['#0b1240', '#1e2a78', '#3b2a7a'], angle: 150, pattern: ['dots', '#fde68a', 0.14, 1.2],
-      // A midnight sky with a big moon behind drifting cloud; a painted matka on a rope with butter at its lip; a pyramid of glowing orbs
-      // reaching up to it; crossed peacock feathers and a bamboo flute.
+      // A midnight sky with a small moon; on the right a picture of two painted matkas brimming with butter, peacock
+      // feathers behind them and a faint mandala (a drawing that ships with the app).
       layers: () => [
-        S('circle', 1090, 100, 380, 380, '#6d5bd0', { opacity: 0.14 }), S('circle', 1090, 100, 230, 230, '#fdf6e3', { opacity: 0.1 }),
-        S('ring', 1090, 92, 200, 200, '#fdf6e3', { opacity: 0.16, p: 0.05 }),
-        S('circle', 1090, 92, 120, 120, '#fffdf0', { fill2: '#e3dcbd', grad: 135 }), S('circle', 1064, 76, 26, 26, '#cbd5e1', { opacity: 0.4 }), S('circle', 1116, 112, 34, 34, '#cbd5e1', { opacity: 0.36 }), S('circle', 1098, 64, 14, 14, '#cbd5e1', { opacity: 0.3 }),
-        S('cloud', 1020, 138, 170, 50, '#27338a', { opacity: 0.55 }), S('cloud', 1175, 150, 120, 38, '#33419f', { opacity: 0.45 }),
-        S('sparkle', 730, 58, 26, 26, '#fde68a'), S('sparkle', 842, 28, 16, 16, '#fde68a', { opacity: 0.8 }), S('sparkle', 900, 96, 12, 12, '#fff', { opacity: 0.7 }), S('star', 1010, 26, 14, 14, '#fde68a', { opacity: 0.8 }), S('sparkle', 1190, 188, 18, 18, '#fde68a', { opacity: 0.8 }), S('sparkle', 770, 170, 14, 14, '#fff', { opacity: 0.6 }),
-        S('circle', 960, 128, 210, 210, '#ffd166', { opacity: 0.09 }),
-        S('line', 960, 38, 86, 3, '#d9b77a', { rot: 90 }),
-        S('matka', 960, 134, 118, 120, '#e8924d', { fill2: '#7a2c10', grad: 90 }),
-        S('line', 960, 134, 92, 3, '#8f1d14', { opacity: 0.9 }), S('line', 960, 168, 96, 3, '#8f1d14', { opacity: 0.9 }),
-        ...[-36, -24, -12, 0, 12, 24, 36].map((dx) => S('circle', 960 + dx, 151 + Math.abs(dx) * 0.05, 5, 5, '#fff1cf')),
-        S('circle', 960, 78, 38, 15, '#ffd34d'), S('circle', 960, 70, 10, 10, '#e6a800'),
-        ...[-18, -9, 0, 9, 18].map((dx) => S('flower', 960 + dx, 96, 14, 14, '#fb923c')),
-        S('drop', 934, 92, 9, 16, '#fdf6e3', { rot: 10 }), S('drop', 988, 98, 8, 14, '#fdf6e3', { rot: -12 }), S('drop', 1000, 118, 6, 10, '#fdf6e3', { opacity: 0.9 }),
-        ...orbPyramid(960, 332),
-        ...featherWithEye(800, 250, 84, 250, -20, '#3fa65a', '#0f7f8f'),
-        ...featherWithEye(752, 262, 74, 220, 12, '#2f8f55', '#0b6b82'),
-        S('flute', 1130, 322, 170, 13, '#ecbd4a', { fill2: '#a8741a', grad: 90, rot: -9 }),
-        S('sparkle', 1050, 296, 14, 14, '#fde68a', { opacity: 0.8 }), S('sparkle', 1214, 276, 12, 12, '#fff', { opacity: 0.6 }),
+        S('circle', 1030, 190, 430, 430, '#6d5bd0', { opacity: 0.16 }), S('circle', 1030, 215, 270, 270, '#ffb347', { opacity: 0.08 }),
+        S('circle', 780, 78, 150, 150, '#fdf6e3', { opacity: 0.08 }), S('circle', 780, 78, 66, 66, '#fffdf0', { fill2: '#e3dcbd', grad: 135 }), S('circle', 766, 70, 12, 12, '#cbd5e1', { opacity: 0.4 }), S('circle', 794, 90, 16, 16, '#cbd5e1', { opacity: 0.36 }),
+        S('artjanmashtami', 1030, 184, 312, 326, '#ffffff'),
+        S('sparkle', 730, 150, 26, 26, '#fde68a'), S('sparkle', 872, 40, 16, 16, '#fde68a', { opacity: 0.8 }), S('star', 930, 120, 12, 12, '#fff', { opacity: 0.7 }), S('sparkle', 1186, 170, 18, 18, '#fde68a', { opacity: 0.8 }), S('sparkle', 700, 250, 14, 14, '#fff', { opacity: 0.6 }),
       ] }),
   },
   {
