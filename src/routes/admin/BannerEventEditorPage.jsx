@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowLeft, CalendarDays, Copy, Eye, Grid3x3, LayoutTemplate, Palette, Redo2, RotateCcw, Shapes, Spline, Sparkles, Type, Undo2 } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Copy, Eye, Grid3x3, LayoutTemplate, MousePointerClick, Palette, Redo2, RotateCcw, Shapes, Spline, Sparkles, Type, Undo2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { apiFetch } from '@/lib/api'
 import { can } from '@/lib/permissions'
@@ -20,6 +20,8 @@ import BannerView from '@/components/home/BannerView'
 import BannerArt from '@/components/home/BannerArt'
 import NoticeCard from '@/components/home/NoticeCard'
 import EdgesPanel from '@/components/admin/banner/EdgesPanel'
+import ActionsPanel from '@/components/admin/banner/ActionsPanel'
+import { runAction } from '@/lib/bannerActions'
 import FontPicker from '@/components/admin/banner/FontPicker'
 import { ColorField, Choice, FitPreview, Section, SliderField } from '@/components/admin/banner/controls'
 import ShapeCanvas from '@/components/admin/banner/ShapeCanvas'
@@ -40,6 +42,7 @@ const TABS = [
   { key: 'pattern', label: 'Pattern', icon: Grid3x3 },
   { key: 'lines', label: 'Lines & edges', icon: Spline },
   { key: 'shapes', label: 'Shapes', icon: Shapes },
+  { key: 'buttons', label: 'Buttons', icon: MousePointerClick },
   { key: 'layout', label: 'Layout', icon: LayoutTemplate },
 ]
 const PRIORITIES = [
@@ -255,7 +258,8 @@ export default function BannerEventEditorPage() {
     setTemplatesOpen(false)
     fromTemplate.current = t ? t.key : null
     if (!t) return
-    edit((d) => Object.assign(d, cloneDesign(t.design)), 'template')
+    // buttons the person already added stay when the template has none of its own
+    edit((d) => { const keep = d.actions || []; Object.assign(d, cloneDesign(t.design)); if (!(d.actions || []).length) d.actions = keep }, 'template')
     setSelectedId(null)
     setMeta((m) => {
       const dates = templateDates(t)
@@ -456,6 +460,7 @@ export default function BannerEventEditorPage() {
                 search={<FakeSearch />}
                 notice={showNotice ? <NoticeCard notice={SAMPLE_NOTICE} tone={look.tone} look={look} /> : null}
                 zones={tab === 'shapes' && zones}
+                onAction={(a) => (a.kind === 'link' ? toast.info(`On the day, this button opens ${a.link}.`) : runAction(a))}
                 overlay={tab === 'shapes' ? <ShapeCanvas layers={design.layers} selectedId={selectedId} onSelect={setSelectedId} onStart={() => { gesture.current = false }} onLive={liveLayer} align={shapesAlign(design.layout)} /> : null}
               />
             </FitPreview>
@@ -644,6 +649,7 @@ export default function BannerEventEditorPage() {
             )}
 
             {tab === 'lines' && <EdgesPanel edges={design.edges} edit={edit} />}
+            {tab === 'buttons' && <ActionsPanel actions={design.actions || []} edit={edit} />}
 
             {tab === 'lines' && (
               <Section title="Contour lines" hint="The wavy chart-like lines behind the greeting.">

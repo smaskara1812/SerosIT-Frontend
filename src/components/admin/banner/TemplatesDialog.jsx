@@ -9,7 +9,7 @@ function Thumb({ design }) {
     <div className="pointer-events-none overflow-hidden rounded-lg border border-border" aria-hidden="true">
       <FitPreview width={1100}>
         <BannerView
-          design={design}
+          design={{ ...design, actions: [] }} // the card is itself a button, so the banner's own buttons stay out of the picture
           firstName="Soham"
           todayLabel="Sunday 18 October"
           fallbackTitle="Good morning, Soham"

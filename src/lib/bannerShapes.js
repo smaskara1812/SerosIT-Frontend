@@ -85,6 +85,9 @@ export const SHAPES = [
   { key: 'ribbon', cat: 'festive', label: 'Fluttering band', w: 160, h: 100 },
   { key: 'bow', cat: 'festive', label: 'Bow and arrow', w: 300, h: 200 },
   { key: 'modak', cat: 'festive', label: 'Modak', w: 96, h: 90 },
+  { key: 'matka', cat: 'festive', label: 'Matka (clay pot)', w: 120, h: 122 },
+  { key: 'feather', cat: 'festive', label: 'Peacock feather', w: 90, h: 270 },
+  { key: 'flute', cat: 'festive', label: 'Flute', w: 240, h: 17 },
   { key: 'splash', cat: 'festive', label: 'Colour splash', w: 120, h: 120 },
   { key: 'burst', cat: 'festive', label: 'Gulal cloud', w: 160, h: 160 },
   { key: 'temple', cat: 'festive', label: 'Temple', w: 140, h: 200 },
@@ -430,6 +433,51 @@ function modakPath() {
   return d
 }
 
+// A clay matka, the handi that is hung and broken: a rimmed mouth, a narrow neck and a round belly.
+function matkaPath() {
+  return 'M-0.17,-0.5 H0.17 Q0.2,-0.5 0.2,-0.46 Q0.2,-0.42 0.15,-0.4 C0.13,-0.34 0.12,-0.32 0.2,-0.28 C0.42,-0.2 0.5,-0.02 0.5,0.14 C0.5,0.36 0.3,0.5 0,0.5 C-0.3,0.5 -0.5,0.36 -0.5,0.14 C-0.5,-0.02 -0.42,-0.2 -0.2,-0.28 C-0.12,-0.32 -0.13,-0.34 -0.15,-0.4 Q-0.2,-0.42 -0.2,-0.46 Q-0.2,-0.5 -0.17,-0.5 Z'
+}
+
+// A peacock feather, tip up and leaning a little: a fringed outline with a fine quill left open along the middle. Its eye is drawn as
+// layered ellipses on top (see the Janmashtami template), at about (0.05, -0.24) of the shape.
+function featherPath() {
+  const N = 36
+  const left = []
+  const right = []
+  for (let i = 0; i <= N; i += 1) {
+    const u = i / N
+    const y = 0.5 - u
+    const bend = 0.07 * Math.sin(u * Math.PI)
+    const hw = u < 0.06 ? 0.012 : 0.27 * Math.sin(Math.PI * Math.min(1, (u - 0.04) / 0.96)) ** 0.75
+    const w = hw * (i % 2 ? 1 : 0.8)
+    left.push([bend - w, y])
+    right.push([bend + w, y])
+  }
+  const pt = ([x, y]) => `${x.toFixed(3)},${y.toFixed(3)}`
+  let d = `M${left.map(pt).join(' L')} L${right.reverse().map(pt).join(' L')} Z`
+  const q1 = []
+  const q2 = []
+  for (let i = 0; i <= 18; i += 1) {
+    const u = (i / 18) * 0.62
+    const y = 0.5 - u
+    const bend = 0.07 * Math.sin(u * Math.PI)
+    q1.push([bend - 0.006, y])
+    q2.push([bend + 0.006, y])
+  }
+  d += ` M${q1.map(pt).join(' L')} L${q2.reverse().map(pt).join(' L')} Z`
+  return d
+}
+
+// A bamboo flute lying flat (best at about 14 to 1): a mouth hole, six finger holes and three fine bands.
+function flutePath() {
+  let d = 'M-0.49,-0.5 H0.49 Q0.5,-0.5 0.5,-0.4 V0.4 Q0.5,0.5 0.49,0.5 H-0.49 Q-0.5,0.5 -0.5,0.4 V-0.4 Q-0.5,-0.5 -0.49,-0.5 Z'
+  const hole = (cx, rx, ry) => ` M${(cx - rx).toFixed(3)},0 A${rx},${ry} 0 1,0 ${(cx + rx).toFixed(3)},0 A${rx},${ry} 0 1,0 ${(cx - rx).toFixed(3)},0 Z`
+  d += hole(-0.34, 0.016, 0.26)
+  for (const x of [-0.1, 0, 0.1, 0.22, 0.32, 0.42]) d += hole(x, 0.011, 0.2)
+  for (const x of [-0.44, -0.22, 0.46]) d += ` M${x},-0.5 h0.007 V0.5 h-0.007 Z`
+  return d
+}
+
 // A long plantain leaf with its midrib, for the sweets to sit on.
 function bananaLeafPath() {
   return 'M-0.5,0.05 C-0.3,-0.2 0.2,-0.28 0.5,-0.05 C0.25,0.28 -0.25,0.3 -0.5,0.05 Z M-0.46,0.045 Q0,-0.05 0.46,-0.045 L0.46,-0.03 Q0,-0.035 -0.46,0.06 Z'
@@ -590,6 +638,12 @@ export function shapeSpec(l) {
       return { unit: true, evenodd: true, d: lanternPath() }
     case 'modak':
       return { unit: true, evenodd: true, d: modakPath() }
+    case 'matka':
+      return { unit: true, d: matkaPath() }
+    case 'feather':
+      return { unit: true, evenodd: true, d: featherPath() }
+    case 'flute':
+      return { unit: true, evenodd: true, d: flutePath() }
     case 'hand':
       return { unit: true, evenodd: true, d: handPath() }
     case 'sun':

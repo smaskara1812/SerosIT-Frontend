@@ -13,6 +13,7 @@ export const DEFAULT_DESIGN = {
   notice: { x: null, y: 0, look: 'auto', color: null, strength: 0.85 }, // across and down, 0 to 100 (null across = the side the layout puts it on); look: auto | dark | light | custom
   frame: { mode: 'auto', color: null }, // the edge around the banner: auto (a light banner gets one), on, or off; colour null = from the banner
   edges: [], // border strips along the top or bottom: { edge, type, size, colors, opacity }
+  actions: [], // buttons on the banner (see lib/bannerActions.js)
   layers: [],
 }
 
@@ -33,6 +34,7 @@ export function withDefaults(d) {
     notice: legacyNotice({ ...base.notice, ...d.notice }),
     frame: { ...base.frame, ...d.frame },
     edges: d.edges || [],
+    actions: d.actions || [],
   }
 }
 

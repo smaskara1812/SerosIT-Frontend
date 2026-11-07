@@ -11,7 +11,7 @@ const S = (type, x, y, w, h, fill, extra = {}) => {
   return type === 'text' ? { ...layer, ...textBox(layer) } : layer // a text label's box follows its words
 }
 
-function make({ titleFont = 'default', bodyFont = 'default', greeting, message, caption, bg, angle = 110, pattern, contours, layers, layout = 'standard', tint = '#ffffff', notice = { x: null, y: 0 }, edges = [] }) {
+function make({ titleFont = 'default', bodyFont = 'default', greeting, message, caption, bg, angle = 110, pattern, contours, layers, layout = 'standard', tint = '#ffffff', notice = { x: null, y: 0 }, edges = [], actions = [] }) {
   counter = 0
   const d = cloneDesign(DEFAULT_DESIGN)
   d.layout = layout
@@ -22,8 +22,65 @@ function make({ titleFont = 'default', bodyFont = 'default', greeting, message, 
   d.search = { tint }
   d.notice = { ...notice }
   d.edges = edges.map((e) => ({ opacity: 1, size: 44, spacing: 1, ...e }))
+  d.actions = actions.map((a, i) => ({ id: `ta${i}`, ...a }))
   d.layers = layers()
   return d
+}
+
+// The Diwali button: fireworks in the festival's own colours.
+const LIGHT_IT_UP = [{ label: 'Light it up', kind: 'effect', effect: 'fireworks', colors: ['#ffc83d', '#ff6a1a', '#ff2d7a', '#ffffff'], bursts: 7, color: null }]
+
+// The Holi button: a play of colour in the festival's own colours.
+const PLAY_HOLI = [{ label: 'Play Holi', kind: 'effect', effect: 'holi', colors: ['#ff2d95', '#ffd600', '#00b8ff', '#6fd400', '#ff6a00', '#8e44ff'], bursts: 8, color: null, icon: 'party' }]
+
+// The Christmas button: snow and Santa's sleigh.
+const CALL_SLEIGH = [{ label: 'Call the sleigh', kind: 'effect', effect: 'christmas', colors: ['#ffffff', '#ffd24a', '#e63946', '#2a9d8f'], bursts: 8, color: null, icon: 'sparkles' }]
+
+// The New Year button: the ball drops, then midnight.
+const DROP_BALL = [{ label: 'Drop the ball', kind: 'effect', effect: 'newyear', colors: ['#ffd24a', '#dfe6f2', '#ffffff', '#5aa9ff'], bursts: 8, color: null, icon: 'party' }]
+
+// The flag button for Republic Day and Independence Day: the tricolour is run up the pole.
+const HOIST_FLAG = [{ label: 'Hoist the flag', kind: 'effect', effect: 'flag', colors: ['#ff9933', '#ffffff', '#138808', '#000080'], bursts: 8, color: null, icon: 'party' }]
+
+// The Navratri button: a rangoli of light, nine glowing rings in the nine colours.
+const GARBA_NIGHT = [{ label: 'Join the Garba', kind: 'effect', effect: 'navratri', colors: ['#f97316', '#f8fafc', '#dc2626', '#2563eb', '#facc15', '#16a34a', '#94a3b8', '#7e22ce', '#0d9488'], bursts: 8, color: null, icon: 'sparkles' }]
+
+// The Ganesh Chaturthi button: a lotus, lamps, modaks and an aarti, with no figure.
+const WELCOME_BAPPA = [{ label: 'Welcome Bappa', kind: 'effect', effect: 'ganesh', colors: ['#f59e0b', '#dc2626', '#fde68a', '#f472b6'], bursts: 8, color: null, icon: 'sparkles' }]
+
+// The Janmashtami button: the pyramid reaches the pot and breaks the handi.
+const BREAK_HANDI = [{ label: 'Break the handi', kind: 'effect', effect: 'janmashtami', colors: ['#ffd166', '#fdf6e3', '#38bdf8', '#f472b6'], bursts: 8, color: null, icon: 'party' }]
+
+
+// A peacock feather with its eye: the feather outline, then the eye drawn as layered ellipses where the feather's eye sits.
+const featherWithEye = (cx, cy, w, h, rot, fill, fill2) => {
+  const r = (rot * Math.PI) / 180
+  const lx = 0.05 * w
+  const ly = -0.24 * h
+  const ex = cx + lx * Math.cos(r) - ly * Math.sin(r)
+  const ey = cy + lx * Math.sin(r) + ly * Math.cos(r)
+  return [
+    S('feather', cx, cy, w * 1.14, h * 1.04, '#d6b23a', { opacity: 0.3, rot }),
+    S('feather', cx, cy, w, h, fill, { fill2, grad: 90, rot }),
+    S('circle', ex, ey, w * 0.66, h * 0.25, '#e0b030', { rot }), S('circle', ex, ey, w * 0.54, h * 0.2, '#2f9e5a', { rot }), S('circle', ex, ey, w * 0.42, h * 0.155, '#0e8aa3', { rot }),
+    S('circle', ex, ey, w * 0.28, h * 0.1, '#1d4ed8', { rot }), S('circle', ex, ey, w * 0.12, h * 0.045, '#0b1a4a', { rot }), S('circle', ex - w * 0.04, ey - h * 0.02, w * 0.06, h * 0.02, '#ffffff', { opacity: 0.45, rot }),
+  ]
+}
+
+// A pyramid of glowing orbs, five then four then three then two then one, each with a soft halo: the team under the hanging pot.
+const orbPyramid = (cx, baseY) => {
+  const cols = [['#fff1b8', '#ffd166'], ['#ffffff', '#fdf6e3'], ['#bfe9ff', '#38bdf8'], ['#ffd1e6', '#f472b6']]
+  const out = []
+  for (let ti = 0; ti < 5; ti += 1) {
+    const n = 5 - ti
+    for (let i = 0; i < n; i += 1) {
+      const [c0, c1] = cols[(i + ti) % 4]
+      const x = cx + (i - (n - 1) / 2) * 35
+      const y = baseY - ti * 33
+      out.push(S('circle', x, y, 56, 56, c1, { opacity: 0.16 }), S('circle', x, y, 30, 30, c0, { fill2: c1, grad: 135 }))
+    }
+  }
+  return out
 }
 
 // `when` is [first month, first day, last month, last day] for a fixed-date occasion.
@@ -31,7 +88,7 @@ function make({ titleFont = 'default', bodyFont = 'default', greeting, message, 
 export const TEMPLATES = [
   {
     key: 'republic', label: 'Republic Day', note: '26 January', when: [1, 26, 1, 26],
-    design: make({ edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ff9933', '#ffffff', '#138808'], opacity: 0.9 }, { edge: 'bottom', type: 'bands', size: 12, colors: ['#ff9933', '#ffffff', '#138808'] }], tint: '#fffdf6', greeting: 'Happy Republic Day, {name}', message: 'The day the Constitution came into force. Proud of every crew that keeps the nation moving.', caption: '26 January', bg: ['#ffb066', '#f6f1e6', '#8fdc9a'], angle: 180,
+    design: make({ actions: HOIST_FLAG, edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ff9933', '#ffffff', '#138808'], opacity: 0.9 }, { edge: 'bottom', type: 'bands', size: 12, colors: ['#ff9933', '#ffffff', '#138808'] }], tint: '#fffdf6', greeting: 'Happy Republic Day, {name}', message: 'The day the Constitution came into force. Proud of every crew that keeps the nation moving.', caption: '', bg: ['#ffb066', '#f6f1e6', '#8fdc9a'], angle: 180,
       // The parade as the country sees it: India Gate on Kartavya Path, the fly-past leaving tricolour smoke, and the Constitution.
       layers: () => [
         S('circle', 1050, 346, 220, 14, '#14532d', { opacity: 0.18 }),
@@ -43,7 +100,7 @@ export const TEMPLATES = [
   },
   {
     key: 'independence', label: 'Independence Day', note: '15 August', when: [8, 15, 8, 15],
-    design: make({ edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ff9933', '#ffffff', '#138808'], opacity: 0.9 }], tint: '#f4f9ff', greeting: 'Happy Independence Day, {name}', message: 'From the ramparts, the tricolour unfurled. Free skies, steady rigs.', caption: '15 August', bg: ['#cfe8ff', '#fff6e5'], angle: 100,
+    design: make({ actions: HOIST_FLAG, edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ff9933', '#ffffff', '#138808'], opacity: 0.9 }], tint: '#f4f9ff', greeting: 'Happy Independence Day, {name}', message: 'From the ramparts, the tricolour unfurled. Free skies, steady rigs.', caption: '', bg: ['#cfe8ff', '#fff6e5'], angle: 100,
       // The ramparts of the Red Fort with the tricolour unfurled over them: a great fluttering flag behind, the fort and its wall in front.
       layers: () => [
         S('ribbon', 974, 86, 520, 220, '#ff9933', { opacity: 0.34 }), S('ribbon', 974, 196, 520, 220, '#ffffff', { opacity: 0.55 }), S('ribbon', 974, 306, 520, 220, '#138808', { opacity: 0.34 }),
@@ -57,7 +114,7 @@ export const TEMPLATES = [
   },
   {
     key: 'safety', label: 'National Safety Day', note: '4 March', when: [3, 4, 3, 4],
-    design: make({ tint: '#eff6ff', greeting: 'Happy National Safety Day, {name}!', message: 'Building a safer, healthier workplace together.', caption: 'Safety First · 4 March', bg: ['#ecfdf5', '#f0f9ff', '#fef3c7'], angle: 100, pattern: ['grid', '#0f766e', 0.05, 1.6],
+    design: make({ tint: '#eff6ff', greeting: 'Happy National Safety Day, {name}!', message: 'Building a safer, healthier workplace together.', caption: '', bg: ['#ecfdf5', '#f0f9ff', '#fef3c7'], angle: 100, pattern: ['grid', '#0f766e', 0.05, 1.6],
       // Fresh and encouraging: mint melting into sky blue and pale amber, faint blueprint gears and a shield behind, and a friendly cluster of
       // the kit of a safe site on the right: hard hat, goggles, checklist, cone, gears and a spanner, with a few leaves for care.
       layers: () => [
@@ -75,7 +132,7 @@ export const TEMPLATES = [
   },
   {
     key: 'women', label: 'International Women’s Day', note: '8 March', when: [3, 8, 3, 8],
-    design: make({ titleFont: 'playfair', bodyFont: 'default', notice: { x: 66, y: 25 }, edges: [{ edge: 'top', type: 'pearls', size: 30, colors: ['#c4b5fd', '#fde68a'], opacity: 0.9 }], tint: '#fff1f2', greeting: 'Happy Women’s Day, {name}', message: 'Thank you for everything you bring to every rig and office.', caption: '8 March', bg: ['#faf5ff', '#fff7ed'], angle: 110, pattern: ['dots', '#7c3aed', 0.06, 1.4],
+    design: make({ titleFont: 'playfair', bodyFont: 'default', notice: { x: 66, y: 25 }, edges: [{ edge: 'top', type: 'pearls', size: 30, colors: ['#c4b5fd', '#fde68a'], opacity: 0.9 }], tint: '#fff1f2', greeting: 'Happy Women’s Day, {name}', message: 'Thank you for everything you bring to every rig and office.', caption: '', bg: ['#faf5ff', '#fff7ed'], angle: 110, pattern: ['dots', '#7c3aed', 0.06, 1.4],
       // Soft line art: a calm portrait drawn in one flowing line, a lotus at her shoulder, and blobs of amber and lavender behind.
       layers: () => [
         S('circle', 1010, 190, 330, 330, '#e9d5ff', { opacity: 0.3 }),
@@ -131,8 +188,34 @@ export const TEMPLATES = [
       ] }),
   },
   {
+    key: 'janmashtami', label: 'Janmashtami', note: 'Set the dates for this year', when: null,
+    design: make({ titleFont: 'yatra', bodyFont: 'default', actions: BREAK_HANDI, edges: [{ edge: 'top', type: 'garland', size: 42, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f472b6'] }], tint: '#eef2ff', greeting: 'Happy Janmashtami, {name}', message: 'A midnight of music, butter and joy.', caption: '', bg: ['#0b1240', '#1e2a78', '#3b2a7a'], angle: 150, pattern: ['dots', '#fde68a', 0.14, 1.2],
+      // A midnight sky with a big moon behind drifting cloud; a painted matka on a rope with butter at its lip; a pyramid of glowing orbs
+      // reaching up to it; crossed peacock feathers and a bamboo flute.
+      layers: () => [
+        S('circle', 1090, 100, 380, 380, '#6d5bd0', { opacity: 0.14 }), S('circle', 1090, 100, 230, 230, '#fdf6e3', { opacity: 0.1 }),
+        S('ring', 1090, 92, 200, 200, '#fdf6e3', { opacity: 0.16, p: 0.05 }),
+        S('circle', 1090, 92, 120, 120, '#fffdf0', { fill2: '#e3dcbd', grad: 135 }), S('circle', 1064, 76, 26, 26, '#cbd5e1', { opacity: 0.4 }), S('circle', 1116, 112, 34, 34, '#cbd5e1', { opacity: 0.36 }), S('circle', 1098, 64, 14, 14, '#cbd5e1', { opacity: 0.3 }),
+        S('cloud', 1020, 138, 170, 50, '#27338a', { opacity: 0.55 }), S('cloud', 1175, 150, 120, 38, '#33419f', { opacity: 0.45 }),
+        S('sparkle', 730, 58, 26, 26, '#fde68a'), S('sparkle', 842, 28, 16, 16, '#fde68a', { opacity: 0.8 }), S('sparkle', 900, 96, 12, 12, '#fff', { opacity: 0.7 }), S('star', 1010, 26, 14, 14, '#fde68a', { opacity: 0.8 }), S('sparkle', 1190, 188, 18, 18, '#fde68a', { opacity: 0.8 }), S('sparkle', 770, 170, 14, 14, '#fff', { opacity: 0.6 }),
+        S('circle', 960, 128, 210, 210, '#ffd166', { opacity: 0.09 }),
+        S('line', 960, 38, 86, 3, '#d9b77a', { rot: 90 }),
+        S('matka', 960, 134, 118, 120, '#e8924d', { fill2: '#7a2c10', grad: 90 }),
+        S('line', 960, 134, 92, 3, '#8f1d14', { opacity: 0.9 }), S('line', 960, 168, 96, 3, '#8f1d14', { opacity: 0.9 }),
+        ...[-36, -24, -12, 0, 12, 24, 36].map((dx) => S('circle', 960 + dx, 151 + Math.abs(dx) * 0.05, 5, 5, '#fff1cf')),
+        S('circle', 960, 78, 38, 15, '#ffd34d'), S('circle', 960, 70, 10, 10, '#e6a800'),
+        ...[-18, -9, 0, 9, 18].map((dx) => S('flower', 960 + dx, 96, 14, 14, '#fb923c')),
+        S('drop', 934, 92, 9, 16, '#fdf6e3', { rot: 10 }), S('drop', 988, 98, 8, 14, '#fdf6e3', { rot: -12 }), S('drop', 1000, 118, 6, 10, '#fdf6e3', { opacity: 0.9 }),
+        ...orbPyramid(960, 332),
+        ...featherWithEye(800, 250, 84, 250, -20, '#3fa65a', '#0f7f8f'),
+        ...featherWithEye(752, 262, 74, 220, 12, '#2f8f55', '#0b6b82'),
+        S('flute', 1130, 322, 170, 13, '#ecbd4a', { fill2: '#a8741a', grad: 90, rot: -9 }),
+        S('sparkle', 1050, 296, 14, 14, '#fde68a', { opacity: 0.8 }), S('sparkle', 1214, 276, 12, 12, '#fff', { opacity: 0.6 }),
+      ] }),
+  },
+  {
     key: 'ganesh', label: 'Ganesh Chaturthi', note: 'Set the dates for this year', when: null,
-    design: make({ titleFont: 'yatra', bodyFont: 'default', edges: [{ edge: 'top', type: 'garland', size: 46, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f97316'] }], tint: '#fff4e5', greeting: 'Ganpati Bappa Morya, {name}', message: 'Wishing you joy, wisdom and a fresh beginning.', caption: 'Happy Ganesh Chaturthi', bg: ['#6b0f2a', '#c2410c'], angle: 120, pattern: ['dots', '#fbbf24', 0.12, 1.2],
+    design: make({ titleFont: 'yatra', bodyFont: 'default', actions: WELCOME_BAPPA, edges: [{ edge: 'top', type: 'garland', size: 46, colors: ['#fbbf24', '#f59e0b', '#fde68a', '#f97316'] }], tint: '#fff4e5', greeting: 'Ganpati Bappa Morya, {name}', message: 'Wishing you joy, wisdom and a fresh beginning.', caption: '', bg: ['#6b0f2a', '#c2410c'], angle: 120, pattern: ['dots', '#fbbf24', 0.12, 1.2],
       layers: () => [
         // A heap of modaks on a plantain leaf, as the festival is painted, with rose petals scattered round it.
         S('bananaleaf', 1030, 334, 430, 88, '#84cc16', { fill2: '#365314', grad: 90, rot: -2 }),
@@ -145,7 +228,7 @@ export const TEMPLATES = [
   },
   {
     key: 'dussehra', label: 'Dussehra', note: 'Set the dates for this year', when: null,
-    design: make({ titleFont: 'yatra', bodyFont: 'default', edges: [{ edge: 'bottom', type: 'garland', size: 46, colors: ['#f59e0b', '#fbbf24', '#f97316', '#fcd34d'] }], tint: '#fff1e0', greeting: 'Happy Dussehra, {name}', message: 'May good triumph over evil in all that we do.', caption: 'Vijayadashami', bg: ['#7f1d1d', '#c2410c', '#991b1b'], angle: 100,
+    design: make({ titleFont: 'yatra', bodyFont: 'default', edges: [{ edge: 'bottom', type: 'garland', size: 46, colors: ['#f59e0b', '#fbbf24', '#f97316', '#fcd34d'] }], tint: '#fff1e0', greeting: 'Happy Dussehra, {name}', message: 'May good triumph over evil in all that we do.', caption: '', bg: ['#7f1d1d', '#c2410c', '#991b1b'], angle: 100,
       // A glowing red-orange sky, temples rising in hazy rows, a golden bow with its arrow raised, and marigolds along the foot.
       layers: () => [
         S('circle', 1000, 210, 460, 460, '#fb923c', { opacity: 0.16 }), S('circle', 1000, 210, 300, 300, '#fdba74', { opacity: 0.18 }), S('circle', 1000, 210, 160, 160, '#fed7aa', { opacity: 0.22 }),
@@ -156,8 +239,20 @@ export const TEMPLATES = [
       ] }),
   },
   {
+    key: 'navratri', label: 'Navratri', note: 'Set the dates for this year', when: null,
+    design: make({ titleFont: 'yatra', bodyFont: 'default', actions: GARBA_NIGHT, edges: [{ edge: 'top', type: 'garland', size: 44, colors: ['#fb8500', '#ffb703', '#f97316', '#ffd166'] }], tint: '#fff0e6', greeting: 'Shubh Navratri, {name}', message: 'Nine nights of colour, music and devotion.', caption: '', bg: ['#2b0a3d', '#8a1c4a', '#e85d1b'], angle: 115, pattern: ['dots', '#ffd166', 0.2, 1.1],
+      // Nine clay lamps in a row, each with a flame in a different night's colour, under soft lights and sparkles.
+      layers: () => [
+        S('circle', 1000, 214, 420, 420, '#fbbf24', { opacity: 0.1 }), S('circle', 1000, 214, 250, 250, '#fdba74', { opacity: 0.12 }),
+        ...[['#f97316', 770], ['#f8fafc', 850], ['#dc2626', 930], ['#2563eb', 1010], ['#facc15', 1090], ['#16a34a', 1170], ['#7e22ce', 1250]].flatMap(([c, x], i) => [
+          S('circle', x, 292 - (i % 2) * 6, 70, 70, c, { opacity: 0.16 }), S('diya', x, 312 - (i % 2) * 6, 78, 44, '#ea580c', { fill2: '#9a2c12', grad: 90 }), S('flame', x, 280 - (i % 2) * 6, 22, 50, c, { fill2: '#fde68a', grad: 90 }),
+        ]),
+        S('sparkle', 740, 70, 38, 38, '#fde68a'), S('sparkle', 1140, 120, 24, 24, '#fde68a', { opacity: 0.8 }), S('sparkle', 960, 60, 18, 18, '#ffd166', { opacity: 0.7 }),
+      ] }),
+  },
+  {
     key: 'diwali', label: 'Diwali', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'top', type: 'lights', size: 44, colors: ['#fde047', '#fb923c', '#fef3c7'] }], tint: '#fff3e0', greeting: 'Happy Diwali, {name}', message: 'May every home and every rig glow bright.', caption: 'Festival of lights', bg: ['#2b1055', '#9a3412'], angle: 120, pattern: ['dots', '#fde68a', 0.22, 1.1],
+    design: make({ actions: LIGHT_IT_UP, edges: [{ edge: 'top', type: 'lights', size: 44, colors: ['#fde047', '#fb923c', '#fef3c7'] }], tint: '#fff3e0', greeting: 'Happy Diwali, {name}', message: 'May every home and every rig glow bright.', caption: '', bg: ['#2b1055', '#9a3412'], angle: 120, pattern: ['dots', '#fde68a', 0.22, 1.1],
       // Clay lamps, each with a three-layer flame (red-orange, gold, pale) and a soft halo.
       layers: () => [
         S('circle', 800, 266, 99, 99, '#fde68a', { opacity: 0.16 }), S('diya', 800, 306, 137, 77, '#ea580c', { fill2: '#b91c1c', grad: 90 }), S('flame', 800, 266, 37, 82, '#f97316', { fill2: '#dc2626', grad: 90 }), S('flame', 800, 270, 24, 59, '#fbbf24'), S('flame', 800, 274, 12, 34, '#fef3c7'),
@@ -168,7 +263,7 @@ export const TEMPLATES = [
   },
   {
     key: 'deepavali', label: 'Deepavali', note: 'Set the dates for this year', when: null,
-    design: make({ titleFont: 'cinzel', bodyFont: 'default', edges: [{ edge: 'top', type: 'diamonds', size: 26, colors: ['#fbbf24', '#b45309'], opacity: 0.9 }], notice: { x: 60, y: 25 }, tint: '#fff4dc', greeting: 'Shubh Deepavali, {name}', message: 'May the light of the diya bring prosperity, peace and joy to you and your family.', caption: 'Happy Diwali', bg: ['#1b0c3d', '#4a1259', '#7a1d3c'], angle: 110, pattern: ['sunburst', '#fbbf24', 0.07, 1.2],
+    design: make({ actions: LIGHT_IT_UP, titleFont: 'cinzel', bodyFont: 'default', edges: [{ edge: 'top', type: 'diamonds', size: 26, colors: ['#fbbf24', '#b45309'], opacity: 0.9 }], notice: { x: 60, y: 25 }, tint: '#fff4dc', greeting: 'Shubh Deepavali, {name}', message: 'May the light of the diya bring prosperity, peace and joy to you and your family.', caption: '', bg: ['#1b0c3d', '#4a1259', '#7a1d3c'], angle: 110, pattern: ['sunburst', '#fbbf24', 0.07, 1.2],
       // Royal: deep indigo melting into plum and crimson, a gold sunburst behind, and on the right a great ornate diya with a glowing
       // flame, a hanging kandil, a lotus rangoli and a marigold garland, under gold rings and stars.
       layers: () => [
@@ -180,7 +275,7 @@ export const TEMPLATES = [
   },
   {
     key: 'holi', label: 'Holi', note: 'Set the dates for this year', when: null,
-    design: make({ titleFont: 'baloo', bodyFont: 'baloo', edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6'] }], tint: '#fff7fb', notice: { x: 58, y: 30 }, greeting: 'Happy Holi, {name}', message: 'Wishing you a colourful and joyful day.', caption: 'Festival of colours', bg: ['#fff1b0', '#ffc0dc', '#a9d8ff'], angle: 105, pattern: ['dots', '#ffffff', 0.4, 0.7],
+    design: make({ actions: PLAY_HOLI, titleFont: 'baloo', bodyFont: 'baloo', edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6'] }], tint: '#fff7fb', notice: { x: 58, y: 30 }, greeting: 'Happy Holi, {name}', message: 'Wishing you a colourful and joyful day.', caption: '', bg: ['#fff1b0', '#ffc0dc', '#a9d8ff'], angle: 105, pattern: ['dots', '#ffffff', 0.4, 0.7],
       // Festive but not crowded: bunting and a fine speckle, four soft clouds of colour, a few outlined splashes and two glossy balloons,
       // and four plates of gulal in a loose group.
       layers: () => [
@@ -201,7 +296,7 @@ export const TEMPLATES = [
   },
   {
     key: 'eid', label: 'Eid', note: 'Set the dates for this year', when: null,
-    design: make({ edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#047857', '#fde68a', '#ffffff'], opacity: 0.9 }], tint: '#ecfdf9', greeting: 'Eid Mubarak, {name}', message: 'Wishing you peace, joy and togetherness.', caption: 'Eid', bg: ['#07142e', '#0f766e'], angle: 125, pattern: ['dots', '#fde68a', 0.1, 1],
+    design: make({ edges: [{ edge: 'top', type: 'bunting', size: 34, colors: ['#047857', '#fde68a', '#ffffff'], opacity: 0.9 }], tint: '#ecfdf9', greeting: 'Eid Mubarak, {name}', message: 'Wishing you peace, joy and togetherness.', caption: '', bg: ['#07142e', '#0f766e'], angle: 125, pattern: ['dots', '#fde68a', 0.1, 1],
       // A night sky over the Taj Mahal: a slender crescent with sharp horns, opening to the right, and a star, hanging lanterns at different lengths, and a faint eight-pointed geometric star.
       layers: () => [
         S('star', 960, 190, 360, 360, '#fde68a', { n: 8, p: 0.72, opacity: 0.05 }),
@@ -215,7 +310,7 @@ export const TEMPLATES = [
   },
   {
     key: 'christmas', label: 'Christmas', note: '25 December', when: [12, 25, 12, 25],
-    design: make({ edges: [{ edge: 'top', type: 'icicles', size: 40, colors: ['#ffffff', '#bfdbfe', '#e0f2fe'], opacity: 0.95 }], tint: '#ffffff', greeting: 'Merry Christmas, {name}', message: 'Wishing you warmth and joy with the people you love.', caption: 'Christmas', bg: ['#f0f7ff', '#ffffff'], angle: 120,
+    design: make({ actions: CALL_SLEIGH, edges: [{ edge: 'top', type: 'icicles', size: 40, colors: ['#ffffff', '#bfdbfe', '#e0f2fe'], opacity: 0.95 }], tint: '#ffffff', greeting: 'Merry Christmas, {name}', message: 'Wishing you warmth and joy with the people you love.', caption: '', bg: ['#f0f7ff', '#ffffff'], angle: 120,
       // A frosted winter morning: pale blue to snow white with faint snowflakes and golden glow, balanced by deep evergreen,
       // crimson berries and amber lights so it feels warm rather than stark.
       layers: () => [
@@ -234,7 +329,7 @@ export const TEMPLATES = [
   {
     key: 'newyear', label: 'New Year', note: '31 December to 1 January', when: [12, 31, 1, 1],
     // The same electric-indigo and slate theme as Engineers' Day: fireworks of different sizes, sparkles and a big gold year.
-    design: make({ edges: [{ edge: 'top', type: 'stars', size: 34, colors: ['#fde68a', '#ffffff', '#fbbf24'], opacity: 0.9 }], tint: '#eef2ff', greeting: 'Happy New Year, {name}', message: 'Here is to a safe and successful year ahead.', caption: 'New Year', bg: ['#0f172a', '#4338ca'], angle: 120, pattern: ['grid', '#c7d2fe', 0.05, 1], contours: ['#c7d2fe', 0.07],
+    design: make({ actions: DROP_BALL, edges: [{ edge: 'top', type: 'stars', size: 34, colors: ['#fde68a', '#ffffff', '#fbbf24'], opacity: 0.9 }], tint: '#eef2ff', greeting: 'Happy New Year, {name}', message: 'Here is to a safe and successful year ahead.', caption: '', bg: ['#0f172a', '#4338ca'], angle: 120, pattern: ['grid', '#c7d2fe', 0.05, 1], contours: ['#c7d2fe', 0.07],
       layers: () => [
         S('text', 1020, 280, 0, 0, '#fde68a', { text: '{newyear}', size: 84, bold: true, font: 'sans', spacing: 4, fill2: '#f59e0b', grad: 90 }),
         S('sun', 720, 84, 84, 84, '#fde68a', { opacity: 0.8 }), S('sun', 1120, 120, 56, 56, '#f472b6', { opacity: 0.6 }), S('sun', 880, 190, 36, 36, '#a5b4fc', { opacity: 0.6 }), S('sun', 790, 290, 48, 48, '#fde68a', { opacity: 0.55 }),

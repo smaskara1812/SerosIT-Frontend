@@ -847,3 +847,14 @@ html[data-ui-zoom] .min-h-screen { min-height: calc(100vh / var(--ui-zoom, 1)); 
 }
 .dark [class*="rounded-full"][class*="px-"]:is([class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-red-"], [class*="bg-sky-"], [class*="bg-blue-"], [class*="bg-orange-"], [class*="bg-purple-"]) { background-image: none; }
 .dark [class*="rounded-"][class*="border-"][class*="bg-"]:is([class*="border-amber-"], [class*="border-red-"], [class*="border-emerald-"], [class*="border-sky-"], [class*="border-blue-"], [class*="border-orange-"]) { box-shadow: var(--elev-1); }
+
+/* The banner's buttons (Banner Events > Buttons): a glow ring that breathes slowly. It stops on hover and under reduced motion. */
+@keyframes cta-glow {
+  0% { box-shadow: 0 0 0 0 var(--cta-glow); }
+  70%, 100% { box-shadow: 0 0 0 var(--cta-spread, 8px) transparent; }
+}
+.banner-cta { animation: cta-glow var(--cta-dur, 4s) ease-out infinite; }
+.banner-cta:hover, .banner-cta:focus-visible { animation: none; box-shadow: 0 0 16px 1px var(--cta-glow); }
+@media (prefers-reduced-motion: reduce) {
+  .banner-cta { animation: none; }
+}

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowUpRight, Flame, PartyPopper, Rocket, Sparkles } from 'lucide-react'
+import { lookOf, runAction } from '@/lib/bannerActions'
 import BannerArt from '@/components/home/BannerArt'
 import { fontFamily, titleWeight, useBannerFonts } from '@/lib/bannerFonts'
-import { backgroundCss, bannerFrame, fillTokens, textColorOf, withDefaults, yearTokens } from '@/lib/bannerDesign'
+import { backgroundCss, bannerFrame, fillTokens, luminance, textColorOf, withDefaults, yearTokens } from '@/lib/bannerDesign'
 
 // The home banner for a custom design (Admin > Banner Events). The same component draws the live banner and the editor's
 // preview, so what a person sees while designing is exactly what everyone sees on the day. The search box and the notice
@@ -9,8 +12,10 @@ import { backgroundCss, bannerFrame, fillTokens, textColorOf, withDefaults, year
 //
 // The layout answers to the banner's own width (a container query), not the window's, so the editor's Wide / Medium /
 // Phone preview behaves like a real screen of that size.
-export default function BannerView({ design: raw, firstName, todayLabel, fallbackTitle, fallbackSub, lastSigned, search, notice, previewBadge, overlay, zones }) {
+export default function BannerView({ design: raw, firstName, todayLabel, fallbackTitle, fallbackSub, lastSigned, search, notice, previewBadge, overlay, zones, onAction }) {
   const design = withDefaults(raw)
+  const navigate = useNavigate()
+  const press = (a) => (onAction ? onAction(a) : runAction(a, navigate))
   useBannerFonts([design.text.titleFont, design.text.bodyFont, ...design.layers.filter((l) => l.type === 'text').map((l) => l.font)])
   const color = textColorOf(design)
   const layout = design.layout
@@ -73,6 +78,11 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
                 {caption}
               </span>
             )}
+            {design.actions.length > 0 && (
+              <div className={`mt-4 flex flex-wrap gap-2 ${centred ? 'justify-center' : mirrored ? '@4xl:justify-end' : ''}`}>
+                {design.actions.map((a) => <ActionButton key={a.id} action={a} color={color} onPress={press} />)}
+              </div>
+            )}
           </div>
           {!centred && noticeNode}
         </div>
@@ -91,6 +101,39 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
       </div>
       {overlay && <div className="absolute inset-0 z-30 overflow-hidden rounded-3xl">{overlay}</div>}
     </section>
+  )
+}
+
+const ICON_SET = { sparkles: Sparkles, flame: Flame, rocket: Rocket, party: PartyPopper, arrow: ArrowUpRight }
+const SIZE_CLS = { small: 'px-3.5 py-1 text-[13px]', medium: 'px-4 py-1.5 text-sm', large: 'px-5 py-2.5 text-base' }
+const ICON_PX = { small: 14, medium: 16, large: 19 }
+const GLOW_VARS = { gentle: { '--cta-spread': '7px', '--cta-dur': '4.2s', alpha: '66' }, lively: { '--cta-spread': '13px', '--cta-dur': '2.4s', alpha: 'aa' } }
+
+// A button the design carries. Its look is the design's own choice (style, size, glow, icon, shape, colour; Banner Events > Buttons). By default it is a soft
+// tinted pill with a gentle glow that breathes slowly; the glow stops on hover and under reduced motion.
+function ActionButton({ action, color, onPress }) {
+  const a = lookOf(action)
+  const accent = a.color || (a.kind === 'effect' ? '#ffc83d' : color)
+  const Icon = ICON_SET[a.icon]
+  const glow = GLOW_VARS[a.glow]
+  const base = { '--cta-glow': `${accent}${glow ? glow.alpha : '66'}`, ...(glow ? { '--cta-spread': glow['--cta-spread'], '--cta-dur': glow['--cta-dur'] } : {}) }
+  let style
+  if (a.style === 'solid') {
+    style = { ...base, background: a.color || 'linear-gradient(135deg, #ffe066 0%, #ffb02e 100%)', borderColor: 'transparent', color: luminance(a.color || '#ffc83d') > 0.45 ? '#2a1400' : '#ffffff' }
+  } else if (a.style === 'outline') {
+    style = { ...base, background: 'transparent', borderColor: accent, color: a.color && luminance(a.color) < 0.2 ? a.color : color }
+  } else {
+    style = { ...base, background: `${accent}2b`, borderColor: `${accent}99`, color }
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onPress(action)}
+      style={style}
+      className={`${glow ? 'banner-cta' : ''} ${SIZE_CLS[a.size]} ${a.shape === 'rounded' ? 'rounded-xl' : 'rounded-full'} group inline-flex cursor-pointer items-center gap-2 border font-semibold transition-all duration-150 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current`}
+    >
+      {Icon && <Icon width={ICON_PX[a.size]} height={ICON_PX[a.size]} aria-hidden="true" />} {action.label}
+    </button>
   )
 }
 
