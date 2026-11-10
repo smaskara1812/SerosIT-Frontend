@@ -2,14 +2,17 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import seroSvg from './sero.svg?raw'
 import { createSero } from './seroController'
 import { lowPowerDevice } from '@/lib/perf'
+import { dress } from '@/lib/seroOutfit'
 
 // Sero, the Seros mascot. The drawing is sero.svg (the stylesheet with every pose lives inside it); sero.js only adds and removes
 // classes. What he IS doing now is set with the props (`state`, `expression`, `flip`); things that HAPPEN to him are played through
 // the ref: play('wave'), sequence([...]), bubble('Hmm…'), look(x, y), stop(). Import this file with lazy() so the 48 KB drawing is
-// fetched only where he appears. Decoration only: it carries no information.
-const Sero = forwardRef(function Sero({ state = null, expression = null, flip = false, size = 160, className = '', label = 'Sero, the Seros mascot' }, ref) {
+// fetched only where he appears. `outfit` ({look}) dresses him (lib/seroOutfit.js); null is his usual look. Decoration only: it carries no information.
+const Sero = forwardRef(function Sero({ state = null, expression = null, flip = false, outfit = null, size = 160, className = '', label = 'Sero, the Seros mascot' }, ref) {
   const host = useRef(null)
   const ctl = useRef(null)
+  const wearing = useRef(outfit) // read when the drawing is first put in; later changes go through the effect below
+  useEffect(() => { wearing.current = outfit }, [outfit])
 
   useEffect(() => {
     // The drawing is put in by hand, not with dangerouslySetInnerHTML: React may replace that markup on a re-render, and the controller would
@@ -21,6 +24,7 @@ const Sero = forwardRef(function Sero({ state = null, expression = null, flip = 
     if (!svg) return undefined
     svg.removeAttribute('role') // the host carries the role and label
     svg.setAttribute('aria-hidden', 'true')
+    dress(svg, wearing.current?.look)
     ctl.current = createSero(svg, { quiet: lowPowerDevice() })
     return () => {
       ctl.current?.destroy()
@@ -28,6 +32,7 @@ const Sero = forwardRef(function Sero({ state = null, expression = null, flip = 
       box.innerHTML = ''
     }
   }, [])
+  useEffect(() => { dress(host.current?.querySelector('svg.sero'), outfit?.look) }, [outfit])
   useEffect(() => { ctl.current?.state(state) }, [state])
   useEffect(() => { ctl.current?.expression(expression) }, [expression])
   useEffect(() => { ctl.current?.flip(flip) }, [flip])

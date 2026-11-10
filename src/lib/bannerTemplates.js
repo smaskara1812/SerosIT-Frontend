@@ -15,6 +15,7 @@ function make({ titleFont = 'default', bodyFont = 'default', greeting, message, 
   counter = 0
   const d = cloneDesign(DEFAULT_DESIGN)
   d.layout = layout
+  d.sidebar = true // every template dresses the sidebar too; it can be unticked per banner
   d.text = { greeting, message, caption, color: null, titleFont, bodyFont }
   d.background = { type: bg.length === 1 ? 'solid' : 'gradient', colors: bg, angle }
   if (pattern) d.pattern = { type: pattern[0], color: pattern[1], opacity: pattern[2], scale: pattern[3] ?? 1 }
@@ -166,7 +167,7 @@ export const TEMPLATES = [
         S('circle', 1030, 190, 430, 430, '#6d5bd0', { opacity: 0.16 }), S('circle', 1030, 215, 270, 270, '#ffb347', { opacity: 0.08 }),
         S('circle', 780, 78, 150, 150, '#fdf6e3', { opacity: 0.08 }), S('circle', 780, 78, 66, 66, '#fffdf0', { fill2: '#e3dcbd', grad: 135 }), S('circle', 766, 70, 12, 12, '#cbd5e1', { opacity: 0.4 }), S('circle', 794, 90, 16, 16, '#cbd5e1', { opacity: 0.36 }),
         S('artjanmashtami', 1030, 184, 312, 326, '#ffffff'),
-        S('sparkle', 730, 150, 26, 26, '#fde68a'), S('sparkle', 872, 40, 16, 16, '#fde68a', { opacity: 0.8 }), S('star', 930, 120, 12, 12, '#fff', { opacity: 0.7 }), S('sparkle', 1186, 170, 18, 18, '#fde68a', { opacity: 0.8 }), S('sparkle', 700, 250, 14, 14, '#fff', { opacity: 0.6 }),
+        S('sparkle', 730, 150, 26, 26, '#fde68a'), S('sparkle', 872, 40, 16, 16, '#fde68a', { opacity: 0.8 }), S('star', 930, 120, 12, 12, '#ffffff', { opacity: 0.7 }), S('sparkle', 1186, 170, 18, 18, '#fde68a', { opacity: 0.8 }), S('sparkle', 700, 250, 14, 14, '#ffffff', { opacity: 0.6 }),
       ] }),
   },
   {

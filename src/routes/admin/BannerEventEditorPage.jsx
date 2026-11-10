@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { ArrowLeft, CalendarDays, Copy, Eye, Grid3x3, LayoutTemplate, MousePointerClick, Palette, Redo2, RotateCcw, Shapes, Spline, Sparkles, Type, Undo2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { apiFetch } from '@/lib/api'
+import { bannerChanged } from '@/lib/activeBanner'
 import { can } from '@/lib/permissions'
 import { buildFieldErrors } from '@/lib/errors'
 import { localDateStr } from '@/lib/naiveDateTime'
@@ -21,11 +22,15 @@ import BannerArt from '@/components/home/BannerArt'
 import NoticeCard from '@/components/home/NoticeCard'
 import EdgesPanel from '@/components/admin/banner/EdgesPanel'
 import ActionsPanel from '@/components/admin/banner/ActionsPanel'
+import SidebarSwatch from '@/components/admin/banner/SidebarSwatch'
 import { runAction } from '@/lib/bannerActions'
 import FontPicker from '@/components/admin/banner/FontPicker'
 import { ColorField, Choice, FitPreview, Section, SliderField } from '@/components/admin/banner/controls'
 import ShapeCanvas from '@/components/admin/banner/ShapeCanvas'
 import ShapesPanel from '@/components/admin/banner/ShapesPanel'
+import SeroPanel from '@/components/admin/banner/SeroPanel'
+import { useOutfitList } from '@/lib/useOutfitList'
+import { SeroPreview } from '@/components/admin/sero/OutfitEditor'
 import TemplatesDialog from '@/components/admin/banner/TemplatesDialog'
 import { templateDates } from '@/lib/bannerTemplates'
 import { MAX_LAYERS, MAX_PICTURES, defaultLayer, defaultText, newLayerId, pictureLayer, scatterLayers, textBox } from '@/lib/bannerShapes'
@@ -345,6 +350,8 @@ export default function BannerEventEditorPage() {
   const read = readability(design)
   const tone = toneOf(design)
   const look = noticeLook(design.notice, tone) // the notice card's own look, if the design gives it one
+  const outfitList = useOutfitList()
+  const seroLook = outfitList.find((o) => o.id === design.sero?.outfit)?.look // null: his usual look (the day's outfit is not previewed here)
   // Wide screen shows the banner at the width the home page really gives it
   // (the window minus the collapsed sidebar and the page margins), scaled to fit.
   const [winW, setWinW] = useState(() => window.innerWidth)
@@ -383,6 +390,7 @@ export default function BannerEventEditorPage() {
       }
       setSaved({ meta: { ...meta, name: meta.name.trim() }, design: cloneDesign(design) })
       setErrors({})
+      bannerChanged()
       toast.success(meta.is_published === 'Y' ? 'Saved. It shows on its days.' : 'Saved as a draft.')
       if (!eventId) {
         setEventId(String(data.event_id))
@@ -458,6 +466,7 @@ export default function BannerEventEditorPage() {
                 fallbackSub={greeting.sub}
                 lastSigned="15 Oct, 11:53"
                 search={<FakeSearch />}
+                sero={design.sero?.show ? <div aria-hidden className="pointer-events-none absolute z-[5] w-28" style={design.sero.x != null && design.sero.y != null ? { left: `calc(8px + (100% - 128px) * ${design.sero.x / 100})`, bottom: `calc((100% - 150px) * ${(100 - design.sero.y) / 100} + 6px)` } : { bottom: 0, right: 40 }}><SeroPreview look={seroLook} size={112} /></div> : null}
                 notice={showNotice ? <NoticeCard notice={SAMPLE_NOTICE} tone={look.tone} look={look} /> : null}
                 zones={tab === 'shapes' && zones}
                 onAction={(a) => (a.kind === 'link' ? toast.info(`On the day, this button opens ${a.link}.`) : runAction(a))}
@@ -595,6 +604,12 @@ export default function BannerEventEditorPage() {
                     <SliderField label="Direction of the blend" value={design.background.angle} min={0} max={360} step={5} onChange={(v) => edit((d) => { d.background.angle = v }, 'angle')} lo="Top to bottom" hi="Round full circle" />
                   )}
                 </Section>
+                <Section title="Sidebar" hint="Let the app's sidebar wear this banner's background colour and pattern while the banner is live. Only the colour and the pattern: no shapes or lines. Its words turn dark or light by themselves to stay readable.">
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={!!design.sidebar} onChange={(e) => edit((d) => { d.sidebar = e.target.checked })} /> Include the sidebar
+                  </label>
+                  {design.sidebar && <SidebarSwatch design={design} />}
+                </Section>
                 <Section title="Search box tint" hint="A light, soft tint so the search box sits comfortably in the theme. White is the default, and it always stays light so the words stay readable.">
                   <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Search box tint">
                     {SOFT_TINTS.map((c) => (
@@ -702,6 +717,7 @@ export default function BannerEventEditorPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">{LAYOUTS.find((l) => l.key === design.layout)?.hint}</p>
                 </Section>
+                <SeroPanel design={design} edit={edit} outfits={outfitList} />
                 <Section title="What the notice card looks like" hint="Use a dark or light card when a picture behind the notice makes it hard to read. The words on the card change to suit it.">
                   <NoticeLookControls design={design} edit={edit} />
                 </Section>

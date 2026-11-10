@@ -28,8 +28,17 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 // Where he can stand: right = how far from the banner's right edge, size = how wide, or not at all.
-function findSpot(section) {
+function findSpot(section, place) {
   const s = section.getBoundingClientRect()
+  if (place) {
+    // an administrator put him somewhere on purpose: no stepping aside, only keep him inside the banner. x: 0 left edge to 100 right edge; y: 0 top to 100 standing on the bottom edge.
+    const size = s.width < 420 ? SIZES[1] : SIZES[0]
+    const h = Math.round(size * ratio)
+    if (s.width < size + 16 || s.height < h + 12) return { right: 40, bottom: 0, size, visible: false }
+    const left = 8 + (s.width - size - 16) * (place.x / 100)
+    const bottom = 6 + (s.height - h - 12) * ((100 - place.y) / 100)
+    return { right: Math.round(s.width - left - size), bottom: Math.round(bottom), size, visible: true }
+  }
   const rects = [...section.querySelectorAll('[data-sero-avoid]')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0)
   for (const size of SIZES) {
     const top = s.bottom - Math.round(size * ratio) - 6
@@ -38,20 +47,23 @@ function findSpot(section) {
       const l = s.right - right - size
       return l >= s.left + 8 && blocks.every((b) => l + size <= b.left - GAP || l >= b.right + GAP)
     }
-    if (fits(40)) return { right: 40, size, visible: true }
+    if (fits(40)) return { right: 40, bottom: 0, size, visible: true }
     const l = s.right - 40 - size
     const hit = blocks.filter((b) => !(l + size <= b.left - GAP || l >= b.right + GAP))
     const right = Math.round(s.right - (Math.min(...hit.map((b) => b.left)) - GAP))
-    if (fits(right)) return { right, size, visible: true }
+    if (fits(right)) return { right, bottom: 0, size, visible: true }
   }
-  return { right: 40, size: SIZES[0], visible: false }
+  return { right: 40, bottom: 0, size: SIZES[0], visible: false }
 }
 
-export default function HomeSero({ hidden = false, hint = null, layoutKey = 0 }) {
+export default function HomeSero({ hidden = false, hint = null, layoutKey = 0, outfit = null, place = null }) {
   const tricks = EASTER_EGGS.seroTricks
   const wrap = useRef(null)
+  const placeRef = useRef(place) // read when he is measured; a change of place measures again (the effect below)
+  const placeKey = place ? `${place.x},${place.y}` : ''
+  useEffect(() => { placeRef.current = place }, [place])
   const sero = useRef(null)
-  const [spot, setSpot] = useState({ right: 40, size: SIZES[0], visible: false })
+  const [spot, setSpot] = useState({ right: 40, bottom: 0, size: SIZES[0], visible: false })
   const [walk, setWalk] = useState({ x: 0, ms: 0 })
   const [scene, setScene] = useState(false)
   const hour = useMemo(() => new Date().getHours(), [])
@@ -97,8 +109,8 @@ export default function HomeSero({ hidden = false, hint = null, layoutKey = 0 })
     const measure = () => {
       clearTimeout(timer) // a short timeout, not requestAnimationFrame: that does not run in a tab that is not showing
       timer = setTimeout(() => {
-        const next = findSpot(section)
-        setSpot((cur) => (cur.right === next.right && cur.size === next.size && cur.visible === next.visible ? cur : next))
+        const next = findSpot(section, placeRef.current)
+        setSpot((cur) => (cur.right === next.right && cur.bottom === next.bottom && cur.size === next.size && cur.visible === next.visible ? cur : next))
       }, 30)
     }
     const ro = new ResizeObserver(measure)
@@ -114,7 +126,7 @@ export default function HomeSero({ hidden = false, hint = null, layoutKey = 0 })
       ro.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [layoutKey])
+  }, [layoutKey, placeKey])
 
   useEffect(() => {
     activeRef.current = active
@@ -360,10 +372,10 @@ export default function HomeSero({ hidden = false, hint = null, layoutKey = 0 })
       onClick={onPoke}
       aria-hidden={!active}
       inert={!active || scene}
-      className={`absolute bottom-0 select-none transition-opacity duration-500 ${active ? 'opacity-100' : 'pointer-events-none opacity-0'} z-20 ${tricks ? 'cursor-pointer' : ''}`}
-      style={{ right: spot.right, width: spot.size, transform: `translateX(${walk.x}px)`, transition: `opacity 500ms, transform ${walk.ms}ms linear` }}
+      className={`absolute select-none transition-opacity duration-500 ${active ? 'opacity-100' : 'pointer-events-none opacity-0'} z-20 ${tricks ? 'cursor-pointer' : ''}`}
+      style={{ right: spot.right, bottom: spot.bottom, width: spot.size, transform: `translateX(${walk.x}px)`, transition: `opacity 500ms, transform ${walk.ms}ms linear` }}
     >
-      <Sero ref={sero} size={spot.size} expression={drowsy ? 'focused' : null} className="[&>svg]:block" />
+      <Sero ref={sero} outfit={outfit} size={spot.size} expression={drowsy ? 'focused' : null} className="[&>svg]:block" />
     </div>
   )
 }

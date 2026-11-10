@@ -9,6 +9,8 @@ export const DEFAULT_DESIGN = {
   pattern: { type: 'none', color: '#ffffff', opacity: 0.12, scale: 1 },
   contours: { on: true, color: '#ffffff', opacity: 0.13, density: 2 },
   showLastSignIn: true,
+  sidebar: false, // the app's sidebar takes this banner's background and pattern while it is live
+  sero: { show: false, outfit: null, x: null, y: null }, // Sero stands on the banner (off unless chosen); outfit = an id from Customise Sero, null = the day's outfit; x, y (0-100, both or neither) = where he stands, null = his usual corner
   search: { tint: '#ffffff' },
   notice: { x: null, y: 0, look: 'auto', color: null, strength: 0.85 }, // across and down, 0 to 100 (null across = the side the layout puts it on); look: auto | dark | light | custom
   frame: { mode: 'auto', color: null }, // the edge around the banner: auto (a light banner gets one), on, or off; colour null = from the banner
@@ -31,6 +33,7 @@ export function withDefaults(d) {
     pattern: { ...base.pattern, ...d.pattern },
     contours: { ...base.contours, ...d.contours },
     search: { ...base.search, ...d.search },
+    sero: { ...base.sero, ...d.sero },
     notice: legacyNotice({ ...base.notice, ...d.notice }),
     frame: { ...base.frame, ...d.frame },
     edges: d.edges || [],
@@ -117,6 +120,15 @@ export function autoTextColor(design) {
   return worst(WHITE) >= worst(NAVY) ? WHITE : NAVY
 }
 export const textColorOf = (design) => design.text.color || autoTextColor(design)
+
+// How the app's sidebar looks when a live banner includes it: the banner's own background, and text that reads on it. The words follow the background alone (white on a dark banner,
+// deep navy on a light one), not the banner's own text colour, so the sidebar is always readable. `fg` is an r g b triple for CSS (rgb(var(--sb-fg) / 0.6)).
+export function sidebarTheme(design) {
+  const lightBackground = autoTextColor(design) === NAVY
+  return lightBackground
+    ? { background: backgroundCss(design), fg: '15 38 80', dim: 0.72, iconActive: '#17566a', tone: 'light' }
+    : { background: backgroundCss(design), fg: '255 255 255', dim: 0.55, iconActive: '#8fd3e4', tone: 'dark' }
+}
 export const toneOf = (design) => (textColorOf(design) === NAVY || luminance(textColorOf(design)) < 0.4 ? 'light' : 'dark')
 
 // The worst contrast between the words and the background, and a plain-words note when it is poor.

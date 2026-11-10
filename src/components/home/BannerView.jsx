@@ -12,7 +12,7 @@ import { backgroundCss, bannerFrame, fillTokens, luminance, textColorOf, withDef
 //
 // The layout answers to the banner's own width (a container query), not the window's, so the editor's Wide / Medium /
 // Phone preview behaves like a real screen of that size.
-export default function BannerView({ design: raw, firstName, todayLabel, fallbackTitle, fallbackSub, lastSigned, search, notice, previewBadge, overlay, zones, onAction }) {
+export default function BannerView({ design: raw, firstName, todayLabel, fallbackTitle, fallbackSub, lastSigned, search, notice, sero, previewBadge, overlay, zones, onAction }) {
   const design = withDefaults(raw)
   const navigate = useNavigate()
   const press = (a) => (onAction ? onAction(a) : runAction(a, navigate))
@@ -45,7 +45,7 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
   const noticeStyle = centred ? undefined : { '--nx': nx, '--ny': design.notice.y, '--nh': `${noticeH}px` }
   const noticePos = centred ? 'mx-auto mt-6 w-full max-w-sm' : 'banner-notice'
   const noticeNode = (
-    <div ref={noticeRef} style={noticeStyle} className={`empty:hidden ${noticePos} ${zones ? 'rounded-2xl outline-dashed outline-2 outline-offset-2 outline-sky-400/80' : ''}`}>
+    <div data-sero-avoid ref={noticeRef} style={noticeStyle} className={`empty:hidden ${noticePos} ${zones ? 'rounded-2xl outline-dashed outline-2 outline-offset-2 outline-sky-400/80' : ''}`}>
       {notice}
       {zones && notice && <ZoneLabel>Notice</ZoneLabel>}
     </div>
@@ -63,12 +63,13 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
       <div className="absolute inset-0 overflow-hidden rounded-3xl">
         <BannerArt design={design} />
       </div>
+      {sero}
       <div
         className="relative z-10 px-8 pb-10 pt-11 sm:px-10 @4xl:min-h-[var(--notice-min)]"
         style={{ color, '--notice-min': !centred && noticeH ? `${noticeH + 84}px` : '0px' }}
       >
         <div className={centred ? 'flex flex-col items-center' : 'flex flex-wrap items-start justify-between gap-x-8 gap-y-4'}>
-          <div className={`relative max-w-xl ${blockCls} ${zones ? 'outline-dashed outline-2 outline-offset-4 outline-sky-400/80' : ''}`}>
+          <div data-sero-avoid className={`relative max-w-xl ${blockCls} ${zones ? 'outline-dashed outline-2 outline-offset-4 outline-sky-400/80' : ''}`}>
             {zones && <ZoneLabel>Greeting and message</ZoneLabel>}
             <p className="text-[13px] font-semibold uppercase tracking-[0.14em]" style={{ opacity: 0.85 }}>{todayLabel}</p>
             <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl" style={{ textWrap: 'balance', fontFamily: fontFamily(design.text.titleFont), fontWeight: titleWeight(design.text.titleFont) }}>{title}</h1>
@@ -87,7 +88,7 @@ export default function BannerView({ design: raw, firstName, todayLabel, fallbac
           {!centred && noticeNode}
         </div>
 
-        <div className={`relative mt-7 max-w-2xl ${centred ? 'mx-auto' : mirrored ? '@4xl:ml-auto' : ''} ${zones ? 'rounded-2xl outline-dashed outline-2 outline-offset-2 outline-sky-400/80' : ''}`}>
+        <div data-sero-avoid className={`relative mt-7 max-w-2xl ${centred ? 'mx-auto' : mirrored ? '@4xl:ml-auto' : ''} ${zones ? 'rounded-2xl outline-dashed outline-2 outline-offset-2 outline-sky-400/80' : ''}`}>
           <div style={{ '--search-tint': design.search.tint }}>{search}</div>
           {zones && <ZoneLabel>Search</ZoneLabel>}
         </div>

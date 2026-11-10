@@ -18,6 +18,7 @@ const MailControlsPage = lazy(() => import('@/routes/admin/MailControlsPage'))
 const LoginSecurity = lazy(() => import('@/routes/admin/LoginSecurity'))
 const NoticeBoardPage = lazy(() => import('@/routes/admin/NoticeBoardPage'))
 const BannerEventsPage = lazy(() => import('@/routes/admin/BannerEventsPage'))
+const CustomiseSeroPage = lazy(() => import('@/routes/admin/CustomiseSeroPage'))
 const BirthdayMailerPage = lazy(() => import('@/routes/admin/BirthdayMailerPage'))
 const HolidayMailerPage = lazy(() => import('@/routes/admin/HolidayMailerPage'))
 const ReportMailsPage = lazy(() => import('@/routes/admin/ReportMailsPage'))
@@ -109,6 +110,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/admin/notice-board" element={<NoticeBoardPage />} />
           <Route path="/admin/banner-events" element={<BannerEventsPage />} />
+          <Route path="/admin/customise-sero" element={<CustomiseSeroPage />} />
           <Route path="/admin/birthday-mailer" element={<BirthdayMailerPage />} />
           <Route path="/admin/holiday-mailer" element={<HolidayMailerPage />} />
           <Route path="/admin/report-mails" element={<ReportMailsPage />} />

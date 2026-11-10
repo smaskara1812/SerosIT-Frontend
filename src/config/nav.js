@@ -3,6 +3,7 @@ import {
   IconShield,
   IconMegaphone,
   IconPalette,
+  IconRobot,
   IconUsers,
   IconHistory,
   IconLayers,
@@ -1336,6 +1337,7 @@ export const navTree = [
         items: [
           { key: 'notice_board', label: 'Notice Board', path: '/admin/notice-board', icon: IconMegaphone, menuKey: 'admin.notice_board', openToRights: true },
           { key: 'banner_events', label: 'Banner Events', path: '/admin/banner-events', icon: IconPalette, menuKey: 'admin.banner_events', openToRights: true },
+          { key: 'customise_sero', label: 'Customise Sero', path: '/admin/customise-sero', icon: IconRobot, menuKey: 'admin.sero_look', openToRights: true },
         ],
       },
       {

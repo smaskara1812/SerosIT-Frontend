@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const py = fs.readFileSync(path.resolve('../backend/core/banner_events.py'), 'utf8')
-const list = (name) => [...py.match(new RegExp(`${name} = \\(([\\s\\S]*?)\\n?\\)`))[1].matchAll(/"([^"]+)"/g)].map((m) => m[1])
+const list = (name) => [...py.match(new RegExp(`(?:^|\\n)${name} = \\(([\\s\\S]*?)\\n?\\)`))[1].matchAll(/"([^"]+)"/g)].map((m) => m[1])
 const SHAPES = new Set(list('SHAPES'))
 const EDGE_TYPES = new Set(list('EDGE_TYPES'))
 const FONT_KEYS = new Set([...py.match(/FONT_KEYS = \(([\s\S]*?)\)/)[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]))

@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { apiFetch } from '@/lib/api'
+import { loadActiveBanner, readCachedBanner } from '@/lib/activeBanner'
+import EggBoundary from '@/components/EggBoundary'
 import { pickGreeting } from '@/lib/greeting'
 import { setCustomBanner } from '@/lib/easter'
-import { localDateStr } from '@/lib/naiveDateTime'
+import { EASTER_EGGS } from '@/config/easterEggs'
 import { noticeLook, toneOf, withDefaults } from '@/lib/bannerDesign'
 import HomeHero from '@/components/home/HomeHero'
 import NoticeBanner from '@/components/home/NoticeBanner'
@@ -12,18 +13,7 @@ import PageSearch from '@/components/PageSearch'
 // The drawing code for a custom banner (the shape library and all) is fetched only on a day when one is live, so every other day
 // nobody downloads it.
 const BannerView = lazy(() => import('@/components/home/BannerView'))
-
-const CACHE_KEY = 'serosit.banner'
-
-// Today's answer is remembered for the session so the banner does not flash the normal look before a custom one.
-function readCache() {
-  try {
-    const c = JSON.parse(sessionStorage.getItem(CACHE_KEY))
-    return c && c.day === localDateStr() ? { event: c.event } : null
-  } catch {
-    return null
-  }
-}
+const HomeSero = lazy(() => import('@/components/home/HomeSero'))
 
 function formatTime(iso) {
   if (!iso) return null
@@ -37,30 +27,19 @@ export default function HomeBanner({ firstName, info, scene, hint, onCustomChang
   const [params] = useSearchParams()
   const previewId = params.get('bannerPreview')
   const [answer, setAnswer] = useState(() => {
-    const c = previewId ? null : readCache()
+    const c = previewId ? null : readCachedBanner()
     if (c) setCustomBanner(!!c.event)
     return c // null = not known yet
   })
 
   useEffect(() => {
     let cancelled = false
-    apiFetch(`/api/banner/active/${previewId ? `?preview=${encodeURIComponent(previewId)}` : ''}`)
-      .then((r) => (r.ok ? r.json() : { event: null }))
-      .catch(() => ({ event: null }))
-      .then((data) => {
-        if (cancelled) return
-        const event = data?.event || null
-        setCustomBanner(!!event) // before anything draws, so the search box already knows
-        onCustomChange?.(!!event)
-        setAnswer({ event })
-        if (!previewId) {
-          try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ day: localDateStr(), event }))
-          } catch {
-            /* private mode */
-          }
-        }
-      })
+    loadActiveBanner(previewId).then(({ event, sero }) => {
+      if (cancelled) return
+      setCustomBanner(!!event) // before anything draws, so the search box already knows
+      onCustomChange?.(!!event)
+      setAnswer({ event, sero })
+    })
     return () => {
       cancelled = true
     }
@@ -68,6 +47,7 @@ export default function HomeBanner({ firstName, info, scene, hint, onCustomChang
 
   const greeting = useMemo(() => pickGreeting(firstName), [firstName])
   const event = answer?.event
+  const outfit = answer?.sero ?? null
   const design = useMemo(() => (event ? withDefaults(event.design) : null), [event])
 
   const placeholder = <div className="rounded-3xl" style={{ minHeight: 300, background: 'linear-gradient(118deg, #1c448a 0%, #17356f 48%, #0f2650 100%)' }} aria-hidden="true" />
@@ -87,6 +67,7 @@ export default function HomeBanner({ firstName, info, scene, hint, onCustomChang
       lastSigned={formatTime(info?.last_login)}
       previewBadge={event.preview ? `Preview: ${event.name}. Only you can see this.` : null}
       search={<PageSearch variant="hero" />}
+      sero={design.sero.show && EASTER_EGGS.sero ? <EggBoundary><Suspense fallback={null}><HomeSero outfit={outfit} place={design.sero.x != null && design.sero.y != null ? { x: design.sero.x, y: design.sero.y } : null} /></Suspense></EggBoundary> : null}
       notice={<NoticeBanner tone={look.tone} look={look} widthClass="" />}
     />
     </Suspense>

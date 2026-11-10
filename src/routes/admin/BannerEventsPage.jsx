@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Copy, Eye, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { apiFetch, asList } from '@/lib/api'
+import { bannerChanged } from '@/lib/activeBanner'
 import { can } from '@/lib/permissions'
 import { withDefaults } from '@/lib/bannerDesign'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -102,6 +103,7 @@ export default function BannerEventsPage() {
     const res = await apiFetch(`/api/admin/banner-events/${ev.event_id}/`, { method: 'DELETE' })
     if (res.ok || res.status === 204) {
       toast.success('Event deleted')
+      bannerChanged()
       load()
     } else toast.error("Couldn't delete the event. Please try again.")
   }

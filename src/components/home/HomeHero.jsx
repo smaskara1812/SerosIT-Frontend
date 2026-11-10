@@ -6,6 +6,7 @@ import PageSearch from '@/components/PageSearch'
 import NoticeBanner from '@/components/home/NoticeBanner'
 import EggBoundary from '@/components/EggBoundary'
 import { EASTER_EGGS } from '@/config/easterEggs'
+import { useSeroOutfit } from '@/lib/activeBanner'
 
 const CrewChangeScene = lazy(() => import('@/components/home/CrewChangeScene')) // fetched only when the code is typed
 const RigMoveScene = lazy(() => import('@/components/home/RigMoveScene'))
@@ -98,6 +99,7 @@ function formatTime(iso) {
 
 // The welcome: who and when, and a search that can take you anywhere.
 export default function HomeHero({ firstName, info, scene = null, hint = null }) {
+  const outfit = useSeroOutfit() // what Sero wears today
   const drilling = scene === 'ship'
   const crew = scene === 'crew'
   const move = scene === 'move'
@@ -151,7 +153,7 @@ export default function HomeHero({ firstName, info, scene = null, hint = null })
       {EASTER_EGGS.sero && (
         <EggBoundary>
           <Suspense fallback={null}>
-            <HomeSero hidden={playing} hint={hint} layoutKey={noticeH} />
+            <HomeSero hidden={playing} hint={hint} layoutKey={noticeH} outfit={outfit} />
           </Suspense>
         </EggBoundary>
       )}

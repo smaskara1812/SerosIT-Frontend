@@ -397,6 +397,17 @@ export function IconMegaphone(props) {
   )
 }
 
+export function IconRobot(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="5" y="8" width="14" height="11" rx="3" />
+      <path d="M12 8V5" /><circle cx="12" cy="4" r="1" />
+      <circle cx="9.5" cy="13" r="1" /><circle cx="14.5" cy="13" r="1" />
+      <path d="M9.5 16.2h5" /><path d="M3 12v3M21 12v3" />
+    </svg>
+  )
+}
+
 export function IconPalette(props) {
   return (
     <svg {...base} {...props}>

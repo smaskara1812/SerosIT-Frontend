@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { navTree } from '@/config/nav'
 import { navGroupVisible, navItemVisible } from '@/lib/permissions'
 import { makeMultiClick, triggerGusher } from '@/lib/easter'
+import { useBannerSidebar } from '@/lib/activeBanner'
+import { sidebarTheme } from '@/lib/bannerDesign'
 import { pickSpudMessage } from '@/lib/rigLines'
 import { IconChevronLeft, IconChevronRight, IconLogout } from '@/components/icons'
 import { Button } from '@/components/ui/button'
@@ -15,6 +17,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+
+// The pattern drawing is fetched only on a day when a live banner includes the sidebar.
+const SidebarPattern = lazy(() => import('@/components/home/BannerPattern'))
 
 // An item with no menuKey (Dashboard, Admin's own sub-pages) is never
 // permission-gated by the menu system — only the top-level adminOnly flag
@@ -40,6 +45,9 @@ export default function Sidebar() {
     () => localStorage.getItem(COLLAPSE_KEY) === '1'
   )
   const { user, logout } = useAuth()
+  // On a day when the live banner includes the sidebar: the banner's background and pattern, and text that reads on them. Otherwise the usual navy.
+  const bannerDesign = useBannerSidebar()
+  const theme = bannerDesign ? sidebarTheme(bannerDesign) : null
   const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const shownName = user?.display_name || user?.username
   const { pathname } = useLocation()
@@ -94,12 +102,20 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="relative flex h-screen shrink-0 flex-col text-white transition-[width] duration-200 ease-in-out"
+      className="relative isolate z-40 flex h-screen shrink-0 flex-col text-[rgb(var(--sb-fg))] transition-[width] duration-200 ease-in-out"
       style={{
         width: collapsed ? '68px' : '236px',
-        background: 'linear-gradient(180deg, #1e478c 0%, #16345f 60%, #10254a 100%)',
+        background: theme ? theme.background : 'linear-gradient(180deg, #1e478c 0%, #16345f 60%, #10254a 100%)',
+        '--sb-fg': theme ? theme.fg : '255 255 255', // the text colour as an r g b triple, so every tone of it is one value
+        '--sb-dim': theme ? theme.dim : 0.55, // how strong the resting menu text is
+        '--sb-icon-active': theme ? theme.iconActive : '#8fd3e4',
       }}
     >
+      {theme && (
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <Suspense fallback={null}><SidebarPattern fg={theme.fg} /></Suspense>
+        </div>
+      )}
       {/* Brand — full wordmark when expanded; cropped to just the mark when
           the rail is too narrow for the wordmark to fit uncropped. */}
       <div className="flex h-16 items-center justify-center px-3" onClick={logoClicks}>
@@ -155,8 +171,8 @@ export default function Sidebar() {
                 'group relative flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-[13.5px] font-medium transition-all duration-150',
                 collapsed && 'justify-center',
                 isActive
-                  ? 'bg-white/12 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
-                  : 'text-white/55 hover:bg-white/[0.06] hover:text-white/90',
+                  ? 'bg-[rgb(var(--sb-fg)/0.12)] text-[rgb(var(--sb-fg))] shadow-[inset_0_0_0_1px_rgb(var(--sb-fg)/0.08)]'
+                  : 'text-[rgb(var(--sb-fg)/var(--sb-dim))] hover:bg-[rgb(var(--sb-fg)/0.06)] hover:text-[rgb(var(--sb-fg)/0.9)]',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -165,7 +181,7 @@ export default function Sidebar() {
                 <span className="absolute left-0 top-1/2 h-[18px] w-[3px] -translate-y-1/2 rounded-full bg-[#35a8c4] shadow-[0_0_8px_rgb(53_168_196/0.65)]" />
               )}
               <Icon
-                className={`h-[19px] w-[19px] shrink-0 transition-colors ${isActive ? 'text-[#8fd3e4]' : ''}`}
+                className={`h-[19px] w-[19px] shrink-0 transition-colors ${isActive ? 'text-[var(--sb-icon-active)]' : ''}`}
               />
               {!collapsed && <span className="min-w-0 break-words leading-snug">{label}</span>}
               {collapsed && (
@@ -179,7 +195,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-white/8 p-3">
+      <div className="border-t border-[rgb(var(--sb-fg)/0.08)] p-3">
         <div
           className={`flex items-center gap-2.5 rounded-xl px-1.5 py-2 ${collapsed ? 'justify-center' : ''}`}
         >
@@ -191,17 +207,17 @@ export default function Sidebar() {
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-white/90">
+              <p className="truncate text-[13px] font-semibold text-[rgb(var(--sb-fg)/0.9)]">
                 {shownName}
               </p>
-              <p className="text-[11px] text-white/35">Signed in</p>
+              <p className="text-[11px] text-[rgb(var(--sb-fg)/0.45)]">Signed in</p>
             </div>
           )}
         </div>
         <button
           type="button"
           onClick={() => setConfirmingSignOut(true)}
-          className={`mt-1 flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] font-medium text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white/90 ${collapsed ? 'justify-center' : ''}`}
+          className={`mt-1 flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] font-medium text-[rgb(var(--sb-fg)/var(--sb-dim))] transition-colors hover:bg-[rgb(var(--sb-fg)/0.06)] hover:text-[rgb(var(--sb-fg)/0.9)] ${collapsed ? 'justify-center' : ''}`}
         >
           <IconLogout className="h-[18px] w-[18px] shrink-0" />
           {!collapsed && <span>Sign out</span>}
