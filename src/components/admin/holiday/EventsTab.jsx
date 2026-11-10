@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { CalendarDays, Pencil, Plus, Repeat, Trash2 } from 'lucide-react'
+import { CalendarDays, CircleCheck, ImageOff, Pencil, Plus, Repeat, ScanSearch, Trash2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { fmtDayYear, inDays } from '@/lib/scheduledMail'
 import { Button } from '@/components/ui/button'
@@ -79,7 +79,9 @@ function EventDialog({ event, onClose, onSaved }) {
           <div className="flex flex-col gap-2">
             <button type="button" onClick={() => input.current?.click()} className="flex min-h-48 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:bg-muted/50">
               {preview ? <img src={preview} alt="The picture you chose" className="max-h-72 w-full object-contain" />
-                : editing ? <MediaImage url={event.url} alt={event.name} className="max-h-72 w-full object-contain" /> : 'Click to choose the finished picture'}
+                : editing && event.picture_ok === false ? (
+                  <span className="flex flex-col items-center gap-2 px-4 py-8 text-center text-destructive"><ImageOff className="h-8 w-8" /><span className="text-sm font-medium">The picture file is missing from the server.</span><span className="text-xs text-muted-foreground">Click here and choose the picture again to put it back.</span></span>
+                ) : editing ? <MediaImage url={event.url} alt={event.name} className="max-h-72 w-full object-contain" /> : 'Click to choose the finished picture'}
             </button>
             <input ref={input} type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" className="sr-only" aria-label="Choose a picture" onChange={(e) => choose(e.target.files?.[0])} />
             <p className="text-xs text-muted-foreground">PNG (or JPG), up to 10 MB. It goes out about 900 px wide, so a wide banner works well. {editing && 'Choose another file to replace the picture.'}</p>
@@ -128,6 +130,8 @@ export default function EventsTab({ mayAdd, mayEdit, mayDelete, onChanged }) {
   const [dialog, setDialog] = useState(null) // null | 'new' | an event
   const [remove, setRemove] = useState(null)
   const [reload, setReload] = useState(0)
+  const [check, setCheck] = useState(null) // the result of the last picture check: {checked, ok, problems}
+  const [checking, setChecking] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -160,6 +164,21 @@ export default function EventsTab({ mayAdd, mayEdit, mayDelete, onChanged }) {
     const res = await apiFetch(`${API}${ev.id}/`, { method: 'DELETE' })
     if (res.ok || res.status === 204) { toast.success('Event removed'); changed() } else toast.error("The event couldn't be removed.")
   }
+  // The small preview on each card is kept in the database, so it shows even when the real picture file is gone from the server. This looks for the real files now.
+  async function checkPictures() {
+    setChecking(true)
+    try {
+      const res = await apiFetch(`${API}check-pictures/`)
+      const d = await res.json().catch(() => null)
+      if (!res.ok) return toast.error(d?.detail || "The pictures couldn't be checked.")
+      setCheck(d)
+      setReload((n) => n + 1) // the cards take their flags from the same look
+    } catch {
+      toast.error('Could not reach the server. Please try again.')
+    } finally {
+      setChecking(false)
+    }
+  }
   const rows = data?.results || []
 
   return (
@@ -174,16 +193,42 @@ export default function EventsTab({ mayAdd, mayEdit, mayDelete, onChanged }) {
           ))}
         </div>
         <Input placeholder="Search events" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search events" className="h-9 w-56" />
-        {mayAdd && <Button type="button" size="sm" className="ml-auto" onClick={() => setDialog('new')}><Plus /> Add an event</Button>}
+        <Button type="button" variant="outline" size="sm" className="ml-auto" onClick={checkPictures} disabled={checking}><ScanSearch /> {checking ? 'Checking…' : 'Check pictures'}</Button>
+        {mayAdd && <Button type="button" size="sm" onClick={() => setDialog('new')}><Plus /> Add an event</Button>}
       </div>
       {error && <p className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {check && (
+        check.problems.length === 0 ? (
+          <p className="mb-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-300" role="status">
+            <CircleCheck className="h-4 w-4 shrink-0" /> All {check.checked} {check.checked === 1 ? 'picture is' : 'pictures are'} on the server and can be opened.
+            <button type="button" className="ml-auto text-xs underline underline-offset-2" onClick={() => setCheck(null)}>Dismiss</button>
+          </p>
+        ) : (
+          <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm" role="alert">
+            <p className="flex items-center gap-2 font-medium text-destructive">
+              <ImageOff className="h-4 w-4 shrink-0" /> {check.problems.length} of {check.checked} {check.checked === 1 ? 'event' : 'events'} {check.problems.length === 1 ? 'has' : 'have'} no usable picture on the server. {check.problems.length === 1 ? 'It' : 'They'} cannot be edited or sent until the picture is added again.
+              <button type="button" className="ml-auto text-xs font-normal text-foreground underline underline-offset-2" onClick={() => setCheck(null)}>Dismiss</button>
+            </p>
+            <ul className="mt-1.5 flex flex-col gap-1">
+              {check.problems.map((p) => (
+                <li key={p.id} className="flex flex-wrap items-center gap-x-2 text-xs">
+                  <strong className="text-sm">{p.name}</strong>
+                  <span className="text-muted-foreground">{p.why}{p.over ? ' (already over)' : !p.active ? ' (switched off)' : ''}</span>
+                  <button type="button" className="underline underline-offset-2" onClick={() => setDialog(rows.find((r) => r.id === p.id) || { id: p.id, name: p.name, picture_ok: false, subject: '', send_on: '', send_days: 1, repeat_yearly: false, active: p.active, note: '' })}>Open it to add the picture again</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      )}
       {!data && !error && <p className="text-sm text-muted-foreground">Loading…</p>}
       {data && rows.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">{q ? 'No event matches that search.' : view === 'over' ? 'No past events.' : 'No holiday events yet. Add a festival picture and the date it should go out.'}</p>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {rows.map((ev) => (
           <div key={ev.id} className={`flex flex-col overflow-hidden rounded-xl border border-border ${ev.active && !ev.over ? '' : 'opacity-70'}`}>
-            <button type="button" onClick={() => setDialog(ev)} className="block bg-muted/40 text-left" aria-label={`Open ${ev.name}`}>
-              {ev.thumb ? <img src={ev.thumb} alt={ev.name} loading="lazy" className="block aspect-[3/2] w-full object-contain" /> : <MediaImage url={ev.url} alt={ev.name} className="block aspect-[3/2] w-full object-contain" />}
+            <button type="button" onClick={() => setDialog(ev)} className="relative block bg-muted/40 text-left" aria-label={`Open ${ev.name}`}>
+              {ev.thumb ? <img src={ev.thumb} alt={ev.name} loading="lazy" className={`block aspect-[3/2] w-full object-contain ${ev.picture_ok === false ? 'opacity-40 grayscale' : ''}`} /> : <MediaImage url={ev.url} alt={ev.name} className="block aspect-[3/2] w-full object-contain" />}
+              {ev.picture_ok === false && <span className="absolute inset-x-2 bottom-2 flex items-center justify-center gap-1.5 rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-white shadow"><ImageOff className="h-3.5 w-3.5" /> Picture missing from the server</span>}
             </button>
             <div className="flex flex-col gap-2 p-3">
               <div className="flex items-start justify-between gap-2">
