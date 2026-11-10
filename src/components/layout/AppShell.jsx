@@ -10,6 +10,7 @@ import StampLayer from '@/components/StampLayer'
 import SpudLayer from '@/components/SpudLayer'
 import EggBoundary from '@/components/EggBoundary'
 import SunsetLoader from '@/components/SunsetLoader'
+import CommandPalette from '@/components/CommandPalette'
 
 export default function AppShell() {
   return (
@@ -26,6 +27,7 @@ export default function AppShell() {
         <SpudLayer />
         <SunsetLoader />
       </EggBoundary>
+      <CommandPalette />
       <Sidebar />
       <SecondarySidebar />
       <div className="flex flex-1 flex-col overflow-hidden">

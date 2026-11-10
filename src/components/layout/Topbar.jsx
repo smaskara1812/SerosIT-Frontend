@@ -4,6 +4,10 @@ import { navSections } from '@/config/nav'
 import { useTopbarSubtitle } from '@/context/TopbarContext'
 import { IconChevronLeft } from '@/components/icons'
 import DisplaySize from '@/components/layout/DisplaySize'
+import { openPalette } from '@/lib/palette'
+import { IconSearch } from '@/components/icons'
+
+const MAC = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent || '')
 
 // New/edit form routes (e.g. /it-asset/it-assets/12/edit,
 // /drilling/drilling-report/new) live one or two segments below their list
@@ -53,6 +57,16 @@ export default function Topbar() {
             Back to {active.label}
           </Link>
         )}
+        <button
+          type="button"
+          onClick={openPalette}
+          aria-label="Search pages and actions"
+          className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <IconSearch className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Search</span>
+          <kbd className="hidden rounded border border-gray-200 bg-white px-1 font-sans text-[10px] sm:inline">{MAC ? '⌘K' : 'Ctrl K'}</kbd>
+        </button>
         <DisplaySize />
       </div>
     </header>

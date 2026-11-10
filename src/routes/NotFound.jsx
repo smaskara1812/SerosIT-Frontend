@@ -1,11 +1,13 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home as HomeIcon, ArrowLeft } from 'lucide-react'
+import { Home as HomeIcon, ArrowLeft, Gamepad2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import PageSearch from '@/components/PageSearch'
 import { EASTER_EGGS } from '@/config/easterEggs'
+import EggBoundary from '@/components/EggBoundary'
 
 const SceneSero = lazy(() => import('@/components/sero/SceneSero'))
+const SeroRunOverlay = lazy(() => import('@/components/game/SeroRunOverlay')) // the game's code is fetched only when someone presses Play
 
 // A page that does not exist: a dry well. Seros runs mobile onshore land rigs, so this is one of those: a lattice
 // mast on its substructure, the doghouse with the company name, ramps down either side. The rig crew are still
@@ -102,6 +104,7 @@ export default function NotFound() {
   // Hidden: five quick clicks on the SEROS lettering on the doghouse tip the empty bucket. One drop falls, the
   // caption flickers, and the well goes back to being dry.
   const [tipped, setTipped] = useState(false)
+  const [playing, setPlaying] = useState(false) // Sero's Run is open
   const count = useRef({ n: 0, timer: 0 })
   const resetTimer = useRef(0)
   useEffect(() => () => { clearTimeout(count.current.timer); clearTimeout(resetTimer.current) }, [])
@@ -152,9 +155,21 @@ export default function NotFound() {
             <Button variant="secondary" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-4 w-4" /> Go back
             </Button>
+            {EASTER_EGGS.seroRun && (
+              <Button variant="ghost" onClick={() => setPlaying(true)}>
+                <Gamepad2 className="h-4 w-4" /> Play Sero&rsquo;s Run
+              </Button>
+            )}
           </div>
         </div>
       </div>
+      {EASTER_EGGS.seroRun && playing && (
+        <EggBoundary>
+          <Suspense fallback={null}>
+            <SeroRunOverlay onClose={() => setPlaying(false)} />
+          </Suspense>
+        </EggBoundary>
+      )}
     </div>
   )
 }

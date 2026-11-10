@@ -25,6 +25,7 @@ export const EASTER_EGGS = {
   spudIn: true, // the spud-in animation, started by a secret phrase typed into the home page search
   spudPhrases: ['spud in', 'spud', 'spudding in', 'spudding', 'spud date'], // any of these (ignoring capitals, hyphens, punctuation and extra spaces) starts it
   sero: true, // Sero, the Seros mascot, standing in the home banner (and on the 404 and access-denied pages). He is part of the app, not a hidden touch: this switch only shows or hides him
+  seroRun: true, // the Play button on the 404 page: Sero's Run, a small endless-runner game in an overlay (fetched only when pressed; nothing is saved). Off = no button
   seroTricks: true, // what he does: pokes, eyes that follow the cursor, a nap when the page is idle, the search-box reactions, the morning wave and the secret phrase. Off = he only stands and breathes
   seroPhrases: ['sero', 'hello sero', 'hi sero', 'hey sero'], // typed into the home page search and confirmed with Enter: he walks the banner, waves and tips his hat
   seroSleepAfterMs: 6 * 60 * 1000, // idle time on the home page before he dozes off (the idle hints start earlier, at idleHintAfterMs); any movement wakes him

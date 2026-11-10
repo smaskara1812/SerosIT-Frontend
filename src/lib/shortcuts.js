@@ -135,7 +135,7 @@ export function allNavLeaves() {
     if (group.sections) {
       for (const section of group.sections) {
         for (const item of section.items) {
-          leaves.push({ ...item, groupLabel: group.label, groupKey: group.key, adminOnly: group.adminOnly })
+          leaves.push({ ...item, groupLabel: group.label, groupKey: group.key, sectionLabel: section.label || '', adminOnly: group.adminOnly })
         }
       }
     } else if (group.path) {
