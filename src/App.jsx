@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from '@/routes/Login'
 import Home from '@/routes/Home'
@@ -35,6 +35,12 @@ const IncidentsPage = lazy(() => import('@/routes/reports/IncidentsPage'))
 const HazardCardsPage = lazy(() => import('@/routes/reports/HazardCardsPage'))
 const RigPerformanceReportPage = lazy(() => import('@/routes/reports/RigPerformanceReportPage'))
 const RigPerformanceMastersPage = lazy(() => import('@/routes/reports/RigPerformanceMastersPage'))
+const CandidateInterviewsPage = lazy(() => import('@/routes/hr/CandidateInterviewsPage'))
+const CandidateInterviewFormPage = lazy(() => import('@/routes/hr/CandidateInterviewFormPage'))
+const CandidateEvaluationsListPage = lazy(() => import('@/routes/hr/CandidateEvaluationsListPage'))
+const CandidateEvaluationPage = lazy(() => import('@/routes/hr/CandidateEvaluationPage'))
+const CandidateInvitesPage = lazy(() => import('@/routes/hr/CandidateInvitesPage'))
+const JoinPage = lazy(() => import('@/routes/public/JoinPage'))
 const ItAssetsPage = lazy(() => import('@/routes/itasset/ItAssetsPage'))
 const ItAssetFormPage = lazy(() => import('@/routes/itasset/ItAssetFormPage'))
 const ItAssetHoldersPage = lazy(() => import('@/routes/itasset/ItAssetHoldersPage'))
@@ -105,6 +111,9 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      {/* The public candidate form: no sign-in, outside the app shell. */}
+      <Route path="/join/preview" element={<Suspense fallback={null}><JoinPage preview /></Suspense>} />
+      <Route path="/join/:token" element={<Suspense fallback={null}><JoinPage /></Suspense>} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<Home />} />
@@ -144,6 +153,12 @@ function App() {
             <Route path="/masters/fs-emp-cur-status/:id/edit" element={<FsFormPage key="status-edit" kind="status" />} />
             <Route path="/masters/:slug" element={<MasterCrudPage />} />
           </Route>
+          <Route path="/rig-personnel/candidate-interviews" element={<CandidateInterviewsPage />} />
+          <Route path="/rig-personnel/candidate-evaluations" element={<CandidateEvaluationsListPage />} />
+          <Route path="/rig-personnel/candidate-evaluations/:id" element={<CandidateEvaluationPage />} />
+          <Route path="/rig-personnel/candidate-interviews/invites" element={<CandidateInvitesPage />} />
+          <Route path="/rig-personnel/candidate-interviews/new" element={<CandidateInterviewFormPage />} />
+          <Route path="/rig-personnel/candidate-interviews/:id/edit" element={<CandidateInterviewFormPage />} />
           <Route path="/it-asset/it-assets" element={<ItAssetsPage />} />
           <Route path="/it-asset/it-assets/new" element={<ItAssetFormPage />} />
           <Route path="/it-asset/it-assets/:id/edit" element={<ItAssetFormPage />} />

@@ -660,6 +660,7 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         rows={2}
+        maxLength={field.maxLength}
         disabled={disabled}
       />
     )
@@ -703,6 +704,7 @@ export function FormField({ field, value, onChange, disabled, filterValue, form,
       min={field.type === 'date' && field.minAfter ? nextDay(form?.[field.minAfter]) : field.type === 'date' && field.minField ? form?.[field.minField] || undefined : field.type === 'date' && field.minToday ? localDateStr() : undefined}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
+      maxLength={field.maxLength}
       disabled={disabled}
     />
   )

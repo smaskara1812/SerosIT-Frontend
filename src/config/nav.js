@@ -1254,6 +1254,32 @@ export const navTree = [
     ],
   },
   {
+    key: 'rig_personnel',
+    label: 'Rig Personnel',
+    icon: IconUsers,
+    sections: [
+      {
+        label: 'New Joinee Workflow',
+        items: [
+          {
+            key: 'candidate_interviews',
+            label: 'Candidate Interview Details',
+            path: '/rig-personnel/candidate-interviews',
+            icon: IconPerson,
+            menuKey: 'hr.candidate_interviews',
+          },
+          {
+            key: 'candidate_competencies',
+            label: 'Candidate Competencies Details',
+            path: '/rig-personnel/candidate-evaluations',
+            icon: IconClipboard,
+            menuKey: 'hr.candidate_competencies',
+          },
+        ],
+      },
+    ],
+  },
+  {
     key: 'reports',
     label: 'Reports',
     icon: IconClipboard,

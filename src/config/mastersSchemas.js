@@ -2070,6 +2070,83 @@ export const mastersSchemas = {
       { name: 'rate_active', label: 'Active', type: 'active-select' },
     ],
   },
+  'candidate-interviews': {
+    // Not routed through MasterCrudPage: its own list and form pages (routes/hr/CandidateInterview*), which read this field list. Rig
+    // Personnel > New Joinee Workflow. Legacy eos.Candidate_Interview_Hdr; the training and experience grids live on the form page.
+    title: 'Candidate Interview Details',
+    menuKey: 'hr.candidate_interviews',
+    apiBase: '/api/hr/candidate-interviews/',
+    idField: 'candidate_interview_hdr_id',
+    nameField: 'full_name',
+    fields: [
+      { name: 'candidate_fname', label: 'First Name', required: true, maxLength: 20, section: 'Candidate' },
+      { name: 'candidate_mname', label: 'Middle Name', maxLength: 20, section: 'Candidate' },
+      { name: 'candidate_lname', label: 'Last Name', required: true, maxLength: 20, section: 'Candidate' },
+      { name: 'father_name', label: "Father's Name", required: true, maxLength: 40, section: 'Candidate' },
+      { name: 'candidate_dob', label: 'Date of Birth', type: 'date', required: true, maxToday: true, section: 'Candidate' },
+      { name: 'nationality', label: 'Nationality', required: true, maxLength: 25, section: 'Candidate' },
+      { name: 'mobile_no', label: 'Mobile No.', required: true, maxLength: 10, section: 'Contact' },
+      { name: 'email_id', label: 'Email', type: 'email', required: true, maxLength: 40, section: 'Contact' },
+      { name: 'present_addr', label: 'Present Address', required: true, wide: true, maxLength: 100, section: 'Contact' },
+      { name: 'permanent_addr', label: 'Permanent Address', required: true, wide: true, maxLength: 100, section: 'Contact' },
+      { name: 'edu_qualification', label: 'Qualification', required: true, wide: true, maxLength: 200, section: 'Experience' },
+      { name: 'tot_experience_yrs', label: 'Total Experience (Years)', type: 'number', section: 'Experience' },
+      { name: 'tot_experience_mths', label: 'Total Experience (Months)', type: 'number', section: 'Experience' },
+      { name: 'exp_in_curr_pos_yrs', label: 'Experience in Current Position (Years)', type: 'number', section: 'Experience' },
+      { name: 'exp_in_curr_pos_mths', label: 'Experience in Current Position (Months)', type: 'number', section: 'Experience' },
+      { name: 'recruitment_source', label: 'Source of Recruitment', maxLength: 50, section: 'Experience' },
+      { name: 'hiring_reccomendation', label: 'Hiring Recommendation', wide: true, maxLength: 75, section: 'Experience' },
+      // HR fills these (the candidate's own form never shows them).
+      { name: 'interview_dt', label: 'Interview Date', type: 'date', required: true, maxToday: true, section: 'Interview (HR)' },
+      { name: 'designated_post', label: 'Designated Post', required: true, maxLength: 25, section: 'Interview (HR)' },
+      {
+        name: 'rank',
+        label: 'Position Applied for / Rank',
+        type: 'select-remote',
+        remote: '/api/masters/ranks/?business_system_id_6=Y', // Oilfield Services ranks, like the incident and job-description pages
+        optionLabel: 'rank_name',
+        optionValue: 'rank_id',
+        labelField: 'rank_name',
+        required: true,
+        section: 'Interview (HR)',
+      },
+      {
+        name: 'rig',
+        label: 'Rig',
+        type: 'select-remote',
+        remote: '/api/masters/rigs/?active=Y',
+        optionLabel: 'rig_name',
+        optionValue: 'rig_id',
+        labelField: 'rig_name',
+        required: true,
+        section: 'Interview (HR)',
+      },
+      {
+        name: 'suitable_for_role',
+        label: 'Suitable for Role',
+        type: 'select',
+        options: [
+          { value: 'Y', label: 'Yes' },
+          { value: 'N', label: 'No' },
+        ],
+        section: 'Interview (HR)',
+      },
+      {
+        name: 'hiring_status',
+        label: 'Hiring Status',
+        type: 'select',
+        default: 'N',
+        options: [
+          { value: 'N', label: 'New' },
+          { value: 'R', label: 'Rejected' },
+          { value: 'S', label: 'Selected' },
+          { value: 'O', label: 'On Hold' },
+        ],
+        section: 'Interview (HR)',
+      },
+      { name: 'additional_notes', label: 'Additional Notes (200 chars)', wide: true, maxLength: 200, section: 'Interview (HR)' },
+    ],
+  },
   'it-assets': {
     // Not routed through MasterCrudPage — too many fields for the generic
     // drawer (see ItAssetsPage/ItAssetFormPage). Kept here purely as the
