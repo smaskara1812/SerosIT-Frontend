@@ -391,6 +391,20 @@ export const navTree = [
             icon: Users,
             menuKey: 'masters.departments',
           },
+          {
+            key: 'eds',
+            label: 'Earnings and Deductions',
+            path: '/masters/eds',
+            icon: IconClipboard,
+            menuKey: 'masters.eds',
+          },
+          {
+            key: 'ed_types',
+            label: 'Earning / Deduction Types',
+            path: '/masters/ed-types',
+            icon: IconClipboard,
+            menuKey: 'masters.ed_types',
+          },
         ],
       },
       {
@@ -1261,6 +1275,27 @@ export const navTree = [
       {
         label: 'New Joinee Workflow',
         items: [
+          {
+            key: 'fs_applicants',
+            label: 'Applicants',
+            path: '/rig-personnel/applicants',
+            icon: IconPerson,
+            menuKey: 'hr.fs_applicants',
+          },
+          {
+            key: 'fs_offer_letters',
+            label: 'Offer Letter',
+            path: '/rig-personnel/offer-letters',
+            icon: IconClipboard,
+            menuKey: 'hr.fs_offer_letters',
+          },
+          {
+            key: 'fs_offer_letter_print',
+            label: 'Print Offer Letter',
+            path: '/rig-personnel/print-offer-letters',
+            icon: IconClipboard,
+            menuKey: 'hr.fs_offer_letter_print',
+          },
           {
             key: 'candidate_interviews',
             label: 'Candidate Interview Details',

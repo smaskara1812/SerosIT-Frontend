@@ -39,6 +39,12 @@ const CandidateInterviewsPage = lazy(() => import('@/routes/hr/CandidateIntervie
 const CandidateInterviewFormPage = lazy(() => import('@/routes/hr/CandidateInterviewFormPage'))
 const CandidateEvaluationsListPage = lazy(() => import('@/routes/hr/CandidateEvaluationsListPage'))
 const CandidateEvaluationPage = lazy(() => import('@/routes/hr/CandidateEvaluationPage'))
+const PrintOfferLettersPage = lazy(() => import('@/routes/hr/PrintOfferLettersPage'))
+const PrintOfferLetterPage = lazy(() => import('@/routes/hr/PrintOfferLetterPage'))
+const OfferLettersPage = lazy(() => import('@/routes/hr/OfferLettersPage'))
+const OfferLetterFormPage = lazy(() => import('@/routes/hr/OfferLetterFormPage'))
+const ApplicantsPage = lazy(() => import('@/routes/hr/ApplicantsPage'))
+const ApplicantFormPage = lazy(() => import('@/routes/hr/ApplicantFormPage'))
 const CandidateInvitesPage = lazy(() => import('@/routes/hr/CandidateInvitesPage'))
 const JoinPage = lazy(() => import('@/routes/public/JoinPage'))
 const ItAssetsPage = lazy(() => import('@/routes/itasset/ItAssetsPage'))
@@ -153,6 +159,14 @@ function App() {
             <Route path="/masters/fs-emp-cur-status/:id/edit" element={<FsFormPage key="status-edit" kind="status" />} />
             <Route path="/masters/:slug" element={<MasterCrudPage />} />
           </Route>
+          <Route path="/rig-personnel/print-offer-letters" element={<PrintOfferLettersPage />} />
+          <Route path="/rig-personnel/print-offer-letters/:id" element={<PrintOfferLetterPage />} />
+          <Route path="/rig-personnel/offer-letters" element={<OfferLettersPage />} />
+          <Route path="/rig-personnel/offer-letters/new" element={<OfferLetterFormPage />} />
+          <Route path="/rig-personnel/offer-letters/:id/edit" element={<OfferLetterFormPage />} />
+          <Route path="/rig-personnel/applicants" element={<ApplicantsPage />} />
+          <Route path="/rig-personnel/applicants/new" element={<ApplicantFormPage />} />
+          <Route path="/rig-personnel/applicants/:id/edit" element={<ApplicantFormPage />} />
           <Route path="/rig-personnel/candidate-interviews" element={<CandidateInterviewsPage />} />
           <Route path="/rig-personnel/candidate-evaluations" element={<CandidateEvaluationsListPage />} />
           <Route path="/rig-personnel/candidate-evaluations/:id" element={<CandidateEvaluationPage />} />
